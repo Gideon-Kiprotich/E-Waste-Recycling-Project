@@ -22,6 +22,7 @@ class PostgresConnectionTest extends TestCase
         $this->assertNotSame($this->developmentDatabase(), $server->database_name);
         $this->assertSame('ewaste_app', $server->role_name);
         $this->assertSame(16, intdiv((int) $server->version_number, 10000));
+        $this->assertSame('UTC', $connection->selectOne('SHOW TIMEZONE')->TimeZone);
 
         $role = $connection->selectOne('SELECT rolsuper::int AS superuser,
             rolcreatedb::int AS create_database, rolcreaterole::int AS create_role,

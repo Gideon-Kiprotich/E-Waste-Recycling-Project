@@ -1,45 +1,86 @@
 :root {
-    color-scheme: light;
-    font-family: system-ui, sans-serif;
-    color: #203b2e;
-    background: #f4f7f5;
-    line-height: 1.6;
+    font-family: "Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color: #141e18;
+    background: #f1fcf3;
+    font-synthesis: none;
+    line-height: 1.5;
+    --primary: #004526;
+    --muted: #404942;
+    --border: #707971;
 }
-
-* {
-    box-sizing: border-box;
-}
-
-body {
-    margin: 0;
-    min-height: 100vh;
-    display: grid;
-    place-items: center;
-    padding: 2rem 1rem;
-}
-
-main {
-    width: min(100%, 48rem);
-    padding: clamp(1.5rem, 5vw, 3rem);
-    border: 1px solid #dce5df;
-    border-radius: 1rem;
-    background: #fff;
-}
-
-.location {
-    margin-top: 0;
-    color: #35684a;
-    font-weight: 600;
-}
-
-h1 {
-    margin: 0 0 1.5rem;
-    font-size: clamp(1.8rem, 4vw, 2.7rem);
-    line-height: 1.2;
-    overflow-wrap: break-word;
-}
-
-p:last-child {
-    margin-bottom: 0;
-    color: #4b5e52;
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+a { color: var(--primary); text-underline-offset: 3px; }
+a:hover { color: #09522f; }
+button, input { font: inherit; }
+button, .button-link { cursor: pointer; }
+:focus-visible { outline: 3px solid #006399; outline-offset: 3px; }
+.skip-link { position: absolute; z-index: 10; top: -100px; left: 16px; padding: 12px; background: white; }
+.skip-link:focus { top: 8px; }
+.context-bar { padding: 8px max(16px, calc((100vw - 1216px) / 2)); background: #1b5e3a; color: white; font-size: .875rem; }
+.site-header { display: flex; justify-content: space-between; align-items: center; gap: 16px; max-width: 1280px; margin: auto; padding: 24px 32px; border-bottom: 1px solid #c0c9bf; }
+.brand { display: flex; align-items: center; gap: 12px; font-size: 1.25rem; font-weight: 700; text-decoration: none; }
+.brand-mark { display: grid; place-items: center; background: var(--primary); color: white; width: 40px; height: 40px; border-radius: 6px; font-size: 2rem; }
+.brand small { display: block; font-size: .875rem; font-weight: 400; color: var(--muted); }
+.header-label { color: var(--muted); font-size: .875rem; }
+.page { max-width: 1280px; padding: 32px; margin: auto; }
+.page-heading { margin-bottom: 24px; }
+.eyebrow { text-transform: uppercase; letter-spacing: .08em; font-size: .75rem; font-weight: 700; color: var(--primary); margin: 0 0 8px; }
+h1 { color: var(--primary); font-size: 2rem; line-height: 1.25; letter-spacing: -.02em; margin: 0 0 12px; }
+h2 { font-size: 1.25rem; line-height: 1.4; margin: 0 0 16px; }
+h3 { font-size: 1rem; margin: 0 0 4px; }
+p { margin: 0 0 16px; }
+.page-heading > p:last-child { color: var(--muted); margin: 0; }
+.access-nav { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 4px; margin-bottom: 28px; background: #e5f1e7; border-radius: 6px; }
+.access-nav a { display: flex; align-items: center; justify-content: center; min-height: 48px; text-decoration: none; padding: 8px; font-weight: 600; border-radius: 4px; }
+.access-nav a:hover { background: #dae5dc; }
+.access-nav a[aria-current] { background: var(--primary); color: white; }
+.workspace { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 24px; align-items: start; }
+.card { background: white; border: 1px solid #c0c9bf; border-radius: 8px; overflow-wrap: anywhere; }
+.card-heading { background: #ebf7ed; padding: 24px; border-bottom: 1px solid #c0c9bf; }
+.card-heading h2 { margin: 0; }
+.account-form, .notice-content { padding: 24px; }
+.field { margin-bottom: 20px; }
+.field label { display: block; font-weight: 600; margin-bottom: 8px; }
+.optional { font-weight: 400; color: var(--muted); }
+.field input { width: 100%; min-height: 48px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; background: white; color: #141e18; }
+.field input:hover { border-color: #404942; }
+.field input[aria-invalid], .acknowledgment input[aria-invalid] { border: 2px solid #ba1a1a; }
+.hint { color: var(--muted); font-size: .875rem; margin: 8px 0 0; }
+.field-error { color: #93000a; font-size: .875rem; margin: 8px 0 0; }
+.form-link { display: inline-flex; align-items: center; min-height: 48px; margin: -8px 0 16px; }
+.primary, .secondary { display: inline-flex; justify-content: center; align-items: center; min-height: 48px; padding: 12px 20px; font-weight: 600; border-radius: 6px; border: 1px solid var(--primary); }
+.primary { background: var(--primary); color: white; }
+.primary:hover { background: #09522f; color: white; }
+.secondary { background: white; color: var(--primary); }
+.secondary:hover { background: #ebf7ed; }
+.button-link { text-decoration: none; }
+.account-form > .primary { width: 100%; }
+.form-end { margin: 20px 0 0; background: #ebf7ed; padding: 16px; font-size: .875rem; }
+.acknowledgment { display: flex; align-items: flex-start; gap: 12px; padding: 12px 0; margin-bottom: 16px; }
+.acknowledgment input { accent-color: var(--primary); width: 24px; height: 24px; flex-shrink: 0; margin: 0; }
+.acknowledgment label { min-height: 48px; }
+.notice, .error-summary { padding: 20px; border-radius: 6px; margin-bottom: 24px; }
+.notice { background: #e5f1e7; border: 1px solid #707971; }
+.error-summary { background: #ffdad6; color: #93000a; border: 1px solid #ba1a1a; }
+.error-summary h2 { margin-bottom: 8px; }
+.error-summary ul { margin: 0; padding-left: 24px; }
+.guidance { padding: 24px; }
+.guidance-block { background: #ebf7ed; padding: 16px; margin-top: 16px; border-left: 3px solid #1b5e3a; }
+.guidance-block p { color: var(--muted); font-size: .875rem; margin-bottom: 8px; }
+.guidance-block a { display: inline-flex; align-items: center; min-height: 48px; }
+.notice-content h2:not(:first-child) { margin-top: 24px; }
+.site-footer { max-width: 1280px; margin: 32px auto 0; display: flex; justify-content: space-between; gap: 16px; padding: 24px 32px; border-top: 1px solid #c0c9bf; color: var(--muted); font-size: .875rem; }
+.site-footer a { display: inline-flex; align-items: center; min-height: 48px; }
+@media (max-width: 760px) {
+    .workspace { grid-template-columns: 1fr; }
+    .site-header, .page, .site-footer { padding: 20px 16px; }
+    .header-label { display: none; }
+    .brand { font-size: 1rem; }
+    .brand-mark { width: 32px; height: 32px; }
+    .brand small { font-size: .75rem; }
+    h1 { font-size: 1.625rem; line-height: 1.3; }
+    .access-nav { grid-template-columns: repeat(2, 1fr); }
+    .card-heading, .account-form, .notice-content, .guidance { padding: 20px; }
+    .site-footer { flex-direction: column; }
 }

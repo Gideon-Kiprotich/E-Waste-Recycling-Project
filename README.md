@@ -1,6 +1,6 @@
 # Smart E-Waste Collection, Tracking and Recycling Management Platform
 
-University final-year project for Kenya, with Nairobi County as the case study. Phase 0 establishes a native Laravel development foundation; business features have not started. See [the verification report](docs/phase-0-report.md) for verified status and actual results.
+University final-year project for Kenya, with Nairobi County as the case study. The native Laravel/PostgreSQL foundation and Phase 1 account access are implemented. Device, collection and processing workflows belong to later phases. See [Phase 0](docs/phase-0-report.md) and [Phase 1](docs/phase-1-report.md) for actual verification results and limitations.
 
 ## Prerequisites
 
@@ -103,14 +103,14 @@ php artisan config:clear
 
 The current local environment files and keys have already been prepared. Do not regenerate keys unnecessarily. Safe examples contain no keys or real credentials. Session/cache use files locally, and queues run synchronously; no worker, Redis, virtual host, TLS, or application system service is needed.
 
-After administrator preparation, confirm ownership and contents, then apply only the framework's initial migrations:
+After administrator preparation, confirm ownership and contents, then apply pending migrations on the separate dedicated databases:
 
 ```bash
 php artisan migrate
 php artisan migrate --env=testing
 ```
 
-No domain migrations or business seeds are included. Do not run `migrate:fresh`, `db:wipe`, or database resets.
+Phase 1 adds only account UUIDs, fixed role memberships, notice acknowledgments and session revocation fields. The forward migration preserves foundation account/session associations and intentionally refuses rollback to integer account IDs. No business seeds are included. Do not run `migrate:fresh`, `db:wipe`, or database resets. The PostgreSQL connection uses UTC for the application's timestamps. PHP must support Argon2id password hashing (`php -r 'echo implode(", ", password_algos());'`).
 
 ## Develop, build, and test
 
@@ -141,18 +141,38 @@ composer test
 
 `composer test` clears cached configuration before PHPUnit. Tests force the dedicated local PostgreSQL connection, database name and non-superuser role; inherited `DB_URL` and database selection cannot redirect them to development/production. The shared test base also rejects cached configuration and a development database matching the test database before database traits execute. Direct PHPUnit commands must use the repository's `phpunit.xml` and an uncached configuration. Do not run parallel tests against the shared test database.
 
-The integration test checks the actual server/database/role, PostgreSQL major version 16, absence of administrative role privileges, database separation, and temporary transactional read/write access. It rolls back temporary data and never resets a database. A separate HTTP feature test checks the welcome route. A passing welcome test alone does not mean PostgreSQL setup is complete.
+The integration test checks the actual server/database/role, PostgreSQL major version 16, UTC, absence of administrative role privileges, database separation, and transactional read/write access. Authentication tests cover registration, validation, notice acknowledgment, all four role boundaries, throttling, CSRF, suspension, recovery, logout and revocation of persisted file sessions. Fixtures roll back; no database is reset. Tests use lower Argon2id costs only inside the test application; local accounts use 64 MiB/four iterations by default.
 
 After starting the development server, an HTTP smoke check is:
 
 ```bash
-curl --fail http://127.0.0.1:8000/
+curl --fail http://127.0.0.1:8000/login
 ```
 
 Stop the server when finished. Dependencies and builds remain local; commit `composer.lock` and `package-lock.json` along with source after all checks pass.
 
-## Required before feature implementation
+## Exercise account access
 
-Supply the actual authoritative Deliverables 2 and 3 in [`docs/requirements/`](docs/requirements/README.md), retaining their original titles/revisions. Supply the reviewed UI prototype and handoff (or an authoritative link with revision/review status) in [`docs/design/`](docs/design/README.md). None has been supplied; no domain schema, business rules, or screens may be invented from them.
+Open `/register` to create a synthetic Consumer account. Email is required, display name is optional, and passwords use 12–128 characters with confirmation. Read and acknowledge the versioned privacy notice. Public registration cannot select staff roles or account status. Sign in at `/login`; POST forms provide logout. Five failed attempts for a normalized email/IP pair block further attempts until the 15-minute window expires.
 
-Follow [`AGENTS.md`](AGENTS.md) for the agreed stack, scope and small-phase workflow. Do not begin Phase 1 until Phase 0 is verified and the required documents/prototype are reviewed.
+An authorized local project operator can provision staff through hidden password prompts:
+
+```bash
+php artisan app:provision-staff collector
+php artisan app:provision-staff processor
+php artisan app:provision-staff administrator
+```
+
+The command requires `APP_ENV=local`, validates the email/password, refuses existing emails, and never changes an existing account. Use synthetic account information and choose private passwords; no default credentials are shipped. Use each account at `/login`, then check `/consumer`, `/collector`, `/processor` or `/administrator`. Each account reaches its own minimal landing page; other role pages deny access. These pages do not grant organization/facility permissions or implement later operational tools.
+
+Request recovery at `/forgot-password`. Local `.env` uses `MAIL_MAILER=log`; it sends no external email. Open the latest recovery message privately in `storage/logs/laravel.log` with your local editor and follow its reset link. Do not paste the message, token or URL into chat, reports or shared terminals. Keep logs outside the web root's public directory, limit local access, and remove evaluation recovery messages when no longer needed. Set `APP_URL` to the address used by your browser so links point to the right local server. Tests use fake/array notifications.
+
+Links expire after 60 minutes, can be used once, and issuing another link supersedes the earlier one (requests within 60 seconds are suppressed). Successful reset requires a fresh sign-in and rejects every previously authenticated session on its next protected request. Account suspension, redaction or inactive membership also rejects existing sessions. Known, unknown and ineligible email recovery requests receive the same message.
+
+For any later deployment, configure HTTPS, `SESSION_SECURE_COOKIE=true`, `APP_DEBUG=false` and a reviewed mail transport; this phase configures local evaluation only. Do not change the frozen notice text in place: add a new versioned notice file and update `App\Support\PrivacyNotice` when its content changes.
+
+## Requirements and reviewed design
+
+The actual authoritative Deliverables 2 and 3 are supplied in [`docs/requirements/`](docs/requirements/README.md); the reviewed Stitch export and handoff are in [`docs/design/`](docs/design/README.md). Deliverable 2 controls scope, Deliverable 3 controls behavior, and Stitch supplies visual presentation. The supplied originals are preserved.
+
+Follow [`AGENTS.md`](AGENTS.md) for the agreed stack, scope and phase workflow. Review each phase's applicable requirements and screens before implementation. Phase 2 has not begun.
