@@ -284,7 +284,7 @@ class AuthenticationTest extends TestCase
         $this->assertDatabaseCount('password_reset_tokens', 1);
     }
 
-    public function test_local_log_mail_contains_a_usable_private_link_without_an_http_token(): void
+    public function test_local_log_mail_link_opens_the_reset_form_and_resets_the_synthetic_account(): void
     {
         $user = $this->account();
         $directory = sys_get_temp_dir().'/ewaste-mail-test-'.Str::uuid();
@@ -303,6 +303,17 @@ class AuthenticationTest extends TestCase
             $this->assertSame(1, preg_match('~/reset-password/([a-f0-9]{64})~', $message, $matches));
             $this->assertTrue(Password::tokenExists($user, $matches[1]));
             $this->assertFalse(str_contains($response->getContent(), $matches[1]));
+            $this->assertSame(1, preg_match('~https?://[^\s"<>]+/reset-password/[a-f0-9]{64}\?email=[^\s"<>]+~', $message, $links));
+            $link = html_entity_decode($links[0]);
+            $form = $this->get($link)->assertOk();
+            $this->assertTrue(str_contains($form->getContent(), 'Choose a new password'));
+            $this->post('/reset-password', $this->resetPayload($user, $matches[1]))->assertRedirect(route('login'));
+            $this->get('/login')->assertSee('Password updated. Sign in with your new password.')->assertSee('feedback--success');
+            $this->assertTrue(Hash::check('new-test-password-only', $user->fresh()->password_hash));
+            $this->get($link)->assertRedirect(route('password.request'));
+            $this->post('/reset-password', $this->resetPayload($user, $matches[1]))->assertSessionHasErrors('email');
+            $this->actingAs($user->fresh())->withSession(['auth_session_version' => 1])->get('/consumer')->assertRedirect(route('login'));
+            $this->assertGuest();
         } finally {
             File::deleteDirectory($directory);
         }
@@ -437,10 +448,10 @@ class AuthenticationTest extends TestCase
 
     public function test_public_forms_and_notice_are_accessible_without_authentication(): void
     {
-        foreach (['/login', '/register', '/forgot-password', '/privacy-notice', '/reset-password/synthetic-invalid-token'] as $path) {
+        foreach (['/login', '/register', '/forgot-password', '/privacy-notice'] as $path) {
             $this->get($path)->assertOk()->assertSee('Skip to content')->assertSee('Nairobi County');
         }
         $this->get('/privacy-notice')->assertSee(PrivacyNotice::VERSION);
-        $this->get('/reset-password/synthetic-invalid-token?email[]=invalid')->assertOk();
+        $this->get('/reset-password/synthetic-invalid-token?email[]=invalid')->assertRedirect(route('password.request'));
     }
 }

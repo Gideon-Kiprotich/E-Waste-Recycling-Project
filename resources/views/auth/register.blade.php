@@ -1,6 +1,6 @@
 @extends('layouts.access')
 @section('title', 'Create a Consumer account')
-@section('intro', 'Register with your email. Staff accounts are provided by a project administrator.')
+@section('intro', 'Register with your email. Staff accounts are created by an administrator.')
 @section('content')
     <div class="card-heading"><p class="eyebrow">Consumer registration</p><h2>Your account details</h2></div>
     <form class="account-form" method="POST" action="{{ route('register') }}">

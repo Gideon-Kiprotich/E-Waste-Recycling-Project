@@ -22,6 +22,9 @@ class RegistrationController extends Controller
         $user = $registration->register($request->validated());
         $session->start($request, $user);
 
-        return redirect()->route('consumer.home');
+        return redirect()->route('consumer.home')->with([
+            'status' => 'Your Consumer account has been created. You are signed in.',
+            'status_type' => 'success',
+        ]);
     }
 }

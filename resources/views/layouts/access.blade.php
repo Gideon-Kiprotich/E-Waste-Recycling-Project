@@ -35,20 +35,25 @@
                 <a href="{{ route('privacy.notice') }}" @if(request()->routeIs('privacy.notice')) aria-current="page" @endif>Privacy notice</a>
             </nav>
         @endguest
-        @if(session('status'))
-            <div class="notice" role="status">{{ session('status') }}</div>
-        @endif
         @if($errors->any())
-            <div class="error-summary" role="alert" tabindex="-1">
-                <h2>Please check the following</h2>
-                <ul>@foreach($errors->all() as $error)<li>{{ $error }}</li>@endforeach</ul>
-            </div>
+            <x-feedback type="error" id="auth-errors" title="Please check the following" :focus="true">
+                <ul>
+                    @foreach($errors->getMessages() as $field => $messages)
+                        @php($fieldId = ['email' => 'email', 'display_name' => 'display_name', 'password' => 'password', 'password_confirmation' => 'password_confirmation', 'notice_acknowledged' => 'notice_acknowledged', 'notice_version' => 'notice_acknowledged'][$field] ?? null)
+                        @foreach($messages as $error)
+                            <li>@if($fieldId)<a href="#{{ $fieldId }}">{{ $error }}</a>@else{{ $error }}@endif</li>
+                        @endforeach
+                    @endforeach
+                </ul>
+            </x-feedback>
+        @elseif(session('status'))
+            <x-feedback :type="session('status_type', 'success')" :message="session('status')" />
         @endif
         <div class="workspace">
             <section class="card">@yield('content')</section>
             <aside class="card guidance" aria-label="Account guidance">
                 <h2>Clear access. Private information.</h2>
-                <div class="guidance-block"><h3>Your account</h3><p>Consumers can register here. Collector, Processor and Administrator accounts are provisioned by an authorized project administrator.</p></div>
+                <div class="guidance-block"><h3>Your account</h3><p>Consumers can register here. Staff accounts are created by an administrator.</p></div>
                 <div class="guidance-block"><h3>Recover securely</h3><p>Recovery requests give the same response for registered and unregistered emails. Reset links expire after 60 minutes and can be used once.</p></div>
                 <div class="guidance-block"><h3>Understand your privacy</h3><p>Read how this study uses account information before registering. Use synthetic information for evaluation.</p><a href="{{ route('privacy.notice') }}">Read the privacy notice →</a></div>
             </aside>

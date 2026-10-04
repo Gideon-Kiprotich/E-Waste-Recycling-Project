@@ -165,9 +165,29 @@ php artisan app:provision-staff administrator
 
 The command requires `APP_ENV=local`, validates the email/password, refuses existing emails, and never changes an existing account. Use synthetic account information and choose private passwords; no default credentials are shipped. Use each account at `/login`, then check `/consumer`, `/collector`, `/processor` or `/administrator`. Each account reaches its own minimal landing page; other role pages deny access. These pages do not grant organization/facility permissions or implement later operational tools.
 
-Request recovery at `/forgot-password`. Local `.env` uses `MAIL_MAILER=log`; it sends no external email. Open the latest recovery message privately in `storage/logs/laravel.log` with your local editor and follow its reset link. Do not paste the message, token or URL into chat, reports or shared terminals. Keep logs outside the web root's public directory, limit local access, and remove evaluation recovery messages when no longer needed. Set `APP_URL` to the address used by your browser so links point to the right local server. Tests use fake/array notifications.
+### Local password recovery
+
+The effective local mailer is `log`. This is working local delivery: messages are written to the application log, not an email inbox. No SMTP provider is configured. Laravel documents this behavior in its [local mail guidance](https://laravel.com/framework/docs/13.x/mail#mail-and-local-development). Tests use fake notifications or a private temporary log; they never send external mail.
+
+To retrieve a recovery message privately:
+
+1. Set `APP_URL` in your private `.env` to the address used by your browser (for example `http://127.0.0.1:8000`). Keep `MAIL_MAILER=log`, then run `php artisan config:clear` and restart your local server if configuration changed.
+2. Submit your account email at `/forgot-password`. The acknowledgment is always “If an eligible account exists for that email, password reset instructions will be sent.” It does not confirm account existence or email delivery.
+3. Open `/var/www/html/E-Waste-Recycling-Project/storage/logs/laravel.log` directly in your local editor. Search for `Reset Password Notification` and select the newest message matching your request time and recipient. No message is generated for an unknown/ineligible email or a throttled request; wait at least 60 seconds before requesting another link (the IP limit is five requests per minute).
+4. Use the complete link from the plain-text part of that message privately in your browser. If you only see MIME-encoded HTML, quoted-printable `=3D` means `=`, a terminal `=` joins the next line, and `&amp;` means `&`; the full link must not contain soft line breaks. Do not paste the message, password, token or URL into chat, reports or shared terminals.
+5. Choose and confirm a new password, then sign in from the success page. A previously signed-in browser must sign in again on its next protected request.
+
+Keep logs outside `public/`, restrict local access, and remove obsolete evaluation recovery messages privately when no longer needed. Do not delete unrelated log records. Acknowledgments, validation errors and successful actions remain visible on their destination pages; failed submissions focus a linked error summary. No feedback automatically disappears.
 
 Links expire after 60 minutes, can be used once, and issuing another link supersedes the earlier one (requests within 60 seconds are suppressed). Successful reset requires a fresh sign-in and rejects every previously authenticated session on its next protected request. Account suspension, redaction or inactive membership also rejects existing sessions. Known, unknown and ineligible email recovery requests receive the same message.
+
+### Optional real inbox delivery
+
+SMTP is supported by the installed Laravel mailer; no additional package is needed for this transport. See [Laravel mail configuration](https://laravel.com/framework/docs/13.x/mail#configuration). The commented SMTP template in `.env.example` contains placeholders only and leaves `MAIL_MAILER=log` active.
+
+Obtain a provider's SMTP host, port, TLS scheme, username/secret and verified sender address privately. Only when those values are available, edit your existing `.env`: set `MAIL_MAILER=smtp`, fill `MAIL_HOST`, `MAIL_PORT`, `MAIL_SCHEME`, `MAIL_USERNAME`, `MAIL_PASSWORD`, `MAIL_FROM_ADDRESS` and `MAIL_FROM_NAME`, and ensure an inherited `MAIL_URL` is empty unless you deliberately use a provider DSN. Use the provider's settings: typically `smtp` with STARTTLS on 587 or `smtps` with implicit TLS on 465. Do not disable certificate verification or paste credentials into commands, Git or chat. Keep `.env.testing` on array delivery.
+
+Run `php artisan config:clear`, restart the local server and manually request recovery for an account whose inbox you control. Check the received message (including spam/provider delivery events) and complete reset before reporting inbox delivery as passed. This work did not configure a provider or send external mail: **real inbox delivery remains unverified**. The generic acknowledgment is never a delivery receipt. Retain log delivery until the private provider configuration is ready.
 
 For any later deployment, configure HTTPS, `SESSION_SECURE_COOKIE=true`, `APP_DEBUG=false` and a reviewed mail transport; this phase configures local evaluation only. Do not change the frozen notice text in place: add a new versioned notice file and update `App\Support\PrivacyNotice` when its content changes.
 

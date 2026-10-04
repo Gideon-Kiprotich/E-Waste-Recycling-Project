@@ -23,7 +23,10 @@ class SessionController extends Controller
         $user = $authentication->authenticate($request->validated(), $request->ip());
         $session->start($request, $user);
 
-        return redirect()->route($user->role()->value.'.home');
+        return redirect()->route($user->role()->value.'.home')->with([
+            'status' => 'You have signed in.',
+            'status_type' => 'success',
+        ]);
     }
 
     public function destroy(Request $request, AuthenticatedSession $session): RedirectResponse
@@ -31,6 +34,9 @@ class SessionController extends Controller
         Log::info('Authentication logout', ['user_id' => $request->user()?->id]);
         $session->end($request);
 
-        return redirect()->route('login')->with('status', 'You have signed out.');
+        return redirect()->route('login')->with([
+            'status' => 'You have signed out.',
+            'status_type' => 'success',
+        ]);
     }
 }

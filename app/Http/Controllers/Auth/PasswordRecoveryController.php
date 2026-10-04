@@ -18,7 +18,7 @@ use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
 
 class PasswordRecoveryController extends Controller
 {
-    public const REQUEST_MESSAGE = 'If an eligible account matches that email, a password reset link will be sent. Please check your inbox.';
+    public const REQUEST_MESSAGE = 'If an eligible account exists for that email, password reset instructions will be sent.';
 
     public function create(): View
     {
@@ -38,12 +38,27 @@ class PasswordRecoveryController extends Controller
             Log::warning('Recovery mail delivery unavailable');
         }
 
-        return back()->with('status', self::REQUEST_MESSAGE);
+        return self::acknowledgeRequest();
     }
 
-    public function edit(Request $request, string $token): View
+    public static function acknowledgeRequest(): RedirectResponse
     {
-        return view('auth.reset-password', ['token' => $token, 'email' => $request->query('email', '')]);
+        return redirect()->route('password.request')->with([
+            'status' => self::REQUEST_MESSAGE,
+            'status_type' => 'info',
+        ]);
+    }
+
+    public function edit(Request $request, #[\SensitiveParameter] string $token): View|RedirectResponse
+    {
+        $email = $request->query('email', '');
+        $account = is_string($email) ? User::where('email', strtolower(trim($email)))->first() : null;
+        if (! $account?->canSignIn() || ! Password::tokenExists($account, $token)) {
+            return redirect()->route('password.request')
+                ->withErrors(['recovery_link' => 'This reset link is invalid or expired. Request a new link.']);
+        }
+
+        return view('auth.reset-password', ['token' => $token, 'email' => $account->email]);
     }
 
     public function update(ResetPasswordRequest $request, ResetAccountPassword $reset, AuthenticatedSession $session): RedirectResponse
@@ -56,6 +71,9 @@ class PasswordRecoveryController extends Controller
 
         $session->end($request);
 
-        return redirect()->route('login')->with('status', 'Password updated. Sign in with your new password.');
+        return redirect()->route('login')->with([
+            'status' => 'Password updated. Sign in with your new password.',
+            'status_type' => 'success',
+        ]);
     }
 }

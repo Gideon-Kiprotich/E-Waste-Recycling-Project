@@ -36,7 +36,7 @@ Migration `2026_10_04_000001_add_authentication_foundation` ran successfully on 
 
 One global membership per account is sufficient for Phase 1's landing-page authorization. Organization/place tables, membership scope and operational permissions are deliberately deferred; staff landing pages grant no facility access. The command never promotes or overwrites existing users. PostgreSQL connection timezone is now explicitly UTC: verification exposed inherited `Africa/Nairobi` database time against Laravel's UTC clock. No cluster-wide setting or package was changed. Safe environment examples document Argon2id costs; credentials, keys and existing private environment files were preserved.
 
-## Actual verification
+## Actual verification — initial implementation
 
 - `composer validate --strict` — passed.
 - `composer check-platform-reqs` — passed, including PHP 8.5.4 and `pdo_pgsql`; PHP's supported algorithms include Argon2id.
@@ -62,3 +62,34 @@ Request recovery at `/forgot-password`. With local `MAIL_MAILER=log`, open `stor
 Before relying on UI acceptance, manually inspect login/register/recovery/reset/notice/error/role screens at desktop and 360px, keyboard-only navigation, visible focus, error associations and overflow. Accessibility markup/responsive CSS are implemented, but no browser or full conformance/usability claim is made.
 
 No unresolved package, database, migration, automated-test or HTTP blocker remains. Browser acceptance is the explicit verification limitation. The reviewed source/references are committed locally as `Add authentication`; the full unused export stays preserved and ignored. No merge, remote change, push or next-phase feature is authorized by this report.
+
+## Recovery and feedback follow-up — 4 October 2026
+
+Continued on `phase-1-authentication`: commit `2e27421` had not merged into `main`, and the starting working tree was clean. The user reports Consumer registration, login and logout working and the layout broadly following Stitch. This does not complete all manual acceptance checks.
+
+### Recovery diagnosis and delivery
+
+Effective development configuration was inspected without exposing values: mailer/transport `log`, default logging `stack` → `single`, debug level, standard `storage/logs/laravel.log` path, uncached configuration and file sessions. SMTP username/password/URL were not configured. The reset mechanism writes local messages; inbox delivery is not configured and is **unverified**, rather than a broken local reset mechanism. No external mail was sent or transport changed. Existing private environment files and the user's development account were preserved.
+
+The local-mail test now exercises the full request → generated private message → actual generated link → reset form → successful reset path using a temporary synthetic account in guarded `ewaste_testing`. Its private temporary log is removed afterward; the account/token changes roll back. It also rejects link/token reuse and an old authenticated session. Existing expiry, suspension, token replacement, single-use and two-file-session rejection tests remain. Recovery URLs/tokens/passwords are not included in this report or verification output.
+
+README now gives exact private editor retrieval steps, including selecting the newest notification by request time/recipient and handling MIME soft line breaks if necessary. It separately explains optional provider SMTP configuration. `.env.example` retains active log delivery and adds only commented, nonfunctional SMTP placeholders. Actual inbox verification requires privately supplied provider settings/verified sender, configuration refresh and a successful manual delivery/reset test for an inbox the operator controls. No provider credentials are invented, requested in chat or committed. See [Laravel's local mail behavior](https://laravel.com/framework/docs/13.x/mail#mail-and-local-development).
+
+### Feedback changes and safeguards
+
+- One reusable `resources/views/components/feedback.blade.php` replaces the previous separate notice/error containers. It uses existing tokens, a text message plus an aria-hidden inline icon, green success, red errors and neutral recovery information. Text is escaped. No library or dependency was added.
+- Registration/login now flash success to the appropriate role landing page; logout and reset success appear on the login page. Explicit success/information variants prevent stale styling. Feedback has no timeout or automatic dismissal.
+- Every eligible/unknown/suspended/broker-throttled/IP-throttled recovery request uses exactly: “If an eligible account exists for that email, password reset instructions will be sent.” It confirms neither account existence nor delivery. A named Laravel limiter retains five requests per minute per IP and returns the same acknowledgment/redirect when blocked; tests prove an additional eligible account gets no notification until the limit expires.
+- Invalid/expired/ineligible/used links are checked on opening and return to recovery with a generic actionable error. POST reset still revalidates atomically; the early GET check does not consume a token or replace reset safeguards.
+- Failed submissions render one linked, focusable error summary with `role="alert"`; minimal bundled JavaScript focuses it after navigation. Field errors retain `aria-describedby`/`aria-invalid` and have no competing alert roles. Success/information uses one `role="status"`. Errors take priority over a stale success flash. Safe fields are preserved; passwords and recovery tokens remain excluded from flashed input. No screen-reader announcement behavior is claimed from markup assertions.
+- Registration guidance now says “Staff accounts are created by an administrator.” Consumer-only creation, privilege-injection protection, password/session rules, PostgreSQL guards and role authorization are unchanged. No migration, account-management screen or Phase 2 functionality was added.
+
+### Follow-up verification and remaining acceptance
+
+- `composer test` — **47 tests passed, 542 assertions** in the final run; existing security/PostgreSQL coverage retained plus six targeted feedback tests. Initial failures concerned the test client's missing redirect cookies and an overly strict expectation of one link per field when a field had multiple validation errors. Fixtures/assertions were corrected; the final result is the passing run, not the earlier failures.
+- `php vendor/bin/pint --test` — passed. `npm run build` — passed with Vite 8.3.2; compiled CSS and focus JavaScript are ignored generated files.
+- Live HTTP checks with real cookies/CSRF — invalid registration returned the red, linked/focusable summary, field associations and safe retained inputs; recovery returned the exact neutral acknowledgment with a single status region; an invalid link returned to recovery with a generic error; built CSS/JS returned 200 and included the focus wiring. The owned temporary server used a free port and was stopped; its listener closed. Existing services were not stopped.
+- Post-test inspection — development still has its one existing account; test users/memberships/acknowledgments/tokens are zero. No database reset, persistent synthetic account or private log evidence remains.
+- Browser availability — computer-use inventory again returned no apps/browsers. **Desktop and 360px visual layout, actual keyboard/error-summary focus and anchor behavior, contrast in the rendered browser, and screen-reader announcement checks remain manual/unverified.** HTML assertions and bundled-script inspection are not a visual/accessibility pass. Real inbox delivery also remains unverified until a configured provider delivery test succeeds.
+
+No automated/runtime blocker remains. The staged review covers 16 Phase 1 paths: configured secrets/private keys, private environment files, dependencies, generated builds, runtime files and temporary evidence are excluded. The commit is `Improve auth feedback`; no merge, push or Phase 2 work is included. The [README recovery instructions](../README.md#local-password-recovery) are the private local handoff.
