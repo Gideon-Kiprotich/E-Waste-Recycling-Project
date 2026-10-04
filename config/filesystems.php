@@ -30,6 +30,15 @@ return [
 
     'disks' => [
 
+        'device_photos' => [
+            'driver' => 'local',
+            'root' => storage_path('app/device-evidence'),
+            'visibility' => 'private',
+            'serve' => false,
+            'throw' => false,
+            'report' => false,
+        ],
+
         'local' => [
             'driver' => 'local',
             'root' => storage_path('app/private'),

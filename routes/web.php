@@ -4,6 +4,7 @@ use App\Enums\Role;
 use App\Http\Controllers\Auth\PasswordRecoveryController;
 use App\Http\Controllers\Auth\RegistrationController;
 use App\Http\Controllers\Auth\SessionController;
+use App\Http\Controllers\Devices\DeviceController;
 use App\Http\Controllers\RoleHomeController;
 use App\Support\PrivacyNotice;
 use Illuminate\Support\Facades\Route;
@@ -24,6 +25,19 @@ Route::middleware('guest')->group(function (): void {
 
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 Route::middleware(['auth', 'account.current'])->group(function (): void {
+    Route::middleware('role:consumer')->group(function (): void {
+        Route::get('/items', [DeviceController::class, 'index'])->name('items.index');
+        Route::get('/items/create', [DeviceController::class, 'create'])->name('items.create');
+        Route::post('/items', [DeviceController::class, 'store'])->middleware('throttle:20,1')->name('items.store');
+        Route::get('/items/lookup', [DeviceController::class, 'manualLookup'])->name('items.lookup.manual');
+        Route::get('/lookup/{public_code}', [DeviceController::class, 'lookup'])->where('public_code', 'EWC-[A-F0-9]{32}')->name('items.lookup');
+        Route::get('/items/{item}', [DeviceController::class, 'show'])->whereUuid('item')->name('items.show');
+        Route::get('/items/{item}/edit', [DeviceController::class, 'edit'])->whereUuid('item')->name('items.edit');
+        Route::patch('/items/{item}/observations', [DeviceController::class, 'update'])->whereUuid('item')->middleware('throttle:20,1')->name('items.update');
+        Route::get('/subjects/{item}/label', [DeviceController::class, 'label'])->whereUuid('item')->name('items.label');
+        Route::get('/subjects/{item}/qr', [DeviceController::class, 'qr'])->whereUuid('item')->name('items.qr');
+        Route::get('/items/{item}/photos/{attachment}', [DeviceController::class, 'photo'])->whereUuid(['item', 'attachment'])->name('items.photo');
+    });
     Route::get('/dashboard', [RoleHomeController::class, 'index'])->name('dashboard');
     foreach (Role::cases() as $role) {
         Route::get('/'.$role->value, [RoleHomeController::class, 'show'])

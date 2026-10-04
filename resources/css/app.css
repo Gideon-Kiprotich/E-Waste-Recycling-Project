@@ -90,3 +90,37 @@ p { margin: 0 0 16px; }
     .card-heading, .account-form, .notice-content, .guidance { padding: 20px; }
     .site-footer { flex-direction: column; }
 }
+
+button, input, select, textarea { font: inherit; }
+.field select, .field textarea { width: 100%; min-height: 48px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; background: white; color: #141e18; }
+.field select[aria-invalid], .field textarea[aria-invalid] { border: 2px solid #ba1a1a; }
+fieldset { border: 0; padding: 0; margin: 24px 0; min-width: 0; }
+legend { font-size: 1.25rem; font-weight: 600; margin-bottom: 12px; }
+.device-nav, .actions, .pagination { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
+.device-nav { background: #e5f1e7; border-radius: 6px; padding: 8px 16px; }
+.device-nav a, .pagination a { min-height: 48px; display: inline-flex; align-items: center; }
+.device-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 24px; margin: 24px 0; }
+.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 20px; }
+.manual-code { font-family: ui-monospace, monospace; overflow-wrap: anywhere; }
+.qr-image { display: block; width: 100%; max-width: 280px; height: auto; background: white; margin: 16px auto; }
+.device-photo { display: block; width: 100%; max-height: 400px; object-fit: contain; }
+.facts { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px 20px; padding: 16px; background: #ebf7ed; border-radius: 6px; }
+.facts dt { font-weight: 600; }
+.facts dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.section-title { margin-top: 24px; }
+.timeline { padding-left: 24px; }
+.timeline > li { margin-bottom: 24px; }
+.identity-label { max-width: 500px; margin: auto; text-align: center; }
+.category-picker { border-bottom: 1px solid #c0c9bf; }
+@media (max-width: 760px) {
+    .device-grid, .form-grid { grid-template-columns: 1fr; }
+    .facts { grid-template-columns: 1fr; gap: 4px; }
+    .facts dd { margin-bottom: 12px; }
+    .device-nav { gap: 8px 16px; }
+}
+@media print {
+    body:has(.identity-label) { background: white; }
+    body:has(.identity-label) .site-header, body:has(.identity-label) .context-bar, body:has(.identity-label) .device-nav, body:has(.identity-label) .page-heading, body:has(.identity-label) .site-footer, .no-print, .skip-link { display: none; }
+    body:has(.identity-label) .page { padding: 0; }
+    .identity-label { break-inside: avoid; border: 1px solid black; color: black; }
+}

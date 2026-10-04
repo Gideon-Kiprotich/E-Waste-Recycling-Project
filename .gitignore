@@ -33,7 +33,7 @@
 /test-results
 /artifacts
 /docs/evidence
-# Preserve the full supplied export locally; version only the reviewed access reference.
+# Preserve the full supplied export locally; version reviewed phase references.
 /docs/design/stitch_e_waste_connect_nairobi_prototype/*
 !/docs/design/stitch_e_waste_connect_nairobi_prototype/civic_stewardship_traceability/
 /docs/design/stitch_e_waste_connect_nairobi_prototype/civic_stewardship_traceability/*
@@ -42,6 +42,15 @@
 /docs/design/stitch_e_waste_connect_nairobi_prototype/s01_access_and_recovery_workspace/*
 !/docs/design/stitch_e_waste_connect_nairobi_prototype/s01_access_and_recovery_workspace/code.html
 !/docs/design/stitch_e_waste_connect_nairobi_prototype/s01_access_and_recovery_workspace/screen.png
+# Reviewed Phase 2 device list and registration/detail references.
+!/docs/design/stitch_e_waste_connect_nairobi_prototype/s02_consumer_overview/
+/docs/design/stitch_e_waste_connect_nairobi_prototype/s02_consumer_overview/*
+!/docs/design/stitch_e_waste_connect_nairobi_prototype/s02_consumer_overview/code.html
+!/docs/design/stitch_e_waste_connect_nairobi_prototype/s02_consumer_overview/screen.png
+!/docs/design/stitch_e_waste_connect_nairobi_prototype/s03_device_registration_detail/
+/docs/design/stitch_e_waste_connect_nairobi_prototype/s03_device_registration_detail/*
+!/docs/design/stitch_e_waste_connect_nairobi_prototype/s03_device_registration_detail/code.html
+!/docs/design/stitch_e_waste_connect_nairobi_prototype/s03_device_registration_detail/screen.png
 /.npm
 /.composer
 *.sql

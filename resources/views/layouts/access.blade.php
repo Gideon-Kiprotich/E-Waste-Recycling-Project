@@ -35,20 +35,7 @@
                 <a href="{{ route('privacy.notice') }}" @if(request()->routeIs('privacy.notice')) aria-current="page" @endif>Privacy notice</a>
             </nav>
         @endguest
-        @if($errors->any())
-            <x-feedback type="error" id="auth-errors" title="Please check the following" :focus="true">
-                <ul>
-                    @foreach($errors->getMessages() as $field => $messages)
-                        @php($fieldId = ['email' => 'email', 'display_name' => 'display_name', 'password' => 'password', 'password_confirmation' => 'password_confirmation', 'notice_acknowledged' => 'notice_acknowledged', 'notice_version' => 'notice_acknowledged'][$field] ?? null)
-                        @foreach($messages as $error)
-                            <li>@if($fieldId)<a href="#{{ $fieldId }}">{{ $error }}</a>@else{{ $error }}@endif</li>
-                        @endforeach
-                    @endforeach
-                </ul>
-            </x-feedback>
-        @elseif(session('status'))
-            <x-feedback :type="session('status_type', 'success')" :message="session('status')" />
-        @endif
+        <x-feedback-summary id="auth-errors" :field-ids="['email'=>'email','display_name'=>'display_name','password'=>'password','password_confirmation'=>'password_confirmation','notice_acknowledged'=>'notice_acknowledged','notice_version'=>'notice_acknowledged']" />
         <div class="workspace">
             <section class="card">@yield('content')</section>
             <aside class="card guidance" aria-label="Account guidance">

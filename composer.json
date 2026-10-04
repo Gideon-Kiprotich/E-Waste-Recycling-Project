@@ -7,12 +7,15 @@
     "license": "MIT",
     "require": {
         "php": "^8.3",
+        "ext-gd": "*",
         "ext-pdo_pgsql": "*",
+        "endroid/qr-code": "~6.0.9",
         "laravel/framework": "^13.17",
         "laravel/tinker": "^3.0"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",
+        "khanamiryan/qrcode-detector-decoder": "^2.0",
         "laravel/pail": "^1.2.5",
         "laravel/pao": "^1.0.6",
         "laravel/pint": "^1.27",
@@ -35,7 +38,7 @@
     "scripts": {
         "dev": [
             "Composer\\Config::disableProcessTimeout",
-            "npx concurrently --names=server,vite --kill-others \"php artisan serve --host=127.0.0.1\" \"npm run dev\""
+            "npx concurrently --names=server,vite --kill-others \"composer run serve\" \"npm run dev\""
         ],
         "test": [
             "@php artisan config:clear --ansi @no_additional_args",
@@ -56,6 +59,10 @@
         ],
         "pre-package-uninstall": [
             "Illuminate\\Foundation\\ComposerScripts::prePackageUninstall"
+        ],
+        "serve": [
+            "Composer\\Config::disableProcessTimeout",
+            "@php -d upload_max_filesize=5M -d post_max_size=8M -S 127.0.0.1:8000 -t public scripts/development-router.php"
         ]
     },
     "extra": {

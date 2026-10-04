@@ -1,12 +1,12 @@
 # Smart E-Waste Collection, Tracking and Recycling Management Platform
 
-University final-year project for Kenya, with Nairobi County as the case study. The native Laravel/PostgreSQL foundation and Phase 1 account access are implemented. Device, collection and processing workflows belong to later phases. See [Phase 0](docs/phase-0-report.md) and [Phase 1](docs/phase-1-report.md) for actual verification results and limitations.
+University final-year project for Kenya, with Nairobi County as the case study. The native Laravel/PostgreSQL foundation, account access and owned-device registration/detail are implemented. Collection and processing workflows belong to later phases. See [Phase 0](docs/phase-0-report.md), [Phase 1](docs/phase-1-report.md) and [Phase 2](docs/phase-2-report.md) for actual verification results and limitations.
 
 ## Prerequisites
 
 - Ubuntu with Laravel 13 and a supported PHP version. Laravel 13 supports PHP 8.3–8.5; this lockfile resolves on PHP 8.5 and requires at least PHP 8.4.1 through its Symfony dependencies. Use PHP 8.5 for this checkout. This environment has Ubuntu 26.04.1 LTS and PHP 8.5.4 CLI.
 - Composer 2 (verified 2.9.5).
-- Laravel's required PHP extensions: Ctype, cURL, DOM, Fileinfo, Filter, Hash, Mbstring, OpenSSL, PCRE, PDO, Session, Tokenizer, XML; additionally **pdo_pgsql** for this application. The Laravel extensions and `pdo_pgsql` are verified loaded in PHP 8.5.4 CLI.
+- Laravel's required PHP extensions: Ctype, cURL, DOM, Fileinfo, Filter, Hash, Mbstring, OpenSSL, PCRE, PDO, Session, Tokenizer, XML; additionally **pdo_pgsql** and **GD** for this application. GD re-encodes private photos and generates real PNG QR labels. These extensions are verified loaded in PHP 8.5.4 CLI; do not reinstall them in this environment. On another Ubuntu machine, install the matching GD package (for example `php8.5-gd`) only if it is missing.
 - PostgreSQL **16**, using its current supported minor release, and `psql`. Verified installation: PostgreSQL 16.15, cluster `16/main`, online on port `5432`.
 - Node.js >= 22.12/npm for the locked Vite and development tooling (verified runtime: Node v26.8.1, npm 11.19.0; Vite 8.3.2).
 
@@ -110,7 +110,7 @@ php artisan migrate
 php artisan migrate --env=testing
 ```
 
-Phase 1 adds only account UUIDs, fixed role memberships, notice acknowledgments and session revocation fields. The forward migration preserves foundation account/session associations and intentionally refuses rollback to integer account IDs. No business seeds are included. Do not run `migrate:fresh`, `db:wipe`, or database resets. The PostgreSQL connection uses UTC for the application's timestamps. PHP must support Argon2id password hashing (`php -r 'echo implode(", ", password_algos());'`).
+Phase 1 adds account UUIDs, fixed role memberships, notice acknowledgments and session revocation fields. Phase 2 adds the device identity/self-report/private-evidence foundation and six supported category reference rows; no sample devices or accounts are seeded. Both domain migrations intentionally refuse destructive rollback: use a reviewed forward migration. Do not run `migrate:fresh`, `db:wipe`, or database resets. The PostgreSQL connection uses UTC for the application's timestamps. PHP must support Argon2id password hashing (`php -r 'echo implode(", ", password_algos());'`).
 
 ## Develop, build, and test
 
@@ -120,12 +120,14 @@ Run the Laravel development server and Vite together:
 composer run dev
 ```
 
-Open <http://127.0.0.1:8000>; Ctrl+C stops both processes. Alternatively, use `php artisan serve --host=127.0.0.1` and `npm run dev` in separate terminals. For compiled assets, build once and run just the Laravel server:
+Open <http://127.0.0.1:8000>; Ctrl+C stops both processes. Alternatively, use `composer run serve` and `npm run dev` in separate terminals. For compiled assets, build once and run just the Laravel server:
 
 ```bash
 npm run build
-php artisan serve --host=127.0.0.1
+composer run serve
 ```
+
+`composer run serve` delegates routing to Laravel's development router and explicitly sets `upload_max_filesize=5M` and `post_max_size=8M`. The installed PHP default is only 2 MiB; an ordinary `php artisan serve` may therefore reject otherwise supported photos. No system PHP setting is changed. Stop an existing local server normally before starting another on port 8000.
 
 Required validation commands:
 
@@ -190,6 +192,23 @@ Obtain a provider's SMTP host, port, TLS scheme, username/secret and verified se
 Run `php artisan config:clear`, restart the local server and manually request recovery for an account whose inbox you control. Check the received message (including spam/provider delivery events) and complete reset before reporting inbox delivery as passed. This work did not configure a provider or send external mail: **real inbox delivery remains unverified**. The generic acknowledgment is never a delivery receipt. Retain log delivery until the private provider configuration is ready.
 
 For any later deployment, configure HTTPS, `SESSION_SECURE_COOKIE=true`, `APP_DEBUG=false` and a reviewed mail transport; this phase configures local evaluation only. Do not change the frozen notice text in place: add a new versioned notice file and update `App\Support\PrivacyNotice` when its content changes.
+
+## Exercise owned devices
+
+After applying both dedicated migrations and building assets, start `composer run serve` (or `composer run dev`) and sign in as a Consumer. Open **My devices** from `/consumer`, or visit `/items`.
+
+1. Select a supported category at `/items/create`, choose Router/Keyboard for peripherals, then **Load category questions** before entering answers. Changing category reloads the form and discards unsaved answers.
+2. Optionally provide make/model and serial/IMEI; leave unknown identifiers blank. Required functional, physical-damage, data-bearing and safety answers offer explicit Unknown. Explain your observations or uncertainty in the notes. Do not upload device contents or personal information.
+3. Optionally select a JPEG/PNG up to 5 MiB and 16 megapixels. Photos are re-encoded to PNG to remove embedded metadata and stored under `storage/app/device-evidence/` outside the generic local disk and `public/`. Only the scoped authenticated photo route serves them; no storage symlink is required. Failed forms require selecting a photo again and re-entering private identifiers.
+4. Register once; repeat submission of the same form/payload returns the same device. A changed payload using that reference produces a conflict. Possible duplicate identifiers produce a warning without disclosing a matching owner, code or private record. They never automatically delete or merge records.
+5. On detail, use **Update self-report** before receipt. Every save retains earlier revisions; another tab with an old version is rejected. Identity, category, model, identifier and ownership are fixed through ordinary edits.
+6. Use **Printable label** and **Print label**, or download the QR PNG. The readable EWC code is alongside the QR on detail/print pages. `/items` supports manual code entry. QR encodes only the authenticated lookup URL plus opaque code, not credentials or personal details; reprinting keeps the same code. Keep `APP_URL` and the browser address consistent.
+
+Collector, Processor and Administrator roles have no device access in this phase; assignment/facility scope is not yet implemented. There are no collection, scheduling, camera-scanning or processing controls. Device history is registration and retained self-report only.
+
+Back up the private `APP_KEY` with the database and private photos. It protects identifiers and context-separated comparison/command hashes (`app-key-context-1`). Do not regenerate it after storing records: reviewed key rotation must rewrap encrypted identifiers and maintain/recompute comparison hashes and retained retry hashes. No automated key rotation, redaction, malware scanning or notification worker is claimed. The small transactional outbox retains pending event references for a later notification phase.
+
+Phase 2's automated checks passed; browser acceptance is still required. Use the exact desktop/mobile, keyboard, upload, isolation and label checks in [the Phase 2 report](docs/phase-2-report.md#manual-acceptance-required-before-phase-closure).
 
 ## Requirements and reviewed design
 

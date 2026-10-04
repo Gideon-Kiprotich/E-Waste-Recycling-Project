@@ -6,4 +6,6 @@ S01 supplies the green civic palette, header, access navigation, form cards and 
 
 Deliverable 2 controls scope and Deliverable 3 controls behavior. Generated role selection, national-ID/passkey access, regulator/IPRS integrations, ledger telemetry, certification claims and invented contacts are omitted. Real routes replace simulated tabs/errors; no later operational functionality is presented as available. See [Phase 1 report](../phase-1-report.md).
 
-The full export remains intact locally. Only S01 HTML/image and shared guidance are tracked for this phase; unused S02–S16 exports are ignored, not deleted. Review the relevant original screens again when their phases begin.
+The full export remains intact locally. Phase 1 tracks S01 HTML/image and shared guidance. Phase 2 additionally tracks the unchanged S02 consumer overview/device-list and S03 registration/detail HTML/images; unused S04–S16 exports remain ignored, not deleted. Review the relevant original screens again when their phases begin.
+
+Phase 2 translates only the owned-device list, registration, self-report detail/history and identity label. The registration/detail composition, card panels and palette remain references; real scoped routes replace simulation. Unsupported category/subtypes, required model/estimated mass, duplicate match disclosures, invented operational milestones, certifications and later workflow controls are omitted according to Deliverables 2 and 3. See [Phase 2 report](../phase-2-report.md) for coverage and manual acceptance.
