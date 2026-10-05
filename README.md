@@ -216,6 +216,8 @@ The actual authoritative Deliverables 2 and 3 are supplied in [`docs/requirement
 
 Follow [`AGENTS.md`](AGENTS.md) for the agreed stack, scope and phase workflow. Review each phase's applicable requirements and screens before implementation. Phase 2 verification and user acceptance are complete. Parts implementation and Phase 3 require a separate request.
 
+CR-PARTS-01 now approves the bounded **design** for standalone HDDs, SSDs and small low-voltage ICT cooling fans. [The implementation specification](docs/parts-intake-design-report.md) and [written UI handoff](docs/design/parts-intake-handoff.md) define the next standalone-intake increment; these types are not yet supported by the application. Batteries and processor-derived components remain outside that first increment. This documentation approval does not start implementation or establish real collection-point acceptance.
+
 ### Identifier migration handoff
 
 `2026_10_05_000001_enforce_unique_device_identifiers` checks for duplicate comparison keys under a PostgreSQL table lock before any schema changes. It refuses conflicting existing records rather than deleting, merging, altering identifiers or choosing a survivor. The three original development conflicts were confirmed by the user as repeated test registrations and removed through narrowly authorized, backed-up maintenance; the fourth device and all accounts remain unchanged. Both dedicated databases now have the unique index and type metadata. See [the Phase 2 report](docs/phase-2-report.md#authorized-test-registration-cleanup-and-final-verification--5-october-2026) for the safe cleanup counts and actual verification.

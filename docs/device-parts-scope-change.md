@@ -1,5 +1,13 @@
 # Device-parts scope assessment
 
+Current decision — 5 October 2026: **CR-PARTS-01 approves a bounded standalone-intake design for individual HDDs, SSDs and small low-voltage ICT cooling fans. Implementation is not authorized by this documentation increment.** Phase 2 is closed at `c12fc2cc4c148e6e780ed0a38676996fbd6161aa`. The identifier migration blocker was resolved before this branch; it is not a parts-design dependency.
+
+Settled contracts and implementation tests: [parts intake design report](parts-intake-design-report.md). Registration/list/detail guidance: [written UI handoff](design/parts-intake-handoff.md). Matching appended D2/D3 CR-PARTS-01 entries form v1.1 while preserving the baseline and CR-ID-01. The approved scope is software design authority from the project user, not stakeholder/collection-point validation. Loose batteries and processor-derived work are deferred; no parts have been implemented.
+
+## Earlier assessment — retained history
+
+The following assessment records the proposal and unresolved state before bounded design approval. Its proposed schema, broad workflow work list, old Phase 2 status and approval dependencies are historical; the final decision section and settled specification supersede them where they conflict. This does not erase the research or assert that deferred work is complete.
+
 Date: 5 October 2026. Status: **proposal only, not authorized implementation**. Prepared at the user's request during Phase 2. No parts categories, screens, schema, inspection rules or collection permissions have been added. Phase 2 remains open; this assessment does not start Phase 3.
 
 ## Baseline and evidence
@@ -87,3 +95,19 @@ Add part-aware capability/hold metadata to places/operator acceptance, typed ins
 - Component measurement/allocation and report denominators, reviewed screens and migration/backfill plan. No historic records should be reclassified automatically.
 
 After approval, record a separate D2/D3 change, obtain reviewed UI states, settle origin/storage identity and capability contracts, then schedule a bounded implementation phase with acceptance tests. Resolve the current Phase 2 identifier migration blocker independently; do not mix parts implementation into its repair or use this assessment to close Phase 2.
+
+## Approved bounded design — CR-PARTS-01
+
+The user now authorizes the following decisions; they supersede the earlier approval/schema/handoff uncertainties for this subset, without claiming unavailable interviews or real service acceptance.
+
+- **Vocabulary settled:** category `standalone_part`, subtypes `hdd`, `ssd`, `ict_cooling_fan`. Existing categories remain unchanged. One already separate physical unit per form; no unknown storage category, mixed components, quantity, bulk inventory or resale.
+- **Fan settled:** dedicated ICT fan/blower no more than 24 V DC and 140 mm largest housing/frame dimension excluding free leads; integral motor-driver/tachometer/PWM circuitry allowed. Mains/industrial fans and separate control/network/storage modules are excluded. Scope NO/UNKNOWN blocks initial intake without requiring a test. Known additional electronics block initially; otherwise eligible unknown electronics gives data UNKNOWN/review guidance. These limits are project scope choices, not technical certification. Consumer observations and later newly learned uncertainty remain distinct from technician findings.
+- **Identity/storage settled:** parts reuse permanent item/subject/EWC and the unchanged encrypted global serial comparison namespace; no manufacturer/owner/type exception. Parts accept optional Serial, not IMEI; unknowns remain null. Every HDD/SSD has a two-column `storage_assets` facet on that exact subject ID, with database-backed reciprocal/immutable guards. No second identity, data-status projection, custody/count or parent/removal history. Existing six-category rows/history/retries stay compatible through a forward migration; no backfill guesses or reset.
+- **Data/questions settled:** canonical HDD/SSD data YES is enforced on registration/revision/direct writes and never cleared by a consumer. Frozen `PARTS-SELF-REPORT-1.0` asks part-specific prior observations/unknowns, with no power/dismantling/internal-content requirement. Future treatment/release gates recognize the same drive; registration does not verify sanitization.
+- **Origin and first increment settled:** consumer-supplied parent/removal/origin/storage fields are rejected, not resolved into links. First implementation is limited to standalone registration, owned views/revisions/labels, metadata and tests, through existing services/styles/policies. The handoff is a concrete written extension of reviewed S02/S03; no new Stitch export exists or is required to finish the design.
+
+**Derived components remain deferred processor work.** D3's future parent-linked storage becomes a facet of the same canonical physical item, with constrained parent/placement/removal metadata added only with that workflow. An already identified drive is reused at detachment, not registered again. Future facility custody and parent/batch lineage must not fabricate consumer first collection or duplicate parent/child kg. No processor detachment, component inventory or provenance reconciliation is implemented now.
+
+**Batteries remain excluded, not an unresolved dropdown choice in this increment.** Any later restricted battery stream needs a separate approved scope, competent safety review and a verified receiving/handling channel; no ordinary unrestricted pickup or handling instruction is added. Arbitrary parts, industrial/mains fans, bulk inventory and resale are also excluded.
+
+**Operational and later-module limits:** real Nairobi point/facility/operator acceptance, safety arrangements, media treatment capabilities and mass parameters remain unverified. The design binds subtype compatibility, inspection, sanitization, custody, measured mass and report-cohort contracts in report §6; it does not schedule their implementation now. Later modules must settle their own technical methods/allocation/evidence before offering those operations. Lack of interviews is not a blocker for this bounded software specification. No material registration/identity/schema decision remains open within the approved scope.
