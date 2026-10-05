@@ -208,13 +208,13 @@ Collector, Processor and Administrator roles have no device access in this phase
 
 Back up the private `APP_KEY` with the database and private photos. It protects identifiers and context-separated comparison/command hashes (`app-key-context-1`). Do not regenerate it after storing records: reviewed key rotation must rewrap encrypted identifiers and maintain/recompute comparison hashes and retained retry hashes. No automated key rotation, redaction, malware scanning or notification worker is claimed. The small transactional outbox retains pending event references for a later notification phase.
 
-The identifier revision now passes development/testing migrations and required automated/runtime checks after the user-authorized cleanup of three repeated test registrations. The fourth device and all accounts were preserved. Actual results and remaining browser acceptance checks are recorded in the report; Phase 2 remains open. Use the exact desktop/mobile, keyboard, upload, isolation and label checks in [the Phase 2 report](docs/phase-2-report.md#manual-acceptance-required-before-phase-closure).
+The identifier revision passes development/testing migrations and required automated/runtime checks after the user-authorized cleanup of three repeated test registrations. The fourth device and all accounts were preserved. The user has confirmed duplicate rejection, IMEI validation and all remaining manual checks; Phase 2 is accepted for closure. Actual automated results and distinct user-performed acceptance are recorded in [the Phase 2 report](docs/phase-2-report.md#user-performed-acceptance-and-closure-review--5-october-2026). Real inbox delivery remains unconfigured/unverified.
 
 ## Requirements and reviewed design
 
 The actual authoritative Deliverables 2 and 3 are supplied in [`docs/requirements/`](docs/requirements/README.md); the reviewed Stitch export and handoff are in [`docs/design/`](docs/design/README.md). Deliverable 2 controls scope, Deliverable 3 controls behavior, and Stitch supplies visual presentation. The supplied originals are preserved.
 
-Follow [`AGENTS.md`](AGENTS.md) for the agreed stack, scope and phase workflow. Review each phase's applicable requirements and screens before implementation. Phase 2 remains open on `phase-2-devices`; do not begin Phase 3.
+Follow [`AGENTS.md`](AGENTS.md) for the agreed stack, scope and phase workflow. Review each phase's applicable requirements and screens before implementation. Phase 2 verification and user acceptance are complete. Parts implementation and Phase 3 require a separate request.
 
 ### Identifier migration handoff
 

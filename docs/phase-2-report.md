@@ -2,7 +2,7 @@
 
 Date: 4 October 2026 (Africa/Nairobi). Branch: `phase-2-devices`, created from completed `main` at `45b52aa6d0b2d68f118600edb492428a142c15fb`; the starting working tree was clean.
 
-Original implementation status (4 October): implemented; required automated/runtime checks passed. Current identifier revision passed its required checks after the explicitly authorized test-data cleanup; see the final dated entry below. Manual browser acceptance remains required before Phase 2 closure. No merge, push or Phase 3 work is included.
+Original implementation status (4 October): implemented; required automated/runtime checks passed. Current identifier revision passed its required checks after the explicitly authorized test-data cleanup. The user has accepted the cleanup, migration, revised registration behavior, duplicate rejection, IMEI validation and all remaining manual checks; see the final dated entry below. Phase 2 verification is complete and closure is accepted. No push, parts implementation or Phase 3 work is included.
 
 The sections through the original verification record the 4 October warning baseline. CR-ID-01 and the dated revision below define current behavior; preserved baseline outcomes are not claims that the revised development migration passed.
 
@@ -140,7 +140,7 @@ Git review: all 15 scoped paths were staged and inspected, including the migrati
 
 ## Authorized test-registration cleanup and final verification — 5 October 2026
 
-**Current status: identifier migration blocker resolved; required automated/runtime verification passed. Phase 2 remains open for the manual acceptance checks above.** This entry supersedes the earlier blocked-attempt status without erasing its actual failed migration or verification history. The prepared identifier implementation and documentation-only parts assessment were preserved; no parts implementation, merge, push or Phase 3 work occurred.
+**Status at the end of cleanup verification: identifier migration blocker resolved; required automated/runtime verification passed. Phase 2 remained open for the manual acceptance checks above.** This entry supersedes the earlier blocked-attempt status without erasing its actual failed migration or verification history. The prepared identifier implementation and documentation-only parts assessment were preserved; no parts implementation, merge, push or Phase 3 work occurred.
 
 ### Authorization, inspection and private backup
 
@@ -181,3 +181,13 @@ Safe before/after counts: subjects/items/observations/commands/events/custody/ou
 Desktop/360px visual checks, actual keyboard/summary focus and screen-reader announcements, two-session manual duplicate submission, uploads/private field reselection and printed/scanned labels remain pending as detailed above. The user has not confirmed these Phase 2 checks. Real inbox delivery remains unconfigured/unverified. The parts assessment remains a proposal requiring separate approval and operational/schema decisions; no parts were added.
 
 Final Git review: 15 explicitly scoped paths were staged and inspected, including the unchanged prepared parts proposal and the cleanup documentation. `git diff --cached --check` passed, and the configured private-key/credential scan found no sensitive values or private-key blocks. The scan's initial artifact flag was only the existing `storage/logs/.gitignore`; the precise exclusion check was corrected and passed. No backup, maintenance helper, runtime log, dependency directory, generated build or unrelated file is staged. The private backup permissions and ignored status were verified. The configured Git identity is used; the authorized commit message is `Block duplicate identifiers`. Phase 2 is not closed and manual acceptance remains pending. Temporary maintenance/audit/smoke/review helpers are excluded from Git and removed after verification; the recoverable private backups are retained.
+
+## User-performed acceptance and closure review — 5 October 2026
+
+The user confirms that the scoped cleanup, development migration and revised registration behavior check out, and accepts **duplicate rejection and IMEI validation**. After clarification about the other required manual checks, the user explicitly confirmed: “All remaining checks were performed and passed.” These are user-performed acceptance results, distinct from the automated verification above. No screenshots, private identifiers, additional case-by-case results or independently observed browser evidence are supplied or claimed.
+
+Git inspection confirmed that `c6050ca55f1647e0331c7548966e20ae8d1bb771` (`Block duplicate identifiers`) exists on `phase-2-devices`. Its report records the required checks as passed: development/testing migrations and schema verification, PostgreSQL tests (73 tests, 1,118 assertions), negative isolation probes, Pint, Composer validation/platform requirements, production build, native HTTP smoke and retained-data verification. Those are the actual prior runs; this documentation update does not claim a new execution of them. No application or database changes were made during this review.
+
+The manual acceptance lists above are now **passed, as reported by the user**: desktop/360px layouts; keyboard focus and screen-reader announcements; category/upload and private-field reselection cases; edit/history and stale-version behavior; printed/scanned labels; manual access-boundary checks; and simultaneous submissions/same-command retry checks. Earlier pending statements record the status before this confirmation and are superseded by this entry. This is user acceptance, not an automated accessibility certification or an agent-observed browser pass. Real inbox delivery remains unconfigured/unverified; standalone parts remain a proposal, with no implementation.
+
+**Phase 2 is accepted for closure: required automated/runtime checks are recorded as passed and all required manual checks are user-confirmed.** Documentation-only review passed Pint and `git diff --check`; the full suite/build were not rerun because application code and configuration are unchanged. An ancestry check confirms that `main` can fast-forward to `phase-2-devices`. The authorized handoff is to commit this documentation as `Record device checks`, confirm a clean tree and merge with `--ff-only`. No push, parts implementation or Phase 3 work is included.
