@@ -2,12 +2,11 @@
 @section('title', 'Device detail')
 @section('intro', 'Your permanent identity and retained consumer self-report.')
 @section('content')
-    @if($duplicate)<x-feedback id="duplicate-warning" type="info" message="Possible duplicate: a known identifier matches a recorded identifier. This is only a warning; your registration is retained. Check that you have not registered the same physical item twice." />@endif
     <div class="workspace">
         <section class="card notice-content">
             <p class="eyebrow">{{ $item->category->label }}{{ $item->subtype ? ' · '.$item->subtype : '' }}</p><h2>{{ $item->model ?? 'Model unknown' }}</h2>
             <p class="manual-code">{{ $item->subject->public_code }}</p>
-            <dl class="facts"><dt>State</dt><dd>{{ ucfirst($item->processing_state) }}</dd><dt>Initial custody</dt><dd>With you at registration</dd><dt>Registered</dt><dd>{{ $item->subject->created_at->format('j M Y H:i') }} UTC</dd><dt>Serial / IMEI</dt><dd>{{ $item->identifier_ciphertext ? 'Private identifier recorded' : 'Unknown / not provided' }}</dd></dl>
+            <dl class="facts"><dt>State</dt><dd>{{ ucfirst($item->processing_state) }}</dd><dt>Initial custody</dt><dd>With you at registration</dd><dt>Registered</dt><dd>{{ $item->subject->created_at->format('j M Y H:i') }} UTC</dd><dt>Serial / IMEI</dt><dd>{{ $item->identifier_ciphertext ? match ($item->identifier_kind) { 'imei' => 'Private IMEI recorded', 'serial' => 'Private serial recorded', default => 'Private identifier recorded · type unspecified' } : 'Unknown / not provided' }}</dd></dl>
             <h3>Current consumer self-report · revision {{ $current->revision }}</h3><p class="hint">Not technician inspection or an approved processing recommendation.</p>
             @include('devices.report', ['observation'=>$current])
             @if($current->answers['safety_concern'] !== 'NO')<p class="form-end">Safety information needs review. Registration does not approve collection or treatment.</p>@endif

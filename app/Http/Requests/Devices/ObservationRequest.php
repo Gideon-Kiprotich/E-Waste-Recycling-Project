@@ -54,7 +54,7 @@ class ObservationRequest extends FormRequest
         }
         if ($this->route('item')) {
             $rules['expected_version'] = ['required', 'integer', 'min:1'];
-            foreach (['category', 'category_id', 'subtype', 'model', 'identifier', 'identifier_ciphertext', 'identifier_hmac', 'photo'] as $field) {
+            foreach (['category', 'category_id', 'subtype', 'model', 'identifier', 'identifier_kind', 'identifier_ciphertext', 'identifier_hmac', 'photo'] as $field) {
                 $rules[$field] = ['prohibited'];
             }
         }

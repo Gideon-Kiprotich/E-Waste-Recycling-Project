@@ -10,12 +10,14 @@ use App\Models\User;
 use App\Support\Devices\Identifiers;
 use App\Support\Devices\PrivatePhoto;
 use App\Support\Devices\Questions;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class RegisterDevice
@@ -36,21 +38,23 @@ class RegisterDevice
                 $category = Category::where('code', $fields['category'])->where('supported', true)->lockForUpdate()->firstOrFail();
                 $id = Str::uuid()->toString();
                 $identifier = Identifiers::normalize($fields['identifier'] ?? null);
-                $duplicate = false;
                 $digest = $identifier === null ? null : Identifiers::digest($identifier);
                 if ($digest) {
-                    // Serialize comparisons of the same uncertain serial without making it unique.
+                    // Retry resolution precedes global uniqueness; the index also protects direct writers.
                     DB::select('SELECT pg_advisory_xact_lock(hashtextextended(?, 0))', [$digest]);
-                    $duplicate = Item::where('identifier_hmac', $digest)->exists();
+                    if (Item::where('identifier_hmac', $digest)->exists()) {
+                        throw ValidationException::withMessages(['identifier' => Identifiers::DUPLICATE_MESSAGE]);
+                    }
                 }
                 DB::table('subjects')->insert(['id' => $id, 'public_code' => 'EWC-'.strtoupper(bin2hex(random_bytes(16))), 'kind' => 'item', 'version' => 1, 'created_at' => now()]);
                 DB::table('items')->insert([
                     'subject_id' => $id, 'owner_user_id' => $actor->id, 'category_id' => $category->id, 'subtype' => $fields['subtype'] ?? null,
                     'model' => $fields['model'] ?? null, 'identifier_ciphertext' => $identifier === null ? null : Crypt::encryptString(trim($fields['identifier'])),
                     'identifier_hmac' => $digest, 'identifier_key_version' => $identifier === null ? null : Identifiers::KEY_VERSION,
+                    'identifier_kind' => $identifier === null ? null : ($fields['identifier_kind'] ?? 'serial'),
                     'processing_state' => 'registered', 'data_status' => $fields['data_status'],
                 ]);
-                $event = $this->record($actor, 'register_item', $fields, $payloadHash, $id, 1, 'item_registered', $duplicate);
+                $event = $this->record($actor, 'register_item', $fields, $payloadHash, $id, 1, 'item_registered');
                 $party = DB::table('parties')->where('user_id', $actor->id)->value('id');
                 if (! $party) {
                     $party = Str::uuid()->toString();
@@ -69,6 +73,9 @@ class RegisterDevice
         } catch (Throwable $exception) {
             if ($stored) {
                 Storage::disk('device_photos')->delete($stored['storage_key']);
+            }
+            if ($exception instanceof QueryException && Identifiers::isDuplicateConflict($exception)) {
+                throw ValidationException::withMessages(['identifier' => Identifiers::DUPLICATE_MESSAGE]);
             }
             throw $exception;
         }
@@ -137,7 +144,7 @@ class RegisterDevice
         return $item->load('subject', 'category');
     }
 
-    private function record(User $actor, string $action, array $fields, string $hash, string $id, int $version, string $type, bool $duplicate = false): string
+    private function record(User $actor, string $action, array $fields, string $hash, string $id, int $version, string $type): string
     {
         $command = Str::uuid()->toString();
         $event = Str::uuid()->toString();
@@ -151,7 +158,7 @@ class RegisterDevice
         DB::table('domain_events')->insert([
             'id' => $event, 'subject_id' => $id, 'aggregate_kind' => 'item', 'aggregate_id' => $id, 'aggregate_version' => $version, 'actor_id' => $actor->id,
             'type' => $type, 'occurred_at' => now(), 'recorded_at' => now(), 'command_id' => $command,
-            'safe_payload' => json_encode(['observation_id' => $observation, 'question_version' => Questions::VERSION, 'possible_duplicate' => $duplicate]),
+            'safe_payload' => json_encode(['observation_id' => $observation, 'question_version' => Questions::VERSION]),
         ]);
         DB::table('notification_outbox')->insert(['id' => Str::uuid()->toString(), 'event_id' => $event, 'recipient_id' => $actor->id, 'channel' => 'in_app', 'state' => 'pending']);
 

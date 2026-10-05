@@ -6,6 +6,7 @@ use App\Actions\RegisterDevice;
 use App\Enums\Role;
 use App\Models\Item;
 use App\Models\User;
+use App\Support\Devices\Identifiers;
 use App\Support\Devices\Questions;
 use DOMDocument;
 use DOMXPath;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
 use Zxing\QrReader;
 
@@ -124,26 +126,175 @@ class DeviceRegistrationTest extends TestCase
         $this->assertCount(1, Storage::disk('device_photos')->allFiles());
     }
 
-    public function test_duplicate_warning_is_private_and_serial_is_encrypted_with_key_version(): void
+    public function test_duplicate_rejection_is_global_private_atomic_and_accessible(): void
     {
         $other = User::factory()->create(['email' => 'private-owner@example.test', 'display_name' => 'Private Other Owner']);
         $this->signIn($other);
-        $otherFields = array_merge($this->fields(), ['identifier' => 'SYNTH-001', 'model' => 'Private other model']);
-        $this->post('/items', $otherFields)->assertRedirect();
-        $otherItem = Item::with('subject')->firstOrFail();
-        $this->signIn($this->owner);
-        $item = $this->register(['identifier' => 'synth 001']);
-        $this->assertSame('synth 001', Crypt::decryptString($item->identifier_ciphertext));
-        $this->assertNotSame('synth 001', $item->identifier_ciphertext);
-        $this->assertNotEmpty($item->identifier_key_version);
-        $response = $this->get(route('items.show', $item->subject_id))->assertOk()->assertSee('Possible duplicate');
-        foreach (['Private Other Owner', $other->email, 'Private other model', $otherItem->subject->public_code, 'synth 001', 'SYNTH-001'] as $private) {
+        $existing = $this->register(['identifier' => 'SYNTH-001', 'model' => 'Private other model', 'photo' => UploadedFile::fake()->image('first.png')]);
+        $this->assertSame('SYNTH-001', Crypt::decryptString($existing->identifier_ciphertext));
+        $this->assertNotSame('SYNTH-001', $existing->identifier_ciphertext);
+        $this->assertSame(Identifiers::KEY_VERSION, $existing->identifier_key_version);
+        $this->assertSame('serial', $existing->identifier_kind);
+        foreach ([$other, $this->owner] as $consumer) {
+            $this->signIn($consumer);
+            foreach (['laptop', 'desktop'] as $category) {
+                $fields = array_merge($this->fields($category), ['identifier' => 'synth 001', 'identifier_kind' => 'serial', 'model' => 'Safe retained model', 'photo' => UploadedFile::fake()->image('rejected.png')]);
+                $this->from('/items/create')->post('/items', $fields)->assertRedirect('/items/create')
+                    ->assertSessionHasErrors(['identifier' => Identifiers::DUPLICATE_MESSAGE])->assertSessionMissing('_old_input.identifier');
+            }
+        }
+        $response = $this->withCookie(config('session.cookie'), session()->getId())->get('/items/create')->assertOk()
+            ->assertSee(Identifiers::DUPLICATE_MESSAGE)->assertSee('Safe retained model')->assertSee('data-error-summary', false);
+        foreach (['Private Other Owner', $other->email, 'Private other model', $existing->subject->public_code, $existing->subject_id, 'synth 001', 'SYNTH-001'] as $private) {
             $response->assertDontSee($private);
         }
+        $dom = new DOMDocument;
+        @$dom->loadHTML($response->getContent());
+        $xpath = new DOMXPath($dom);
+        $this->assertSame(1, $xpath->query('//input[@id="identifier"][@aria-invalid="true"]')->length);
+        $this->assertStringContainsString('identifier-error', $xpath->query('//input[@id="identifier"]')->item(0)->getAttribute('aria-describedby'));
+        $this->assertSame('', $xpath->query('//input[@id="identifier"]')->item(0)->getAttribute('value'));
+        $this->assertGreaterThanOrEqual(1, $xpath->query('//a[@href="#identifier"]')->length);
+        $this->assertSame(1, $xpath->query('//*[@role="alert"]')->length);
+        $this->assertSame(1, $xpath->query('//*[@data-error-summary][@tabindex="-1"]')->length);
+        $this->assertRegistrationCounts(1);
+        $this->assertCount(1, Storage::disk('device_photos')->allFiles());
         $events = DB::table('domain_events')->get()->toJson();
         $this->assertStringNotContainsString('SYNTH-001', $events);
-        $this->assertStringNotContainsString('synth 001', $events);
+        $this->assertStringNotContainsString('possible_duplicate', $events);
+    }
+
+    public function test_normalization_preserves_leading_zeroes_and_blocks_equivalent_serials(): void
+    {
+        $item = $this->register(['identifier' => ' 00-Ab-12 ']);
+        $this->assertSame(Identifiers::digest('00AB12'), $item->identifier_hmac);
+        foreach (['00ab12', '00 AB 12', "00-ab\t12"] as $identifier) {
+            $this->post('/items', array_merge($this->fields(), ['identifier' => $identifier]))->assertSessionHasErrors(['identifier' => Identifiers::DUPLICATE_MESSAGE]);
+        }
+        $this->register(['identifier' => '0AB12']);
         $this->assertDatabaseCount('items', 2);
+    }
+
+    public function test_optional_and_unknown_identifiers_do_not_conflict(): void
+    {
+        foreach ([[], ['identifier' => null], ['identifier' => ''], ['identifier' => ' - '], ['identifier_kind' => 'imei', 'identifier' => '']] as $extra) {
+            $item = $this->register($extra);
+            foreach (['identifier_kind', 'identifier_hmac', 'identifier_ciphertext', 'identifier_key_version'] as $field) {
+                $this->assertNull($item->$field);
+            }
+        }
+        $this->assertDatabaseCount('items', 5);
+    }
+
+    private function exampleImei(): string
+    {
+        // Public computation example, not an invented/allocated device: ETSI TS 123 003 V15.10.0 Annex B.3.
+        return '260531793113837';
+    }
+
+    public function test_imei_has_explicit_type_format_checksum_and_shared_serial_namespace(): void
+    {
+        $imei = $this->exampleImei();
+        $fields = array_merge($this->fields('phone'), ['identifier_kind' => 'imei', 'identifier' => substr($imei, 0, 8).'-'.substr($imei, 8)]);
+        $first = $this->post('/items', $fields)->assertRedirect();
+        $this->post('/items', $fields)->assertRedirect($first->headers->get('Location'));
+        $item = Item::firstOrFail();
+        $this->assertSame('imei', $item->identifier_kind);
+        $this->assertSame(Identifiers::digest($imei), $item->identifier_hmac);
+        $this->get($this->detail($item))->assertOk()->assertSee('Private IMEI recorded')->assertDontSee($imei);
+        $this->post('/items', array_merge($this->fields(), ['identifier_kind' => 'serial', 'identifier' => $imei]))->assertSessionHasErrors(['identifier' => Identifiers::DUPLICATE_MESSAGE]);
+        $this->post('/items', array_merge($fields, ['idempotency_key' => Str::uuid()->toString()]))->assertSessionHasErrors(['identifier' => Identifiers::DUPLICATE_MESSAGE]);
+        $this->assertRegistrationCounts(1, 0);
+    }
+
+    public function test_invalid_imei_serial_and_type_input_are_rejected_without_writes(): void
+    {
+        $imei = $this->exampleImei();
+        foreach ([substr($imei, 0, 14), $imei.'0', substr($imei, 0, 14).'8', 'SYNTH-IMEI', [$imei]] as $identifier) {
+            $this->post('/items', array_merge($this->fields('phone'), ['identifier_kind' => 'imei', 'identifier' => $identifier]))->assertSessionHasErrors('identifier')->assertSessionMissing('_old_input.identifier');
+        }
+        foreach (['bad/type', 'é123', str_repeat('A', 101)] as $identifier) {
+            $this->post('/items', array_merge($this->fields(), ['identifier_kind' => 'serial', 'identifier' => $identifier]))->assertSessionHasErrors('identifier');
+        }
+        foreach (['legacy_unspecified', 'manufacturer', ['serial']] as $kind) {
+            $this->post('/items', array_merge($this->fields(), ['identifier_kind' => $kind]))->assertSessionHasErrors('identifier_kind');
+        }
+        $this->assertRegistrationCounts(0, 0);
+    }
+
+    public function test_database_index_rejects_direct_duplicate_insert_across_owner_category_and_key_version(): void
+    {
+        $existing = $this->register(['identifier' => 'SYNTH-DB']);
+        $other = User::factory()->create();
+        $row = (array) DB::table('items')->where('subject_id', $existing->subject_id)->first();
+        $row['subject_id'] = Str::uuid()->toString();
+        $row['owner_user_id'] = $other->id;
+        $row['category_id'] = DB::table('categories')->where('code', 'desktop')->value('id');
+        $row['identifier_key_version'] = 'synthetic-other-key-version';
+        try {
+            DB::transaction(function () use ($row): void {
+                DB::table('subjects')->insert(['id' => $row['subject_id'], 'public_code' => 'EWC-'.strtoupper(bin2hex(random_bytes(16))), 'kind' => 'item', 'version' => 1, 'created_at' => now()]);
+                DB::table('items')->insert($row);
+            });
+            $this->fail('The unique index must reject a direct writer that bypasses application locks.');
+        } catch (QueryException $exception) {
+            $this->assertTrue(Identifiers::isDuplicateConflict($exception));
+        }
+        $this->assertRegistrationCounts(1, 0);
+    }
+
+    public function test_named_unique_conflict_rolls_back_all_records_and_private_photo(): void
+    {
+        DB::listen(function ($query): void {
+            if (str_starts_with($query->sql, 'insert into "evidence_links"')) {
+                throw $this->databaseConflict(Identifiers::UNIQUE_INDEX);
+            }
+        });
+        try {
+            app(RegisterDevice::class)->register($this->owner, array_merge($this->fields(), ['identifier' => 'SYNTH-RACE']), UploadedFile::fake()->image('rejected.png'));
+            $this->fail('Expected a field error for the named unique constraint.');
+        } catch (ValidationException $exception) {
+            $this->assertSame(['identifier' => [Identifiers::DUPLICATE_MESSAGE]], $exception->errors());
+        }
+        $this->assertRegistrationCounts(0, 0);
+        $this->assertCount(0, Storage::disk('device_photos')->allFiles());
+    }
+
+    public function test_unrelated_database_conflicts_are_not_converted_or_suppressed(): void
+    {
+        $failure = $this->databaseConflict('subjects_public_code_unique');
+        $this->assertFalse(Identifiers::isDuplicateConflict($failure));
+        DB::listen(function ($query) use ($failure): void {
+            if (str_starts_with($query->sql, 'insert into "items"')) {
+                throw $failure;
+            }
+        });
+        $this->withoutExceptionHandling();
+        try {
+            $this->post('/items', $this->fields());
+            $this->fail('An unrelated database error must propagate.');
+        } catch (QueryException $exception) {
+            $this->assertSame($failure, $exception);
+        }
+        $this->assertRegistrationCounts(0, 0);
+    }
+
+    private function databaseConflict(string $constraint): QueryException
+    {
+        $cause = new \PDOException('Synthetic unique conflict');
+        $cause->errorInfo = ['23505', 7, 'duplicate key value violates unique constraint "'.$constraint.'"'];
+
+        return new QueryException('pgsql', 'synthetic write', [], $cause);
+    }
+
+    private function assertRegistrationCounts(int $records, int $photos = 1): void
+    {
+        foreach (['subjects', 'items', 'item_observations', 'domain_events', 'commands', 'custody_current', 'notification_outbox'] as $table) {
+            $this->assertDatabaseCount($table, $records);
+        }
+        foreach (['attachments', 'evidence_links'] as $table) {
+            $this->assertDatabaseCount($table, $photos);
+        }
     }
 
     public function test_owner_isolation_covers_every_device_and_photo_route(): void
@@ -205,7 +356,7 @@ class DeviceRegistrationTest extends TestCase
         $this->patch(route('items.update', $item->subject_id), $stale)->assertStatus(409)->assertSee('device has changed');
         $changed = array_merge($fields, ['reason' => 'Different payload']);
         $this->patch(route('items.update', $item->subject_id), $changed)->assertStatus(409);
-        foreach (['public_code', 'owner_user_id', 'identifier', 'category', 'processing_state'] as $field) {
+        foreach (['public_code', 'owner_user_id', 'identifier', 'identifier_kind', 'category', 'processing_state'] as $field) {
             $this->patch(route('items.update', $item->subject_id), array_merge($this->revision($item->refresh()->load('subject', 'category')), [$field => 'injected']))->assertSessionHasErrors($field);
         }
         DB::table('items')->where('subject_id', $item->subject_id)->update(['processing_state' => 'received']);
@@ -216,8 +367,8 @@ class DeviceRegistrationTest extends TestCase
 
     public function test_database_rejects_overwritten_history_and_identity(): void
     {
-        $item = $this->register();
-        foreach ([fn () => DB::table('domain_events')->update(['type' => 'rewritten']), fn () => DB::table('item_observations')->delete(), fn () => DB::table('subjects')->update(['public_code' => 'replacement']), fn () => DB::table('items')->update(['owner_user_id' => User::factory()->create()->id])] as $mutation) {
+        $item = $this->register(['identifier' => 'SYNTH-IMMUTABLE']);
+        foreach ([fn () => DB::table('domain_events')->update(['type' => 'rewritten']), fn () => DB::table('item_observations')->delete(), fn () => DB::table('subjects')->update(['public_code' => 'replacement']), fn () => DB::table('items')->update(['owner_user_id' => User::factory()->create()->id]), fn () => DB::table('items')->update(['identifier_kind' => 'imei'])] as $mutation) {
             try {
                 DB::transaction($mutation);
                 $this->fail('Database allowed permanent history or identity mutation.');

@@ -45,11 +45,7 @@ class DeviceController extends Controller
 
     public function store(RegisterDeviceRequest $request, RegisterDevice $action): RedirectResponse
     {
-        try {
-            $item = $action->register($request->user(), $request->validated(), $request->file('photo'));
-        } catch (QueryException) {
-            throw ValidationException::withMessages(['registration' => 'Registration could not be saved. Retry with the same form reference.']);
-        }
+        $item = $action->register($request->user(), $request->validated(), $request->file('photo'));
 
         return redirect()->route('items.show', $item->subject_id)->with('status', 'Your device is registered. Its identity label is ready.')->with('status_type', 'success');
     }
@@ -59,11 +55,10 @@ class DeviceController extends Controller
         $item = $this->owned($request, $item);
         $history = $item->observations()->orderByDesc('revision')->paginate(10);
         $current = $item->observations()->orderByDesc('revision')->firstOrFail();
-        $duplicate = DB::table('domain_events')->where('subject_id', $item->subject_id)->where('type', 'item_registered')->whereRaw("safe_payload->>'possible_duplicate' = 'true'")->exists();
         $photo = DB::table('evidence_links')->join('attachments', 'attachments.id', '=', 'evidence_links.attachment_id')->where('evidence_links.subject_id', $item->subject_id)->whereNull('attachments.redacted_at')->value('attachments.id');
         $tests = Questions::tests($item->category->code, $item->subtype);
 
-        return view('devices.show', compact('item', 'history', 'current', 'duplicate', 'photo', 'tests'));
+        return view('devices.show', compact('item', 'history', 'current', 'photo', 'tests'));
     }
 
     public function edit(Request $request, string $item): View
