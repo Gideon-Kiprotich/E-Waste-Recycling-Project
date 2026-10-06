@@ -1,6 +1,6 @@
 # Phase 3 — Collection Requests
 
-Implemented on `phase-3-collection-requests`, from clean main `128ca1b00a1e63ec9e1cb36ee03add66a79aa8fb`, on 6 October 2026. Automated/runtime verification is recorded below. **Phase 3 remains open. The user reports that the earlier collection-request behavior works; pickup-map acceptance remains pending.** No merge or push was performed.
+Implemented on `phase-3-collection-requests`, from clean main `128ca1b00a1e63ec9e1cb36ee03add66a79aa8fb`, on 6 October 2026. **Phase 3 is closed with user-reported acceptance of the previously exercised collection-request behavior and live-map tests.** Automated/runtime results and user-reported acceptance are recorded separately below. Specifically unverified checks and operational limitations remain documented; closure does not turn them into passed checks.
 
 ## Scope and requirement coverage
 
@@ -69,15 +69,17 @@ Both dedicated migrations passed. The testing database was independently verifie
 
 Initial focused checks found adjacent Blade directives causing a detail-page parse error; separated them and reran successfully. A redirect assertion exposed missing test-cookie persistence with JSON sessions; the fixture now carries a browser-equivalent cookie and verifies actual redirected error associations. The first smoke helper selected development hot assets; its isolated Vite setting was corrected without changing the user's hot file. A final test edit initially failed Pint spacing; formatting was applied and the full formatting/test checks reran successfully. Final checks above supersede those failed attempts.
 
-No enabled browser surfaces were available (`apps: []`, `browsers: []`). HTML assertions and native HTTP checks are **not** visual, keyboard or screen-reader acceptance. No screenshots, participant results or manual acceptance are invented.
+At the initial collection-request verification, no enabled browser surfaces were available (`apps: []`, `browsers: []`). Later native Firefox checks and user-reported acceptance are recorded in their own entries below. HTML assertions and native HTTP checks are **not** visual, keyboard or screen-reader acceptance. No screenshots or participant results are invented.
 
-## Local handoff and remaining manual acceptance
+## Local handoff and original acceptance checklist
+
+This checklist is retained as a handoff reference. The closure entry records the user's general acceptance of the behavior they exercised; it does not claim that every individual checklist case was performed or supply missing screen-reader evidence.
 
 1. After the dedicated migrations, in the local environment run `php artisan app:setup-collection-demo`. Repeat once and confirm entries/capabilities remain unchanged. Use synthetic account/contact/address data. With no setup, the UI explains the missing active area/compatible point; it does not silently choose a substitute.
 2. Register/select a whole device plus HDD, SSD and eligible fan; enter positive kg estimates. Finish pickup with manual coordinates inside the labelled rectangle, then drop-off using synthetic all-ICT with a different eligible selection. Test rectangle edges, outside coordinates, missing consent, invalid dates/mass, incompatible whole-device-only and inactive cases. The inactive point is not listed, and whole-device-only is excluded for parts. To exercise no compatible options, use a separate isolated fixture or explicitly reviewed local directory configuration; repeat setup must not undo those changes.
 3. Confirm summary/private values, Awaiting review/reference/success feedback, unchanged custody/item state, owned list/detail/current per-item preferences and actual history. Safety Unknown/Yes and uncertain fans show review guidance. A later fan uncertainty/out-of-scope revision updates pending history/version and blocks ordinary scheduling; no powering/dismantling is required.
 4. Change the date for one outstanding item and cancel another; confirm only the cancelled reservation releases, earlier preferences/reasons persist, and submitted date preferences are not shown as booked appointments. Reload after stale changes; use two wizard tabs to confirm stale forms are rejected. Confirm repeat submission returns the original request.
-5. On desktop and at 360px, check layouts, readable contrast, checkbox/field labels, visible focus, keyboard completion/back navigation, summary focus and error-link focus, and screen-reader announcements/associations. Check private detail is inaccessible to another Consumer and staff roles. Record what was actually performed before Phase 3 closure.
+5. On desktop and at 360px, check layouts, readable contrast, checkbox/field labels, visible focus, keyboard completion/back navigation, summary focus and error-link focus, and screen-reader announcements/associations. Check private detail is inaccessible to another Consumer and staff roles. Record only checks actually performed; screen-reader acceptance remains unverified.
 
 ## Deferred and limitations
 
@@ -85,7 +87,7 @@ No collector assignment/acknowledgment, route algorithm, actual receipt/custody 
 
 ## Pickup location enhancement — 6 October 2026
 
-The user reports that the other collection-request behavior works, while typing coordinates is cumbersome. This records **general user-reported acceptance of the previously exercised request behavior**, not a checklist of detailed tests, screenshots or assistive-technology evidence. Phase 3 is still open; this increment does not mark all earlier manual criteria or the new map acceptance complete.
+At the time of this enhancement, the user reported that the other collection-request behavior worked, while typing coordinates was cumbersome. That was **general user-reported acceptance of the previously exercised request behavior**, not a checklist of detailed tests, screenshots or assistive-technology evidence. The subsequent closure entry records the user's acceptance of live-map tests as well, without marking every individual manual criterion complete.
 
 ### Scope and implementation
 
@@ -120,19 +122,19 @@ No schema, historical migration or development data write is needed. Existing id
 
 The first focused PHP run had two fixture expectation failures (the existing area error uses the latitude key; simulated pre-existing session drafts needed explicit session persistence). Both were corrected; the focused 24 tests and full suite then passed. A temporary fixture renderer initially reached PHPUnit-only teardown state outside its runner; it now explicitly rolls back/disconnects and finishes successfully. Browser harness corrections use the actual local asset origin, a separate failure URL to avoid a legitimately cached successful mock tile, and an undecodable failure body. These are test-fixture corrections, not claimed successful product checks from failed attempts. Inspecting the narrow map image also exposed Leaflet CSS overriding the zoom target size; the selector was strengthened and final browser measurements confirmed 48px targets. Confirmation parsing rejects malformed/overprecision values rather than rounding invalid retained input into a prior confirmation.
 
-Installing Leaflet also surfaced **two pre-existing npm audit findings**, in concurrently and its pinned shell-quote 1.9.0 dependency (critical command-injection advisory [GHSA-pqg4-j6r4-53mv](https://github.com/advisories/GHSA-pqg4-j6r4-53mv)). Leaflet is not the reported vulnerable package. No forced downgrade or unrelated toolchain upgrade was performed. Audit is not claimed clean; these findings required a separately scoped tooling fix; see the subsequent remediation entry below for their current disposition. The registry audit first failed inside restricted networking, then succeeded in retrieving the findings outside it.
+Installing Leaflet also surfaced **two pre-existing npm audit package findings**, in concurrently and its pinned shell-quote 1.9.0 dependency, for the same command-injection advisory [GHSA-pqg4-j6r4-53mv](https://github.com/ljharb/shell-quote/security/advisories/GHSA-pqg4-j6r4-53mv). The maintainer rates the advisory **High (CVSS 3.1, 8.1)**; the earlier npm audit classified the package findings **Critical**. Leaflet is not the reported vulnerable package. No forced downgrade or unrelated toolchain upgrade was performed. The audit was not clean at that stage; the subsequent scoped remediation records the current zero-vulnerability result and override-maintenance guidance. The registry audit first failed inside restricted networking, then succeeded in retrieving the findings outside it.
 
-### Remaining manual acceptance
+### Live-map acceptance and verification limits
 
-Use synthetic data and the explicitly labelled study area; do not request real service. In the running application:
+The user now reports that live-map tests passed; this is user-reported acceptance, separate from the mock-provider automation. The earlier checklist below remains a reference for reproducing checks, not a claim that each case was individually reported as passed. Use synthetic data and the explicitly labelled study area; do not request real service.
 
-1. Load live tiles and verify visible attribution and an origin-only tile Referer (no private page path); check normal cache behavior. Confirm that a fresh map has no selected point. Actual public-provider delivery is unverified by mock tests.
-2. Exercise the real permission dialog on HTTPS/localhost: grant, deny, unavailable/timeout and insecure browser conditions where possible. Check approximate accuracy text, adjust the entrance and confirm; no exact GPS guarantee, automatic replacement or repeated prompt. Real device accuracy and permission UI remain unverified.
+1. Load live tiles and verify visible attribution and an origin-only tile Referer (no private page path); check normal cache behavior. Confirm that a fresh map has no selected point. Live-map behavior is accepted by user report; independent real-provider referrer/cache measurements were not supplied, and mock tests do not establish them.
+2. Exercise the real permission dialog on HTTPS/localhost: grant, deny, unavailable/timeout and insecure browser conditions where possible. Check approximate accuracy text, adjust the entrance and confirm; no exact GPS guarantee, automatic replacement or repeated prompt. Real device accuracy and the individual permission/error variants remain unverified beyond the general live-map acceptance report.
 3. Click/tap and drag the pin; move by keyboard/direction/zoom controls and Use map centre. Confirm, move again, and verify Continue requires fresh confirmation. Check Back and unrelated field corrections preserve the selection; outside-area coordinates must be blocked even with a visible pin.
 4. Disable JavaScript or block tiles: use Advanced location entry and confirm without a map. Check field error/summary focus, no loss of address/contact, same-command retry and drop-off behavior in the running browser.
 5. At desktop and 360px, verify readable contrast, visible keyboard focus, full keyboard completion/Tab exit, mobile scrolling/touch placement/drag and screen-reader announcements/error associations. No named assistive-technology pass or real touch result is claimed.
 
-Real collection-point acceptance, official county/service geometry and inbox delivery remain unconfigured/unverified. Phase 3 is not closed or merged; no next-phase implementation is included.
+Real collection-point acceptance, official county/service geometry and inbox delivery remain unconfigured/unverified. These limits remain after Phase 3 closure; no next-phase implementation is included.
 
 ## Tooling vulnerability assessment and remediation — 6 October 2026
 
@@ -145,7 +147,7 @@ This is the separately authorized assessment of the two findings reported after 
 - **shell-quote 1.9.0**, transitive dev dependency: root → concurrently 10.0.5 → shell-quote 1.9.0. Advisory **GHSA-pqg4-j6r4-53mv / CVE-2026-102422**; affected releases **>=1.8.4 and <1.11.0**; first patched release **1.11.0**, verified in the [maintainer's advisory](https://github.com/ljharb/shell-quote/security/advisories/GHSA-pqg4-j6r4-53mv) and [fix commit](https://github.com/ljharb/shell-quote/commit/6002b2ed90c6b83095eb272b6b0adaf3a172b0bc). Its quoting function permits shell comment termination through a line break in a later string token. If that output is executed by a POSIX shell, attacker-controlled syntax can run. The patch rejects LF, CR, U+2028 and U+2029 in strings after a structured comment token. An in-memory pre-fix probe accepted all four sequences; it executed **no shell**.
 - **concurrently 10.0.5**, direct dev dependency (`^10.0.3`), at root → concurrently. The audit entry's `via` is shell-quote, propagating **the same GHSA/CVE** through its exact 1.9.0 dependency pin. There is no second concurrently advisory or distinct first patched concurrently release for this finding. Registry metadata and the [upstream release history](https://github.com/open-cli-tools/concurrently/releases) still identify 10.0.5 as latest. We retain that version and fix its resolved child, rather than claiming the upstream package was released with a new dependency pin.
 
-Severity labels differ between sources: npm's two entries and the [GitHub reviewed database record](https://github.com/advisories/GHSA-pqg4-j6r4-53mv) label this critical; the maintainer advisory labels it High (CVSS 3.1, 8.1), while the reviewed record lists CVSS 4.0, 9.2. This distinction does not remove the audit finding or the need for a patched installation.
+The [maintainer advisory](https://github.com/ljharb/shell-quote/security/advisories/GHSA-pqg4-j6r4-53mv) rates the vulnerability **High (CVSS 3.1, 8.1)**. Separately, the earlier npm audit classified its two package entries **Critical**, and the [GitHub reviewed database record](https://github.com/advisories/GHSA-pqg4-j6r4-53mv) labels it Critical with CVSS 4.0, 9.2. These source-specific classifications are preserved; the maintainer's rating is not described as Critical. The differing labels do not remove the need for a patched installation.
 
 ### Actual project exposure
 
@@ -186,4 +188,12 @@ The first targeted JavaScript run hit sandbox child-process EPERM errors; these 
 
 The full-tree audit currently has **no unresolved finding**. This is point-in-time evidence, not a guarantee against future advisories. The override deliberately replaces an upstream exact pin; keep it while upstream still resolves a vulnerable child, and review/remove it only after an upstream update resolves a patched child and the audit/runner tests pass. Normal development scripts still execute trusted checkout commands with the local user's privileges; do not repurpose them to execute request-supplied commands or assume quoting makes arbitrary command templates safe.
 
-Phase 3 remains open. Live map delivery/referrers, actual device permission/accuracy, real touch and screen-reader acceptance remain as listed above. Real collection-point acceptance, official service geography and inbox delivery remain unverified; this tooling fix does not mark those checks complete or close the phase.
+The tooling fix did not itself establish manual acceptance. The subsequent user-reported closure below accepts the exercised request and live-map behavior while retaining the specific verification limits above. Real collection-point acceptance, official service geography and inbox delivery remain unverified.
+
+## User-reported acceptance and closure — 6 October 2026
+
+The user reports that the previously exercised collection-request behavior and live-map tests passed and requests Phase 3 closure. This is **user-reported manual acceptance**, distinct from the automated/runtime results above. No screenshots, detailed case-by-case outcomes, named assistive-technology results or additional test evidence were supplied or invented.
+
+Screen-reader announcements/associations remain unverified. The general report also does not establish individual real-device permission/error variants, accuracy, touch or keyboard/layout scenarios, or independent live-provider referrer/cache measurements. Retained checklists document these verification limits without a blanket claim that manual acceptance is pending. Synthetic facilities/service geometry remain demonstration configuration; real operational acceptance and inbox delivery remain unconfigured/unverified.
+
+Verified `57f2c1c4932513a433429588d028f2798ec83234` (`Fix tooling vulnerabilities`) on this branch and reviewed the recorded passing checks: initial Composer/platform validation and dedicated migrations/preservation audits; the later full PostgreSQL suite (**123 tests, 2613 assertions**); Pint, production builds, HTTP/browser smoke checks; and the remediation's full zero-vulnerability npm audit and **10 passing JavaScript tests**. The scoped shell-quote 1.11.0 override and its maintenance guidance are retained. These are existing results, not new test runs. This closure changes only this report; no application/database changes or unnecessary test reruns were made.
