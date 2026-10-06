@@ -124,3 +124,9 @@ legend { font-size: 1.25rem; font-weight: 600; margin-bottom: 12px; }
     body:has(.identity-label) .page { padding: 0; }
     .identity-label { break-inside: avoid; border: 1px solid black; color: black; }
 }
+
+.request-steps { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; list-style: none; padding: 0; margin-bottom: 24px; }
+.request-steps li { padding: 16px; background: #e5f1e7; border: 1px solid var(--border); border-radius: 6px; overflow-wrap: anywhere; }
+.request-steps [aria-current] { background: var(--primary); color: white; font-weight: 600; }
+.request-choice { padding: 16px 0; border-bottom: 1px solid var(--border); }
+@media (max-width: 760px) { .request-steps { grid-template-columns: 1fr; gap: 8px; } }

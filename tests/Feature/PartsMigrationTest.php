@@ -39,7 +39,7 @@ class PartsMigrationTest extends TestCase
         $files = glob(database_path('migrations/*.php'));
         sort($files);
         foreach ($files as $file) {
-            if (basename($file) !== '2026_10_06_000001_create_standalone_parts_intake.php') {
+            if (basename($file) < '2026_10_06_000001_create_standalone_parts_intake.php') {
                 (require $file)->up();
             }
         }

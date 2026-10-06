@@ -4,12 +4,14 @@ use App\Enums\Role;
 use App\Http\Controllers\Auth\PasswordRecoveryController;
 use App\Http\Controllers\Auth\RegistrationController;
 use App\Http\Controllers\Auth\SessionController;
+use App\Http\Controllers\Collection\RequestController;
 use App\Http\Controllers\Devices\DeviceController;
 use App\Http\Controllers\RoleHomeController;
 use App\Support\PrivacyNotice;
 use Illuminate\Support\Facades\Route;
 
 Route::redirect('/', '/login');
+Route::get('/collection-points', [RequestController::class, 'points'])->name('collection.points');
 Route::view('/privacy-notice', 'auth.privacy-notice', ['noticeVersion' => PrivacyNotice::VERSION])->name('privacy.notice');
 
 Route::middleware('guest')->group(function (): void {
@@ -26,6 +28,13 @@ Route::middleware('guest')->group(function (): void {
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 Route::middleware(['auth', 'account.current'])->group(function (): void {
     Route::middleware('role:consumer')->group(function (): void {
+        Route::get('/requests', [RequestController::class, 'index'])->name('requests.index');
+        Route::get('/requests/create', [RequestController::class, 'create'])->name('requests.create');
+        Route::post('/requests/restart', [RequestController::class, 'restart'])->name('requests.restart');
+        Route::get('/requests/create/{step}', [RequestController::class, 'create'])->where('step', '[1-4]')->name('requests.step');
+        Route::post('/requests/create/{step}', [RequestController::class, 'advance'])->where('step', '[1-4]')->middleware('throttle:20,1')->name('requests.advance');
+        Route::get('/requests/{collection}', [RequestController::class, 'show'])->whereUuid('collection')->name('requests.show');
+        Route::post('/requests/{collection}/change', [RequestController::class, 'change'])->whereUuid('collection')->middleware('throttle:20,1')->name('requests.change');
         Route::get('/items', [DeviceController::class, 'index'])->name('items.index');
         Route::get('/items/create', [DeviceController::class, 'create'])->name('items.create');
         Route::post('/items', [DeviceController::class, 'store'])->middleware('throttle:20,1')->name('items.store');

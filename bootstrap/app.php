@@ -2,6 +2,7 @@
 
 use App\Http\Middleware\EnsureCurrentAccount;
 use App\Http\Middleware\RequireRole;
+use App\Support\Collection\Input;
 use App\Support\Devices\SafeInput;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -23,8 +24,12 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->dontFlash(['token', 'password', 'password_confirmation', 'current_password', 'identifier', 'photo']);
+        $exceptions->dontFlash(['token', 'password', 'password_confirmation', 'current_password', 'identifier', 'photo', 'address', 'contact', 'latitude', 'longitude', 'reason']);
         $exceptions->render(function (ValidationException $exception, Request $request) {
+            if ($request->routeIs('requests.change') && ! $request->expectsJson()) {
+                return redirect()->route('requests.show', $request->route('collection'))->withErrors($exception->errors())
+                    ->withInput(Input::safeChange($request->all()));
+            }
             if (! $request->routeIs('items.store', 'items.update') || $request->expectsJson()) {
                 return null;
             }

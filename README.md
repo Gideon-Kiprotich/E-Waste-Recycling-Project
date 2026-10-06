@@ -1,6 +1,6 @@
 # Smart E-Waste Collection, Tracking and Recycling Management Platform
 
-University final-year project for Kenya, with Nairobi County as the case study. The native Laravel/PostgreSQL foundation, account access, owned-device registration/detail and bounded standalone-parts intake are implemented. Collection and processing workflows belong to later phases. See [Phase 0](docs/phase-0-report.md), [Phase 1](docs/phase-1-report.md), [Phase 2](docs/phase-2-report.md) and [Phase 2A](docs/phase-2a-report.md) for actual verification results and limitations. Phase 2A still requires manual acceptance.
+University final-year project for Kenya, with Nairobi County as the case study. The native Laravel/PostgreSQL foundation, account access, owned devices/standalone parts and consumer collection requests are implemented. Assignment, physical collection and processing remain for later phases. See [Phase 0](docs/phase-0-report.md), [Phase 1](docs/phase-1-report.md), [Phase 2](docs/phase-2-report.md), [Phase 2A](docs/phase-2a-report.md) and [Phase 3](docs/phase-3-report.md) for actual verification and limitations. Phase 2A is user accepted; Phase 3 awaits manual browser acceptance.
 
 ## Prerequisites
 
@@ -222,11 +222,29 @@ Owned list/detail, retained history, private photos, manual lookup and QR/printi
 
 The forward migration `2026_10_06_000001_create_standalone_parts_intake` checks the known category/schema/identity protections and existing item classifications before changes. It backfills existing items as whole devices only, preserves legacy command hashes and creates no old storage or parent records. Use the existing `php artisan migrate` and `php artisan migrate --env=testing` setup commands on the verified dedicated databases; do not reset them or edit historical migrations. Unexpected state blocks migration for review; destructive rollback is intentionally refused. See [Phase 2A's migration and acceptance record](docs/phase-2a-report.md).
 
+## Collection requests (Phase 3)
+
+Apply the two new forward migrations on the verified separate databases using the existing migration commands. Migrations create no demo operator/point data. In APP_ENV=local, explicitly initialize the fictional study directory and boundary:
+
+```bash
+php artisan app:setup-collection-demo
+```
+
+This command requires a dedicated local PostgreSQL project database owned by non-elevated `ewaste_app`. It preserves existing configuration on repeats. It adds labelled synthetic all-ICT, whole-device-only and inactive points, with explicit HDD/SSD/fan capabilities only where configured; none establishes real facility certification or acceptance. The whole-device-only point cannot accept loose parts, and the inactive point is excluded. No compatible point produces a clear limitation instead of an automatic replacement. Deliberate point/capability edits are not restored by repeating setup.
+
+`SYNTHETIC-STUDY-1.0` is a hand-defined rectangle: latitude −1.350000 to −1.200000, longitude 36.750000 to 36.900000, boundary included within 0.000001 degrees. It is **not the official Nairobi County boundary**. Use only synthetic information for evaluation. A new geometry needs a new version; no map/location permission is required.
+
+From My devices, open **My requests → Request collection**. Complete Devices → Collection method → Location → Review, with positive estimated kg per selected item, a preferred date, private contact, pickup address/manual coordinates or a compatible drop-off point, and the required privacy acknowledgment. Submission produces **Awaiting review** and a reference; the date is not a booking and custody remains unchanged. Private drafts are encrypted in the server session, with stale-tab checks; do not put contact/address into query strings or browser storage.
+
+My requests/detail show owned items, current per-item preferences and actual history. Select outstanding unreceived items to cancel or change their preferred date with a reason. Only cancelled reservations release. Reload when a request/wizard version is stale; retries with the same successful command return its original result. Safety Yes/Unknown and unresolved fans carry review restrictions; later self-report revisions refresh pending eligibility/history. Unknown past function alone is not a hazard declaration. All outstanding requests still await human review; there is no dispatch, receipt, sanitization or request-notification delivery in this increment.
+
+The [Phase 3 report](docs/phase-3-report.md) records preservation, tests, synthetic assumptions and remaining desktop/360px, keyboard and screen-reader acceptance. Existing log-based password recovery remains local; real inbox delivery and real collection-point acceptance remain unconfigured/unverified.
+
 ## Requirements and reviewed design
 
 The actual authoritative Deliverables 2 and 3 are supplied in [`docs/requirements/`](docs/requirements/README.md); the reviewed Stitch export and handoff are in [`docs/design/`](docs/design/README.md). Deliverable 2 controls scope, Deliverable 3 controls behavior, and Stitch supplies visual presentation. The supplied originals are preserved.
 
-Follow [`AGENTS.md`](AGENTS.md) for the agreed stack, scope and phase workflow. Review each phase's applicable requirements and screens before implementation. Phase 2 verification and user acceptance are complete. Phase 2A implements the separately authorized standalone intake increment; closure awaits its own manual checks. Phase 3 requires a separate request.
+Follow [`AGENTS.md`](AGENTS.md) for the agreed stack, scope and phase workflow. Review each phase's applicable requirements and screens before implementation. Phase 2 verification and user acceptance are complete. Phase 2A is implemented and user accepted. Phase 3 implements the separately authorized consumer request increment; browser acceptance and closure remain pending.
 
 CR-PARTS-01 supplies the bounded [implementation specification](docs/parts-intake-design-report.md) and [written UI handoff](docs/design/parts-intake-handoff.md). Those documents preserve the reviewed design and its original verification history; [Phase 2A's report](docs/phase-2a-report.md) records implementation results. Batteries and processor-derived components remain excluded from this increment. Real collection-point acceptance is unverified.
 

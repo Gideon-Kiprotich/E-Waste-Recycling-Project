@@ -110,7 +110,8 @@ class RegisterDevice
             $subject->version = $version;
             $subject->save();
             DB::table('items')->where('subject_id', $item->subject_id)->update(['data_status' => $fields['data_status']]);
-            $this->record($actor, 'revise_item:'.$item->subject_id, $fields, $payloadHash, $item->subject_id, $version, 'self_report_revised', Questions::version($item->category->code));
+            $event = $this->record($actor, 'revise_item:'.$item->subject_id, $fields, $payloadHash, $item->subject_id, $version, 'self_report_revised', Questions::version($item->category->code));
+            app(CollectionRequests::class)->refreshEligibility($actor, $item, $event);
 
             return $item->refresh()->load('subject', 'category');
         });
