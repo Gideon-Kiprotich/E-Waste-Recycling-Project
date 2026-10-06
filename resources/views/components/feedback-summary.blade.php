@@ -1,9 +1,9 @@
-@props(['fieldIds' => [], 'id' => 'form-errors'])
+@props(['fieldIds' => [], 'id' => 'form-errors', 'fallbackId' => null])
 @if($errors->any())
     <x-feedback type="error" :id="$id" title="Please check the following" :focus="true">
         <ul>
             @foreach($errors->getMessages() as $field => $messages)
-                @php($fieldId = $fieldIds[$field] ?? null)
+                @php($fieldId = $fieldIds[$field] ?? $fallbackId)
                 @foreach($messages as $error)<li>@if($fieldId)<a href="#{{ $fieldId }}">{{ $error }}</a>@else{{ $error }}@endif</li>@endforeach
             @endforeach
         </ul>

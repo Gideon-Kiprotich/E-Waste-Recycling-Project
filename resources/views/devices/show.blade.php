@@ -1,12 +1,17 @@
 @extends('layouts.devices')
-@section('title', 'Device detail')
+@section('title', $item->isPart() ? 'Standalone part detail' : 'Device detail')
 @section('intro', 'Your permanent identity and retained consumer self-report.')
 @section('content')
     <div class="workspace">
         <section class="card notice-content">
-            <p class="eyebrow">{{ $item->category->label }}{{ $item->subtype ? ' · '.$item->subtype : '' }}</p><h2>{{ $item->model ?? 'Model unknown' }}</h2>
+            <p class="eyebrow">{{ $item->category->label }}{{ $item->subtypeLabel() ? ' · '.$item->subtypeLabel() : '' }}</p><h2>{{ $item->model ?? 'Model unknown' }}</h2>
             <p class="manual-code">{{ $item->subject->public_code }}</p>
             <dl class="facts"><dt>State</dt><dd>{{ ucfirst($item->processing_state) }}</dd><dt>Initial custody</dt><dd>With you at registration</dd><dt>Registered</dt><dd>{{ $item->subject->created_at->format('j M Y H:i') }} UTC</dd><dt>Serial / IMEI</dt><dd>{{ $item->identifier_ciphertext ? match ($item->identifier_kind) { 'imei' => 'Private IMEI recorded', 'serial' => 'Private serial recorded', default => 'Private identifier recorded · type unspecified' } : 'Unknown / not provided' }}</dd></dl>
+            @if($item->isPart())<dl class="facts"><dt>Origin</dt><dd>Standalone registration — no parent/removal history recorded</dd>
+                @if($item->storageAsset)<dt>Storage medium</dt><dd>{{ \App\Support\Devices\Questions::PART_SUBTYPES[$item->storageAsset->media_kind] }} · Same physical identity</dd>@endif</dl>
+                @if($item->storageAsset)<p class="form-end">Data-bearing: Yes — storage medium. Sanitization has not been verified by this registration.</p>@endif
+                @if($item->subtype === 'ict_cooling_fan' && (($current->answers['answers']['fan_scope'] ?? null) !== 'YES' || ($current->answers['answers']['fan_electronics'] ?? null) !== 'BASIC'))<p class="form-end">Electronics/data status needs review. Registration does not approve collection or treatment.</p>@endif
+            @endif
             <h3>Current consumer self-report · revision {{ $current->revision }}</h3><p class="hint">Not technician inspection or an approved processing recommendation.</p>
             @include('devices.report', ['observation'=>$current])
             @if($current->answers['safety_concern'] !== 'NO')<p class="form-end">Safety information needs review. Registration does not approve collection or treatment.</p>@endif

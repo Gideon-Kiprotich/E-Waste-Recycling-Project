@@ -33,21 +33,22 @@ class DeviceController extends Controller
 
     public function create(Request $request): View
     {
-        $category = old('category', $request->query('category', 'laptop'));
+        $category = old('category', $request->query('category', $request->session()->hasOldInput() ? '' : 'laptop'));
         $subtype = old('subtype', $request->query('subtype'));
-        $category = is_string($category) && isset(Questions::CATEGORIES[$category]) ? $category : 'laptop';
-        $subtype = $category === 'peripheral' && in_array($subtype, ['router', 'keyboard'], true) ? $subtype : null;
+        $category = is_string($category) && isset(Questions::CATEGORIES[$category]) ? $category : '';
+        $subtype = is_string($subtype) && isset(Questions::subtypes($category)[$subtype]) ? $subtype : null;
+        $selectionError = $category === '' || ($request->query('subtype') !== null && $subtype === null);
         $categories = Category::where('supported', true)->orderBy('code')->get();
-        $tests = Questions::tests($category, $subtype);
+        $tests = $selectionError ? [] : Questions::tests($category, $subtype);
 
-        return view('devices.create', compact('category', 'subtype', 'categories', 'tests'))->with('commandKey', $this->commandKey());
+        return view('devices.create', compact('category', 'subtype', 'categories', 'tests', 'selectionError'))->with('commandKey', $this->commandKey());
     }
 
     public function store(RegisterDeviceRequest $request, RegisterDevice $action): RedirectResponse
     {
         $item = $action->register($request->user(), $request->validated(), $request->file('photo'));
 
-        return redirect()->route('items.show', $item->subject_id)->with('status', 'Your device is registered. Its identity label is ready.')->with('status_type', 'success');
+        return redirect()->route('items.show', $item->subject_id)->with('status', $item->isPart() ? 'Your part is registered. Its identity label is ready.' : 'Your device is registered. Its identity label is ready.')->with('status_type', 'success');
     }
 
     public function show(Request $request, string $item): View
@@ -56,7 +57,7 @@ class DeviceController extends Controller
         $history = $item->observations()->orderByDesc('revision')->paginate(10);
         $current = $item->observations()->orderByDesc('revision')->firstOrFail();
         $photo = DB::table('evidence_links')->join('attachments', 'attachments.id', '=', 'evidence_links.attachment_id')->where('evidence_links.subject_id', $item->subject_id)->whereNull('attachments.redacted_at')->value('attachments.id');
-        $tests = Questions::tests($item->category->code, $item->subtype);
+        $tests = Questions::tests($item->category->code, $item->subtype, $current->question_version);
 
         return view('devices.show', compact('item', 'history', 'current', 'photo', 'tests'));
     }
@@ -66,7 +67,7 @@ class DeviceController extends Controller
         $item = $this->owned($request, $item);
         Gate::authorize('update', $item);
         $current = $item->observations()->orderByDesc('revision')->firstOrFail();
-        $tests = Questions::tests($item->category->code, $item->subtype);
+        $tests = Questions::tests($item->category->code, $item->subtype, $current->question_version);
 
         return view('devices.edit', compact('item', 'current', 'tests'))->with('commandKey', $this->commandKey());
     }
@@ -126,7 +127,7 @@ class DeviceController extends Controller
 
     private function owned(Request $request, string $id): Item
     {
-        $item = Item::with('subject', 'category')->where('owner_user_id', $request->user()->id)->findOrFail($id);
+        $item = Item::with('subject', 'category', 'storageAsset')->where('owner_user_id', $request->user()->id)->findOrFail($id);
         Gate::authorize('view', $item);
 
         return $item;

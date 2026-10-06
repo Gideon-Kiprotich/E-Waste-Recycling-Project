@@ -13,9 +13,9 @@
         <form method="POST" action="{{ route('logout') }}">@csrf<button class="secondary" type="submit">Sign out</button></form>
     </header>
     <main id="main" class="page" tabindex="-1">
-        <nav class="device-nav" aria-label="Consumer navigation"><a href="{{ route('consumer.home') }}">Overview</a><a href="{{ route('items.index') }}">My devices</a><a href="{{ route('items.create') }}">Register device</a><a href="{{ route('privacy.notice') }}">Privacy notice</a></nav>
-        <div class="page-heading"><p class="eyebrow">Device registration and identity</p><h1>@yield('title')</h1><p>@yield('intro')</p></div>
-        <x-feedback-summary :field-ids="$fieldIds ?? []" />
+        <nav class="device-nav" aria-label="Consumer navigation"><a href="{{ route('consumer.home') }}">Overview</a><a href="{{ route('items.index') }}">My devices</a><a href="{{ route('items.create') }}">Register device or part</a><a href="{{ route('privacy.notice') }}">Privacy notice</a></nav>
+        <div class="page-heading"><p class="eyebrow">Device registration and identity</p><h1 id="registration-heading" tabindex="-1">@yield('title')</h1><p>@yield('intro')</p></div>
+        <x-feedback-summary :field-ids="$fieldIds ?? []" fallback-id="registration-heading" />
         @yield('content')
     </main>
     <footer class="site-footer"><span>Nairobi County case study · Use synthetic information for evaluation</span><a href="{{ route('privacy.notice') }}">Privacy notice</a></footer>

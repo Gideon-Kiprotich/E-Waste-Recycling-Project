@@ -1,5 +1,5 @@
 @extends('layouts.devices')
-@php($fieldIds = array_merge(['data_status'=>'data_status','safety_concern'=>'safety_concern','physical_damage'=>'physical_damage','reason'=>'reason'], collect($tests)->mapWithKeys(fn ($label, $code) => ['answers.'.$code => 'answers_'.$code])->all()))
+@php($fieldIds = array_merge(['safety_concern'=>'safety_concern','physical_damage'=>'physical_damage','reason'=>'reason'], $item->isPart() ? [] : ['data_status'=>'data_status'], collect($tests)->mapWithKeys(fn ($label, $code) => ['answers.'.$code => 'answers_'.$code])->all()))
 @section('title', 'Update self-report')
 @section('intro', 'A new revision retains your earlier answers. Device identity and ownership stay fixed.')
 @section('content')

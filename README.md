@@ -1,6 +1,6 @@
 # Smart E-Waste Collection, Tracking and Recycling Management Platform
 
-University final-year project for Kenya, with Nairobi County as the case study. The native Laravel/PostgreSQL foundation, account access and owned-device registration/detail are implemented. Collection and processing workflows belong to later phases. See [Phase 0](docs/phase-0-report.md), [Phase 1](docs/phase-1-report.md) and [Phase 2](docs/phase-2-report.md) for actual verification results and limitations.
+University final-year project for Kenya, with Nairobi County as the case study. The native Laravel/PostgreSQL foundation, account access, owned-device registration/detail and bounded standalone-parts intake are implemented. Collection and processing workflows belong to later phases. See [Phase 0](docs/phase-0-report.md), [Phase 1](docs/phase-1-report.md), [Phase 2](docs/phase-2-report.md) and [Phase 2A](docs/phase-2a-report.md) for actual verification results and limitations. Phase 2A still requires manual acceptance.
 
 ## Prerequisites
 
@@ -210,13 +210,25 @@ Back up the private `APP_KEY` with the database and private photos. It protects 
 
 The identifier revision passes development/testing migrations and required automated/runtime checks after the user-authorized cleanup of three repeated test registrations. The fourth device and all accounts were preserved. The user has confirmed duplicate rejection, IMEI validation and all remaining manual checks; Phase 2 is accepted for closure. Actual automated results and distinct user-performed acceptance are recorded in [the Phase 2 report](docs/phase-2-report.md#user-performed-acceptance-and-closure-review--5-october-2026). Real inbox delivery remains unconfigured/unverified.
 
+### Exercise standalone parts
+
+At `/items/create`, select **Standalone ICT part**, load its type choices, choose **Hard disk drive (HDD)**, **Solid-state drive (SSD)** or **Small ICT cooling fan**, then load the questions. Register one already separate unit. Unknown drive types, multi-drive enclosures, batteries, mains/industrial fans, arbitrary components and bulk inventory are outside this intake. Do not power, dismantle or inspect inside a part to answer the form.
+
+Parts accept an optional serial only; the same global uniqueness, encryption and private re-entry policy apply. HDD/SSD data-bearing capability is always **Yes**, including empty, broken or reportedly erased media. It is displayed as text, not a consumer override; registration does not verify sanitization or approve reuse. A drive's storage facet uses its existing physical identity, with no extra label, custody or parent history.
+
+A fan must be known to be one dedicated ICT cooling fan/blower, no more than **24 V DC** and **140 mm** across its housing (excluding free leads). Use existing knowledge or an accessible label; if its eligibility is unknown, stop rather than test or dismantle it. Ordinary motor-driver/tach/PWM circuitry is basic. Known additional control/network/storage modules block registration; eligible fans with unknown electronics can register but need review. Later self-report revisions may honestly record newly discovered uncertainty or exclusion, preserving earlier answers and the same identity. These are self-reports, not technician approval.
+
+Owned list/detail, retained history, private photos, manual lookup and QR/printing work through the existing device routes. Parent/removal/storage/server-owned fields are rejected even when null; notes never create parent links. Safe form values remain after errors, while serials and photos need re-entry/reselection.
+
+The forward migration `2026_10_06_000001_create_standalone_parts_intake` checks the known category/schema/identity protections and existing item classifications before changes. It backfills existing items as whole devices only, preserves legacy command hashes and creates no old storage or parent records. Use the existing `php artisan migrate` and `php artisan migrate --env=testing` setup commands on the verified dedicated databases; do not reset them or edit historical migrations. Unexpected state blocks migration for review; destructive rollback is intentionally refused. See [Phase 2A's migration and acceptance record](docs/phase-2a-report.md).
+
 ## Requirements and reviewed design
 
 The actual authoritative Deliverables 2 and 3 are supplied in [`docs/requirements/`](docs/requirements/README.md); the reviewed Stitch export and handoff are in [`docs/design/`](docs/design/README.md). Deliverable 2 controls scope, Deliverable 3 controls behavior, and Stitch supplies visual presentation. The supplied originals are preserved.
 
-Follow [`AGENTS.md`](AGENTS.md) for the agreed stack, scope and phase workflow. Review each phase's applicable requirements and screens before implementation. Phase 2 verification and user acceptance are complete. Parts implementation and Phase 3 require a separate request.
+Follow [`AGENTS.md`](AGENTS.md) for the agreed stack, scope and phase workflow. Review each phase's applicable requirements and screens before implementation. Phase 2 verification and user acceptance are complete. Phase 2A implements the separately authorized standalone intake increment; closure awaits its own manual checks. Phase 3 requires a separate request.
 
-CR-PARTS-01 now approves the bounded **design** for standalone HDDs, SSDs and small low-voltage ICT cooling fans. [The implementation specification](docs/parts-intake-design-report.md) and [written UI handoff](docs/design/parts-intake-handoff.md) define the next standalone-intake increment; these types are not yet supported by the application. Batteries and processor-derived components remain outside that first increment. This documentation approval does not start implementation or establish real collection-point acceptance.
+CR-PARTS-01 supplies the bounded [implementation specification](docs/parts-intake-design-report.md) and [written UI handoff](docs/design/parts-intake-handoff.md). Those documents preserve the reviewed design and its original verification history; [Phase 2A's report](docs/phase-2a-report.md) records implementation results. Batteries and processor-derived components remain excluded from this increment. Real collection-point acceptance is unverified.
 
 ### Identifier migration handoff
 
@@ -226,4 +238,4 @@ For future conflicts, stop and obtain explicit review/authorization rather than 
 
 Nonconflicting old identifiers retain their ciphertext/hash and acquire `legacy_unspecified` type. The migration leaves retained historic events and command hashes untouched. A request replayed with its original fields/reference still resolves the original successful registration. Serial/IMEI type is immutable in ordinary edits. Do not regenerate `APP_KEY` or use a new hash context to bypass uniqueness.
 
-[Standalone device-parts assessment](docs/device-parts-scope-change.md) is a proposal only; HDDs, SSDs, standalone fans and loose batteries have not been added to registration.
+[The original parts assessment and approved bounded scope](docs/device-parts-scope-change.md) preserve the distinction between standalone intake, excluded batteries and deferred processor-derived work.

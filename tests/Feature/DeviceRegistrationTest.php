@@ -382,7 +382,8 @@ class DeviceRegistrationTest extends TestCase
     {
         $item = $this->register(['identifier' => 'SYNTH-PRIVATE', 'model' => 'Synthetic model']);
         $response = $this->get(route('items.qr', $item->subject_id))->assertOk()->assertHeader('Content-Type', 'image/png');
-        $decoded = (new QrReader($response->getContent(), QrReader::SOURCE_TYPE_BLOB))->text();
+        // Scan every finder-pattern row; the decoder's fast path skips valid patterns for some opaque codes.
+        $decoded = (new QrReader($response->getContent(), QrReader::SOURCE_TYPE_BLOB))->text(['TRY_HARDER' => true]);
         $this->assertSame(route('items.lookup', $item->subject->public_code), $decoded);
         foreach (['SYNTH-PRIVATE', $this->owner->email, 'Synthetic model'] as $private) {
             $this->assertStringNotContainsString($private, $decoded);
@@ -391,7 +392,7 @@ class DeviceRegistrationTest extends TestCase
         $this->get('/items/lookup?public_code='.$item->subject->public_code)->assertRedirect($this->detail($item));
         $this->get(route('items.label', $item->subject_id))->assertOk()->assertSee($item->subject->public_code)->assertSee('data-print-label', false);
         $download = $this->get(route('items.qr', ['item' => $item->subject_id, 'download' => 1]))->assertOk()->assertHeader('Content-Disposition', 'attachment; filename="'.$item->subject->public_code.'.png"');
-        $this->assertSame($decoded, (new QrReader($download->getContent(), QrReader::SOURCE_TYPE_BLOB))->text());
+        $this->assertSame($decoded, (new QrReader($download->getContent(), QrReader::SOURCE_TYPE_BLOB))->text(['TRY_HARDER' => true]));
         $this->assertDatabaseCount('subjects', 1);
     }
 

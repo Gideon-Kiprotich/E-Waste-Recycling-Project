@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Support\Devices\Questions;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Item extends Model
 {
@@ -33,5 +35,20 @@ class Item extends Model
     public function observations(): HasMany
     {
         return $this->hasMany(ItemObservation::class, 'item_id', 'subject_id');
+    }
+
+    public function storageAsset(): HasOne
+    {
+        return $this->hasOne(StorageAsset::class, 'subject_id', 'subject_id');
+    }
+
+    public function isPart(): bool
+    {
+        return $this->intake_class === 'standalone_part';
+    }
+
+    public function subtypeLabel(): ?string
+    {
+        return Questions::subtypes($this->category->code)[$this->subtype ?? ''] ?? null;
     }
 }
