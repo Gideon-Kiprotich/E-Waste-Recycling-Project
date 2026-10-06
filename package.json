@@ -5,7 +5,7 @@
     "scripts": {
         "build": "vite build",
         "dev": "vite",
-        "test": "node tests/JavaScript/pickup-location.test.js"
+        "test": "node tests/JavaScript/pickup-location.test.js && node tests/JavaScript/tooling-security.test.js"
     },
     "devDependencies": {
         "concurrently": "^10.0.3",
@@ -14,5 +14,10 @@
     },
     "dependencies": {
         "leaflet": "1.9.4"
+    },
+    "overrides": {
+        "concurrently": {
+            "shell-quote": "1.11.0"
+        }
     }
 }

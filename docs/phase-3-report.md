@@ -120,7 +120,7 @@ No schema, historical migration or development data write is needed. Existing id
 
 The first focused PHP run had two fixture expectation failures (the existing area error uses the latitude key; simulated pre-existing session drafts needed explicit session persistence). Both were corrected; the focused 24 tests and full suite then passed. A temporary fixture renderer initially reached PHPUnit-only teardown state outside its runner; it now explicitly rolls back/disconnects and finishes successfully. Browser harness corrections use the actual local asset origin, a separate failure URL to avoid a legitimately cached successful mock tile, and an undecodable failure body. These are test-fixture corrections, not claimed successful product checks from failed attempts. Inspecting the narrow map image also exposed Leaflet CSS overriding the zoom target size; the selector was strengthened and final browser measurements confirmed 48px targets. Confirmation parsing rejects malformed/overprecision values rather than rounding invalid retained input into a prior confirmation.
 
-Installing Leaflet also surfaced **two pre-existing npm audit findings**, in concurrently and its pinned shell-quote 1.9.0 dependency (critical command-injection advisory [GHSA-pqg4-j6r4-53mv](https://github.com/advisories/GHSA-pqg4-j6r4-53mv)). Leaflet is not the reported vulnerable package. No forced downgrade or unrelated toolchain upgrade was performed. Audit is not claimed clean; these findings need a separately scoped tooling fix. The registry audit first failed inside restricted networking, then succeeded in retrieving the findings outside it.
+Installing Leaflet also surfaced **two pre-existing npm audit findings**, in concurrently and its pinned shell-quote 1.9.0 dependency (critical command-injection advisory [GHSA-pqg4-j6r4-53mv](https://github.com/advisories/GHSA-pqg4-j6r4-53mv)). Leaflet is not the reported vulnerable package. No forced downgrade or unrelated toolchain upgrade was performed. Audit is not claimed clean; these findings required a separately scoped tooling fix; see the subsequent remediation entry below for their current disposition. The registry audit first failed inside restricted networking, then succeeded in retrieving the findings outside it.
 
 ### Remaining manual acceptance
 
@@ -133,3 +133,57 @@ Use synthetic data and the explicitly labelled study area; do not request real s
 5. At desktop and 360px, verify readable contrast, visible keyboard focus, full keyboard completion/Tab exit, mobile scrolling/touch placement/drag and screen-reader announcements/error associations. No named assistive-technology pass or real touch result is claimed.
 
 Real collection-point acceptance, official county/service geometry and inbox delivery remain unconfigured/unverified. Phase 3 is not closed or merged; no next-phase implementation is included.
+
+## Tooling vulnerability assessment and remediation — 6 October 2026
+
+This is the separately authorized assessment of the two findings reported after `Improve pickup location` (`f6bf49bedddf7d20a3ff373ed35ec8d2a21c2425`). The starting working tree was clean on `phase-3-collection-requests`. This increment changes dependency resolution and targeted tooling tests, not collection features, PHP dependencies, database state or the phase's acceptance status.
+
+### Findings and primary evidence
+
+`npm audit --json` reproduced **two critical package entries with one underlying advisory**, not two independent flaws:
+
+- **shell-quote 1.9.0**, transitive dev dependency: root → concurrently 10.0.5 → shell-quote 1.9.0. Advisory **GHSA-pqg4-j6r4-53mv / CVE-2026-102422**; affected releases **>=1.8.4 and <1.11.0**; first patched release **1.11.0**, verified in the [maintainer's advisory](https://github.com/ljharb/shell-quote/security/advisories/GHSA-pqg4-j6r4-53mv) and [fix commit](https://github.com/ljharb/shell-quote/commit/6002b2ed90c6b83095eb272b6b0adaf3a172b0bc). Its quoting function permits shell comment termination through a line break in a later string token. If that output is executed by a POSIX shell, attacker-controlled syntax can run. The patch rejects LF, CR, U+2028 and U+2029 in strings after a structured comment token. An in-memory pre-fix probe accepted all four sequences; it executed **no shell**.
+- **concurrently 10.0.5**, direct dev dependency (`^10.0.3`), at root → concurrently. The audit entry's `via` is shell-quote, propagating **the same GHSA/CVE** through its exact 1.9.0 dependency pin. There is no second concurrently advisory or distinct first patched concurrently release for this finding. Registry metadata and the [upstream release history](https://github.com/open-cli-tools/concurrently/releases) still identify 10.0.5 as latest. We retain that version and fix its resolved child, rather than claiming the upstream package was released with a new dependency pin.
+
+Severity labels differ between sources: npm's two entries and the [GitHub reviewed database record](https://github.com/advisories/GHSA-pqg4-j6r4-53mv) label this critical; the maintainer advisory labels it High (CVSS 3.1, 8.1), while the reviewed record lists CVSS 4.0, 9.2. This distinction does not remove the audit finding or the need for a patched installation.
+
+### Actual project exposure
+
+Both entries concern **local development runner tooling**, installed alongside build tools. They do **not** affect production browser assets, and the affected package is not called by `npm run build`:
+
+- `composer.json`'s development script invokes concurrently with fixed `composer run serve` and `npm run dev` commands, names and `--kill-others`. It supplies no passthrough flag/placeholders, parsed comment tokens or consumer-controlled values. These scripts intentionally launch local shell commands; they are not HTTP command-execution endpoints.
+- Inspection of installed `concurrently/dist/bin/index.js` and `lib/command-parser/expand-arguments.js` shows that its optional passthrough path converts CLI arguments to strings and calls `quote()` on strings/string arrays. It does not combine `shell-quote.parse()` comment objects with subsequent untrusted strings. The project's ordinary development invocation does not enter that optional path at all. The advisory's required structured-comment-plus-later-line-terminator pattern is therefore **not reachable through the inspected current application/scripts**. This is a code-based reachability assessment, not a blanket exemption for dev dependencies.
+- `npm run build` directly runs Vite; `vite.config.js` imports the Laravel Vite plugin, not concurrently. A read-only Vite module-provenance build recorded application modules, Leaflet/CSS and Vite's preload helper, with neither affected package in the browser module graph. All **nine** production assets/manifest files are byte-for-byte identical before/after remediation. `npm ls`/`npm explain` show no other project dependency path to shell-quote. No consumer contact, address, coordinates or uploaded file names are supplied to this runner.
+
+If another tool or a future integration used the vulnerable structured quoting pattern with attacker-controlled input, injected commands would run with that developer/CI process's permissions and could affect its accessible checkout, configuration and files. Current script reachability limits direct exposure; it does not make retaining vulnerable code a safe long-term disposition. The dependency is remediated below rather than suppressed.
+
+### Targeted compatible remediation
+
+Added a root [npm override](https://docs.npmjs.com/cli/v11/configuring-npm/package-json/#overrides) scoped to concurrently's child:
+
+```json
+"overrides": {
+    "concurrently": {
+        "shell-quote": "1.11.0"
+    }
+}
+```
+
+`npm install` changed **one package**, shell-quote 1.9.0 → **1.11.0**; the lockfile diff changes only its version, archive URL and integrity. Concurrently remains **10.0.5**; Vite, Leaflet and all other package versions are unchanged. Both child versions use the same compatible Node engine minimum; concurrently retains Node >=22. The first patched minor release was chosen rather than an unrelated latest-version sweep. Its [maintainer changelog](https://raw.githubusercontent.com/ljharb/shell-quote/v1.11.0/CHANGELOG.md) and actual compatibility tests support this substitution for the string-quoting calls used by the runner. Rejection of dangerous structured inputs is the intentional security behavior change.
+
+npm's automatic proposed resolution was a semver-major downgrade to concurrently **9.2.1**, outside the declared range. That is not necessary with the tested scoped override, and was not applied. No `npm audit fix --force`, downgrade, ignored advisory, severity threshold, new direct shell-quote dependency or broad upgrade was used. `npm test` now retains the five pickup tests and additionally runs five dependency-security/runner tests, resolving shell-quote through concurrently's actual installed dependency rather than an unrelated copy.
+
+### Actual verification and remaining risk
+
+- Complete `npm audit --json`: **passed, zero vulnerabilities at every severity**. `npm audit --omit=dev --json`: also passed, zero. This is resolution in the full installed tree, not just exclusion of dev dependencies.
+- `npm ls concurrently shell-quote --all` and `npm explain shell-quote`: concurrently 10.0.5 → shell-quote **1.11.0 overridden**; no old installed child remains.
+- `npm test`: **10 tests passed** (5 existing pickup + 5 targeted tooling). Covers all four prohibited separators after comments without executing those payloads; a parsed-comment composition; ordinary POSIX argument round trips; actual concurrently CLI passthrough; and project-shaped named output, nonzero failure propagation and sibling SIGTERM cleanup. Synthetic child processes are bounded; no actual PHP/Vite development server or database is started by these tests.
+- `npm run build`: passed, Vite 8.3.2. Before/after asset and manifest fingerprints matched for all nine files; a read-only build additionally confirmed affected packages absent from the browser module graph. Laravel Pint check and `git diff --check`: passed.
+- Focused native Firefox smoke: **4 scenario groups passed** on the current production bundles and a rendered synthetic pickup component: restored pin/centre positioning and confirmation invalidation with 48px zoom targets; mocked denial with one explicit attempt and retained selection; mocked provider failure with manual fallback; and map/control fit without horizontal overflow in an actual 360px iframe. Local mock tiles alone were used, and tile referrers contained only the site origin. There were **zero external tile requests and no database access/writes**. Real permission dialogs, touch and screen-reader acceptance were not tested. Temporary browser, driver, fixture HTTP server, files and private fingerprints were removed after verification.
+- PHP/database tests and Composer checks were **not rerun**: no PHP, schema, authorization, request or Composer change was made. The earlier 123-test/2613-assertion result remains the preceding verification, not a claimed new run. Testing was broadened only to the affected Node runner and unchanged browser asset smoke.
+
+The first targeted JavaScript run hit sandbox child-process EPERM errors; these tests were then run outside that restriction rather than skipped. Its passthrough fixture initially omitted concurrently's required `--passthrough-arguments`; corrected that fixture and all ten tests passed. A standalone browser component fixture initially lacked the middleware-shared error bag; its renderer now shares the synthetic bag. A WebDriver mock counter initially used the execution realm instead of `window`; only the test fixture was corrected. Failed attempts are not counted as passes.
+
+The full-tree audit currently has **no unresolved finding**. This is point-in-time evidence, not a guarantee against future advisories. The override deliberately replaces an upstream exact pin; keep it while upstream still resolves a vulnerable child, and review/remove it only after an upstream update resolves a patched child and the audit/runner tests pass. Normal development scripts still execute trusted checkout commands with the local user's privileges; do not repurpose them to execute request-supplied commands or assume quoting makes arbitrary command templates safe.
+
+Phase 3 remains open. Live map delivery/referrers, actual device permission/accuracy, real touch and screen-reader acceptance remain as listed above. Real collection-point acceptance, official service geography and inbox delivery remain unverified; this tooling fix does not mark those checks complete or close the phase.
