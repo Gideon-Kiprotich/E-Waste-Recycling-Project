@@ -1,6 +1,6 @@
 # Smart E-Waste Collection, Tracking and Recycling Management Platform
 
-University final-year project for Kenya, with Nairobi County as the case study. The native Laravel/PostgreSQL foundation, account access, owned devices/standalone parts and consumer collection requests are implemented. Assignment, physical collection and processing remain for later phases. See [Phase 0](docs/phase-0-report.md), [Phase 1](docs/phase-1-report.md), [Phase 2](docs/phase-2-report.md), [Phase 2A](docs/phase-2a-report.md) and [Phase 3](docs/phase-3-report.md) for actual verification and limitations. Phase 2A is user accepted; Phase 3 awaits manual browser acceptance.
+University final-year project for Kenya, with Nairobi County as the case study. The native Laravel/PostgreSQL foundation, account access, owned devices/standalone parts and consumer collection requests are implemented. Assignment, physical collection and processing remain for later phases. See [Phase 0](docs/phase-0-report.md), [Phase 1](docs/phase-1-report.md), [Phase 2](docs/phase-2-report.md), [Phase 2A](docs/phase-2a-report.md) and [Phase 3](docs/phase-3-report.md) for actual verification and limitations. Phase 2A is user accepted; Phase 3 remains open. The user reports the earlier collection-request behavior works; acceptance of the pickup-map enhancement remains pending.
 
 ## Prerequisites
 
@@ -234,7 +234,30 @@ This command requires a dedicated local PostgreSQL project database owned by non
 
 `SYNTHETIC-STUDY-1.0` is a hand-defined rectangle: latitude −1.350000 to −1.200000, longitude 36.750000 to 36.900000, boundary included within 0.000001 degrees. It is **not the official Nairobi County boundary**. Use only synthetic information for evaluation. A new geometry needs a new version; no map/location permission is required.
 
-From My devices, open **My requests → Request collection**. Complete Devices → Collection method → Location → Review, with positive estimated kg per selected item, a preferred date, private contact, pickup address/manual coordinates or a compatible drop-off point, and the required privacy acknowledgment. Submission produces **Awaiting review** and a reference; the date is not a booking and custody remains unchanged. Private drafts are encrypted in the server session, with stale-tab checks; do not put contact/address into query strings or browser storage.
+From My devices, open **My requests → Request collection**. Complete Devices → Collection method → Location → Review, with positive estimated kg per selected item, a preferred date, private contact, pickup address/entrance instructions and a confirmed point, or a compatible drop-off point, and the required privacy acknowledgment. Submission produces **Awaiting review** and a reference; the date is not a booking and custody remains unchanged. Private drafts are encrypted in the server session, with stale-tab checks; do not put contact/address into query strings or browser storage.
+
+### Pickup map and manual fallback
+
+At Location, use **Load pickup map**, then click/tap or drag the pin to the entrance/meeting point. Keyboard users can focus the map and use arrows/+ or −, or the direction buttons, followed by **Use map centre**. The starting view does not select a point. On mobile, swiping the map scrolls the page; direction/zoom controls provide positioning without map panning. Press **Confirm pickup point**, which saves confirmation on the server and returns to Location, then complete the other fields and Continue. This confirms your selection, not service or a booking.
+
+**Use my location** makes one explicit browser geolocation request per page load, requiring HTTPS or localhost. Reported accuracy is approximate; inspect/adjust the point rather than assuming GPS gives an exact entrance. Denial, unavailable location, timeout or unsupported/restricted browsers allow manual selection. No background tracking or repeated permission loop runs. Moving/replacing the point or changing the study area requires confirmation again. Back with the same items/method and errors in unrelated fields preserve a valid selection. Switching method or selection clears it. Out-of-area points remain blocked by the server.
+
+**Advanced location entry** accepts decimal latitude/longitude (at most six decimal places) when JavaScript, tiles or browser location are unavailable. Open it, enter the point and press Confirm pickup point; Continue still uses server validation. You can use this fallback without loading tiles or granting permission. Address/landmark/entrance guidance remains required. Do not place private locations in URLs, logs or browser persistent storage.
+
+Leaflet **1.9.4** is bundled locally by Vite; no geocoder, search service or private API key is introduced. Public settings in `config/maps.php` and `.env.example`:
+
+```dotenv
+PICKUP_MAP_ENABLED=true
+PICKUP_MAP_TILE_URL="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+PICKUP_MAP_ATTRIBUTION_TEXT="© OpenStreetMap contributors"
+PICKUP_MAP_ATTRIBUTION_URL=https://www.openstreetmap.org/copyright
+```
+
+Set `PICKUP_MAP_ENABLED=false` to keep manual entry available without map loading. After local configuration changes, use `php artisan config:clear` (or rebuild your deployment's config cache). Tile URL/attribution are public; never insert private keys. Switching provider requires checking its permission, attribution and privacy requirements and revising the notice where necessary. No live environment file was changed for this increment.
+
+The default provider is OpenStreetMap Standard raster tiles. Its [official tile policy](https://operations.osmfoundation.org/policies/tiles/) requires attribution, identification and normal caching, and prohibits bulk/offline downloads. It is best-effort with no SLA. Browser requests keep the browser User-Agent/cache behavior; only tile images use `referrerPolicy: origin`, keeping private page paths out of their referrer. Verify this survives deployment headers/proxies before live use. Automated checks use local mock tiles, never OSM pan/zoom traffic. No cache-bypass, proxy, prefetch or offline feature is added.
+
+The optional map shares IP/browser information, site origin and viewed tile areas with its provider; names, contact and address text are not sent. The [privacy notice](resources/views/privacy/notices/2026-10-06-2.blade.php) version `2026-10-06.2` explains this and the permission-free fallback; prior versions/acknowledgments are retained. Real tile delivery, device permission dialogs/accuracy and screen-reader/touch acceptance still require manual checks in [the report](docs/phase-3-report.md#pickup-location-enhancement--6-october-2026). Run `npm test` for the small dependency-free JavaScript tests in addition to the normal PHP suite, Pint and production build.
 
 My requests/detail show owned items, current per-item preferences and actual history. Select outstanding unreceived items to cancel or change their preferred date with a reason. Only cancelled reservations release. Reload when a request/wizard version is stale; retries with the same successful command return its original result. Safety Yes/Unknown and unresolved fans carry review restrictions; later self-report revisions refresh pending eligibility/history. Unknown past function alone is not a hazard declaration. All outstanding requests still await human review; there is no dispatch, receipt, sanitization or request-notification delivery in this increment.
 

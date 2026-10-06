@@ -130,3 +130,16 @@ legend { font-size: 1.25rem; font-weight: 600; margin-bottom: 12px; }
 .request-steps [aria-current] { background: var(--primary); color: white; font-weight: 600; }
 .request-choice { padding: 16px 0; border-bottom: 1px solid var(--border); }
 @media (max-width: 760px) { .request-steps { grid-template-columns: 1fr; gap: 8px; } }
+
+.pickup-location { min-width: 0; margin: 0 0 24px; }
+.pickup-location legend { font-weight: 600; }
+.pickup-location [hidden] { display: none !important; }
+.pickup-location details { margin: 16px 0; }
+.pickup-location summary { cursor: pointer; min-height: 48px; padding: 12px 0; font-weight: 600; color: var(--primary); }
+.pickup-map { height: 320px; width: 100%; margin: 12px 0; z-index: 0; border: 1px solid var(--border); }
+.pickup-map .leaflet-control-zoom.leaflet-bar a { width: 48px; height: 48px; line-height: 48px; color: var(--primary); }
+.pickup-map .leaflet-control-attribution { background: white; color: #141e18; font-size: 12px; max-width: 100%; }
+.pickup-map .leaflet-control-attribution a { color: var(--primary); }
+.pickup-pin { display: grid !important; place-items: center; color: var(--primary); font-size: 32px; background: white; border: 3px solid var(--primary); border-radius: 50%; box-shadow: 0 1px 4px #404942; }
+.map-position-controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.pickup-location button:disabled { cursor: default; opacity: .65; }

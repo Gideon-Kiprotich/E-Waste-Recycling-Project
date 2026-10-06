@@ -4,11 +4,15 @@
     "type": "module",
     "scripts": {
         "build": "vite build",
-        "dev": "vite"
+        "dev": "vite",
+        "test": "node tests/JavaScript/pickup-location.test.js"
     },
     "devDependencies": {
         "concurrently": "^10.0.3",
         "laravel-vite-plugin": "^3.1",
         "vite": "^8.0.0"
+    },
+    "dependencies": {
+        "leaflet": "1.9.4"
     }
 }

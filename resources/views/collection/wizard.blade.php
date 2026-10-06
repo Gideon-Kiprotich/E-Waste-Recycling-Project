@@ -3,7 +3,7 @@
 @section('title', 'Request collection')
 @section('intro', 'Use synthetic information for this study. Submission requests review; it does not book collection or transfer custody.')
 @php
-$fieldIds = ['items'=>'selected-items','estimated_kg'=>'selected-items','mode'=>'mode','point_id'=>'point_id','service_area_id'=>'service_area_id','address'=>'address','latitude'=>'latitude','longitude'=>'longitude','contact'=>'contact','preferred_date'=>'preferred_date','privacy_ack'=>'privacy_ack'];
+$fieldIds = ['items'=>'selected-items','estimated_kg'=>'selected-items','mode'=>'mode','point_id'=>'point_id','service_area_id'=>'service_area_id','address'=>'address','latitude'=>'latitude','longitude'=>'longitude','pickup_point'=>'pickup_point','contact'=>'contact','preferred_date'=>'preferred_date','privacy_ack'=>'privacy_ack'];
 foreach ($items as $device) { $fieldIds['estimated_kg.'.$device->subject_id] = 'mass-'.$device->subject_id; }
 if ($step !== 1) { $fieldIds['items'] = 'registration-heading'; $fieldIds['estimated_kg'] = 'registration-heading'; }
 if ($step === 4) { foreach (['mode','point_id','service_area_id','address','latitude','longitude','contact','preferred_date'] as $field) { $fieldIds[$field] = 'registration-heading'; } }
@@ -38,8 +38,8 @@ if ($step === 4) { foreach (['mode','point_id','service_area_id','address','lati
 <x-select-field name="service_area_id" label="Study service area" :options="$areaOptions" :value="$fields['service_area_id'] ?? ''" hint="The local synthetic rectangle spans latitude −1.350000 to −1.200000 and longitude 36.750000 to 36.900000. Its boundary is included. This is not the official Nairobi County boundary." />
 @if($areas->isEmpty())<x-feedback type="info" message="No active service area is configured. Local demonstration setup is required before submission." />@endif
 @if($fields['mode'] === 'pickup')
-<x-field name="address" label="Pickup address / landmark" :value="$fields['address'] ?? ''" maxlength="500" autocomplete="off" hint="Private to your request. Use synthetic information during evaluation." />
-<div class="form-grid"><x-field name="latitude" label="Latitude" :value="$fields['latitude'] ?? ''" hint="Manual decimal coordinates, at most 6 decimal places." /><x-field name="longitude" label="Longitude" :value="$fields['longitude'] ?? ''" hint="Manual decimal coordinates, at most 6 decimal places." /></div>
+<x-field name="address" label="Pickup address and landmark / entrance instructions" :value="$fields['address'] ?? ''" maxlength="500" autocomplete="off" hint="Describe where to meet at the selected point. Private to your request; use synthetic information during evaluation." />
+<x-pickup-location :fields="$fields" :confirmed="$pickupConfirmed" />
 @else
 @php($pointOptions = $points->mapWithKeys(fn($point)=>[$point->id=>$point->name.($point->synthetic ? ' · Synthetic, no real acceptance' : '')])->all())
 <x-select-field name="point_id" label="Compatible drop-off point" :options="$pointOptions" :value="$fields['point_id'] ?? ''" hint="Only currently active points accepting every selected category/subtype are listed. Final submission checks again." />
@@ -49,7 +49,7 @@ if ($step === 4) { foreach (['mode','point_id','service_area_id','address','lati
 <x-field name="preferred_date" label="Preferred date" type="date" :value="$fields['preferred_date'] ?? ''" hint="A preference only; no pickup or drop-off appointment is confirmed." />
 @else
 <dl class="facts"><dt>Method</dt><dd>{{ $fields['mode'] === 'pickup' ? 'Pickup request' : 'Drop-off request' }}</dd><dt>Preferred date</dt><dd>{{ $fields['preferred_date'] }}</dd><dt>Contact (private)</dt><dd>{{ $fields['contact'] }}</dd>
-@if($fields['mode'] === 'pickup')<dt>Address (private)</dt><dd>{{ $fields['address'] }}</dd><dt>Manual coordinates (private)</dt><dd>{{ $fields['latitude'] }}, {{ $fields['longitude'] }}</dd>@else<dt>Point</dt><dd>{{ $points->firstWhere('id',$fields['point_id'])?->name ?? 'Point unavailable — return to Location' }}</dd>@endif
+@if($fields['mode'] === 'pickup')<dt>Address (private)</dt><dd>{{ $fields['address'] }}</dd><dt>Pickup point (private)</dt><dd>{{ $pickupConfirmed ? 'Selected point confirmed.' : 'Pickup point needs confirmation.' }} <a href="{{ route('requests.step',['step'=>3]) }}">Review or adjust location</a></dd>@else<dt>Point</dt><dd>{{ $points->firstWhere('id',$fields['point_id'])?->name ?? 'Point unavailable — return to Location' }}</dd>@endif
 <dt>Estimated total</dt><dd>{{ number_format(array_sum($fields['estimated_kg']),3) }} kg · estimates only</dd><dt>Service area</dt><dd>{{ $areas->firstWhere('id',$fields['service_area_id'])?->version_code ?? 'Area inactive' }} · local study, not official county boundary</dd></dl>
 <input type="hidden" name="idempotency_key" value="{{ $fields['idempotency_key'] }}">
 <div class="acknowledgment"><input type="checkbox" id="privacy_ack" name="privacy_ack" value="1" required @if($errors->has('privacy_ack')) aria-invalid="true" aria-describedby="privacy_ack-error" @endif><label for="privacy_ack">I acknowledge that this request stores my selected items and private contact/location information under the <a href="{{ route('privacy.notice') }}">privacy notice</a>. Submission requests review and does not transfer physical custody.</label></div>

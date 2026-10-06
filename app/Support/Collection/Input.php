@@ -35,7 +35,7 @@ class Input
         return $safe;
     }
 
-    public static function validate(#[\SensitiveParameter] array $fields, int $step): array
+    public static function validate(#[\SensitiveParameter] array $fields, int $step, bool $confirmPoint = false): array
     {
         if ($step === 1 && is_array($fields['estimated_kg'] ?? null) && is_array($fields['items'] ?? null)) {
             foreach ($fields['estimated_kg'] as $id => $mass) {
@@ -50,6 +50,13 @@ class Input
             3 => ['mode' => ['required', Rule::in(['pickup', 'drop_off'])], 'service_area_id' => ['required', 'uuid'], 'point_id' => ['required_if:mode,drop_off', 'prohibited_if:mode,pickup', 'nullable', 'uuid'], 'address' => ['required_if:mode,pickup', 'prohibited_if:mode,drop_off', 'nullable', 'string', 'max:500'], 'latitude' => ['required_if:mode,pickup', 'prohibited_if:mode,drop_off', 'nullable', 'numeric', 'between:-90,90', 'decimal:0,6'], 'longitude' => ['required_if:mode,pickup', 'prohibited_if:mode,drop_off', 'nullable', 'numeric', 'between:-180,180', 'decimal:0,6'], 'contact' => ['required', 'string', 'max:150'], 'preferred_date' => ['required', 'date_format:Y-m-d']],
             4 => ['privacy_ack' => ['accepted'], 'idempotency_key' => ['required', 'uuid']],
         };
+        if ($step === 3 && $confirmPoint) {
+            // Confirming the point need not force the user to complete unrelated fields first.
+            $rules['mode'] = ['required', Rule::in(['pickup'])];
+            $rules['address'] = ['nullable', 'string', 'max:500'];
+            $rules['contact'] = ['nullable', 'string', 'max:150'];
+            $rules['preferred_date'] = ['nullable', 'date_format:Y-m-d'];
+        }
         $allowed = array_merge(array_filter(array_keys($rules), fn ($key) => ! str_contains($key, '.')), ['_token']);
         if (array_diff(array_keys($fields), $allowed)) {
             throw ValidationException::withMessages(['submission' => 'This form contains unsupported fields. Reopen the appropriate step.']);

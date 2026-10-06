@@ -8,6 +8,7 @@ use App\Models\Item;
 use App\Support\Collection\Directory;
 use App\Support\Collection\Eligibility;
 use App\Support\Collection\Input;
+use App\Support\Collection\PickupPoint;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -52,6 +53,7 @@ class RequestController extends Controller
         abort_unless($step >= 1 && $step <= 4 && $step <= $draft['completed'] + 1, 409, 'Complete the earlier request steps first.');
         $fields = $draft['fields'];
         $draftVersion = $draft['version'];
+        $pickupConfirmed = PickupPoint::confirmed($draft);
         $items = Item::with('subject', 'category')->where('owner_user_id', $request->user()->id)->orderBy('subject_id')->get();
         $selected = $items->whereIn('subject_id', $fields['items'] ?? []);
         $points = $directory->points()->filter(fn ($point) => $selected->isNotEmpty() && $directory->compatible($point, $selected));
@@ -67,7 +69,7 @@ class RequestController extends Controller
             }
         }
 
-        return response()->view('collection.wizard', compact('step', 'fields', 'items', 'selected', 'points', 'areas', 'eligibility', 'draftVersion'))->header('Cache-Control', 'private, no-store');
+        return response()->view('collection.wizard', compact('step', 'fields', 'items', 'selected', 'points', 'areas', 'eligibility', 'draftVersion', 'pickupConfirmed'))->header('Cache-Control', 'private, no-store');
     }
 
     public function advance(Request $request, CollectionRequests $action, int $step)
@@ -82,24 +84,52 @@ class RequestController extends Controller
                 if ($final['idempotency_key'] !== $draft['fields']['idempotency_key']) {
                     abort(409, 'This form is stale. Reopen the request wizard.');
                 }
+                // Existing commands still replay through the original payload-hash check.
+                $retry = DB::table('commands')->where('actor_id', $request->user()->id)->where('action', 'submit_request')->where('idempotency_key', $final['idempotency_key'])->where('status', 'completed')->exists();
+                if ($draft['fields']['mode'] === 'pickup' && ! $retry) {
+                    PickupPoint::requireConfirmation($draft);
+                }
                 $id = $action->submit($request->user(), array_merge($draft['fields'], $final));
             } catch (ValidationException $e) {
+                if (isset($e->errors()['pickup_point'])) {
+                    $draft['completed'] = 2;
+                    $draft['version']++;
+                    $this->save($request, $draft);
+
+                    return redirect()->route('requests.step', ['step' => 3])->withErrors($e->errors());
+                }
+
                 return redirect()->route('requests.step', ['step' => 4])->withErrors($e->errors());
             }
 
             return redirect()->route('requests.show', $id)->with('status', 'Your request was submitted. It is awaiting review; the preferred date is not a booking.')->with('status_type', 'success');
         }
         try {
+            $confirmPoint = $step === 3 && $request->input('intent') === 'confirm_pickup' && $draft['fields']['mode'] === 'pickup';
+            if ($request->exists('intent') && ! $confirmPoint) {
+                throw ValidationException::withMessages(['submission' => 'Unsupported location action.']);
+            }
+            if ($request->exists('pickup_changed')) {
+                if ($step !== 3 || $draft['fields']['mode'] !== 'pickup' || $request->input('pickup_changed') !== '1') {
+                    throw ValidationException::withMessages(['submission' => 'Unsupported location change.']);
+                }
+                unset($draft['pickup_confirmation']);
+            }
             if ($step === 3 && $request->input('mode') !== $draft['fields']['mode']) {
                 throw ValidationException::withMessages(['mode' => 'Return to Collection method to change the method.']);
             }
-            $fields = Input::validate($request->except('draft_version'), $step);
+            $fields = Input::validate($request->except(array_merge(['draft_version', 'pickup_changed'], $confirmPoint ? ['intent'] : [])), $step, $confirmPoint);
             if ($step === 1) {
                 $action->available($action->items($request->user(), $fields['items']));
             }
             if ($step === 3) {
-                $action->futureDate($fields['preferred_date']);
+                if (! $confirmPoint) {
+                    $action->futureDate($fields['preferred_date']);
+                }
                 $action->location($fields, $action->items($request->user(), $draft['fields']['items']));
+                if ($fields['mode'] === 'pickup' && ! $confirmPoint) {
+                    PickupPoint::requireConfirmation($draft, $fields);
+                }
             }
         } catch (ValidationException $e) {
             $draft['completed'] = min($draft['completed'], $step - 1);
@@ -119,22 +149,34 @@ class RequestController extends Controller
                 $masses = $request->input('estimated_kg', []);
                 $draft['fields']['estimated_kg'] = is_array($masses) ? array_filter(array_intersect_key($masses, array_flip($ids)), fn ($mass) => is_string($mass) && strlen($mass) <= 30) : [];
             }
+            if (! PickupPoint::confirmed($draft)) {
+                unset($draft['pickup_confirmation']);
+            }
             $this->save($request, $draft);
 
             return redirect()->route($step === 1 ? 'requests.create' : 'requests.step', $step === 1 ? [] : ['step' => $step])->withErrors($e->errors());
         }
-        if ($step === 1) {
+        if ($step === 1 && ($draft['fields']['items'] ?? []) !== $fields['items']) {
             $draft['fields'] = ['idempotency_key' => $draft['fields']['idempotency_key']];
+            unset($draft['pickup_confirmation']);
         }
-        if ($step === 2) {
+        if ($step === 2 && ($draft['fields']['mode'] ?? null) !== $fields['mode']) {
             foreach (['point_id', 'address', 'latitude', 'longitude'] as $key) {
                 unset($draft['fields'][$key]);
             }
+            unset($draft['pickup_confirmation']);
         }
         $draft['fields'] = array_merge($draft['fields'], $fields);
-        $draft['completed'] = $step;
+        if ($confirmPoint) {
+            $draft['pickup_confirmation'] = PickupPoint::key($fields);
+        }
+        $draft['completed'] = $confirmPoint ? 2 : $step;
         $draft['version']++;
         $this->save($request, $draft);
+
+        if ($confirmPoint) {
+            return redirect()->route('requests.step', ['step' => 3])->with('status', 'Pickup point confirmed. Complete the location details, then continue. This does not confirm service or a booking.')->with('status_type', 'info');
+        }
 
         return redirect()->route('requests.step', ['step' => $step + 1]);
     }

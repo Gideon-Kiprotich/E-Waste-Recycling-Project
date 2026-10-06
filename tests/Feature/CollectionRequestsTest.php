@@ -7,6 +7,7 @@ use App\Actions\RegisterDevice;
 use App\Enums\Role;
 use App\Models\User;
 use App\Support\Collection\Directory;
+use App\Support\Collection\PickupPoint;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Artisan;
@@ -107,6 +108,7 @@ class CollectionRequestsTest extends TestCase
         $this->assertIsString($cipher);
         $this->assertStringNotContainsString($f['contact'], $cipher);
         $this->get('/requests/create/3')->assertViewHas('errors', fn ($bag) => $bag->has('latitude'))->assertOk()->assertSee('value="Synthetic landmark only"', false)->assertSee('aria-invalid="true"', false)->assertSee('latitude-error')->assertSee('data-error-summary', false);
+        $this->wizardPost(3, array_merge($location, ['intent' => 'confirm_pickup']))->assertRedirect('/requests/create/3');
         $this->wizardPost(3, $location)->assertRedirect('/requests/create/4');
         $draft = Crypt::decrypt(session('collection_draft'));
         $key = $draft['fields']['idempotency_key'];
@@ -454,5 +456,135 @@ class CollectionRequestsTest extends TestCase
         $this->wizardPost(1, array_intersect_key($f, array_flip(['items', 'estimated_kg'])))->assertRedirect();
         $this->post('/requests/create/2', ['mode' => 'pickup', 'draft_version' => $oldVersion])->assertConflict();
         $this->assertDatabaseCount('requests', 0);
+    }
+
+    private function pickupLocation(): array
+    {
+        $f = $this->requestFields([$this->device($this->owner)->subject_id]);
+        $this->wizardPost(1, array_intersect_key($f, array_flip(['items', 'estimated_kg'])))->assertRedirect('/requests/create/2');
+        $this->wizardPost(2, ['mode' => 'pickup'])->assertRedirect('/requests/create/3');
+
+        return array_intersect_key($f, array_flip(['mode', 'service_area_id', 'address', 'latitude', 'longitude', 'contact', 'preferred_date']));
+    }
+
+    public function test_pickup_requires_server_bound_confirmation_without_creating_records(): void
+    {
+        $location = $this->pickupLocation();
+        $this->wizardPost(3, $location)->assertSessionHasErrors('pickup_point')->assertRedirect('/requests/create/3');
+        $this->get('/requests/create/3')->assertSee('pickup_point-error')->assertSee('aria-invalid="true"', false)->assertSee('data-error-summary', false)->assertSee('Advanced location entry');
+        $this->get('/requests/create/4')->assertConflict();
+        foreach ([null, [], '1'] as $forged) {
+            $this->wizardPost(3, array_merge($location, ['pickup_confirmation' => $forged]))->assertSessionHasErrors('submission');
+        }
+        foreach (['intent', 'pickup_changed'] as $protected) {
+            foreach ([null, []] as $forged) {
+                $this->wizardPost(3, array_merge($location, [$protected => $forged]))->assertSessionHasErrors('submission');
+            }
+        }
+        $this->assertDatabaseCount('requests', 0);
+        $this->assertDatabaseCount('request_private_details', 0);
+        $this->wizardPost(3, array_merge($location, ['intent' => 'confirm_pickup']))->assertRedirect('/requests/create/3');
+        $this->get('/requests/create/3')->assertSee('Selected pickup point confirmed.')->assertSee('This does not confirm service or a booking.');
+        $this->wizardPost(3, $location)->assertRedirect('/requests/create/4');
+    }
+
+    public function test_point_can_be_confirmed_before_unrelated_fields_but_cannot_skip_them(): void
+    {
+        $location = $this->pickupLocation();
+        $point = array_diff_key($location, array_flip(['address', 'contact', 'preferred_date']));
+        $this->wizardPost(3, array_merge($point, ['intent' => 'confirm_pickup']))->assertRedirect('/requests/create/3');
+        $this->assertTrue(PickupPoint::confirmed(Crypt::decrypt(session('collection_draft'))));
+        $this->wizardPost(3, $point)->assertSessionHasErrors(['address', 'contact', 'preferred_date']);
+        $this->assertTrue(PickupPoint::confirmed(Crypt::decrypt(session('collection_draft'))));
+        $this->wizardPost(3, $location)->assertRedirect('/requests/create/4');
+    }
+
+    public function test_location_change_and_change_then_return_require_fresh_confirmation(): void
+    {
+        $location = $this->pickupLocation();
+        $this->wizardPost(3, array_merge($location, ['intent' => 'confirm_pickup']))->assertRedirect();
+        $changed = array_replace($location, ['latitude' => '-1.290000']);
+        $this->wizardPost(3, $changed)->assertSessionHasErrors('pickup_point');
+        $this->assertArrayNotHasKey('pickup_confirmation', Crypt::decrypt(session('collection_draft')));
+        $this->wizardPost(3, array_merge($changed, ['intent' => 'confirm_pickup']))->assertRedirect();
+        $this->wizardPost(3, array_merge($changed, ['pickup_changed' => '1']))->assertSessionHasErrors('pickup_point');
+        $this->wizardPost(3, array_merge($changed, ['pickup_changed' => '1', 'intent' => 'confirm_pickup']))->assertRedirect('/requests/create/3');
+        $this->wizardPost(3, $changed)->assertRedirect('/requests/create/4');
+        $area = (array) DB::table('service_areas')->where('id', $location['service_area_id'])->first();
+        $area['id'] = Str::uuid()->toString();
+        $area['version_code'] = 'SYNTHETIC-CONFIRMATION-ONLY';
+        DB::table('service_areas')->insert($area);
+        $this->wizardPost(3, array_replace($changed, ['service_area_id' => $area['id']]))->assertSessionHasErrors('pickup_point');
+        $this->assertArrayNotHasKey('pickup_confirmation', Crypt::decrypt(session('collection_draft')));
+        $this->assertDatabaseCount('requests', 0);
+    }
+
+    public function test_back_navigation_and_unrelated_errors_preserve_confirmed_private_selection(): void
+    {
+        $location = $this->pickupLocation();
+        $this->wizardPost(3, array_merge($location, ['intent' => 'confirm_pickup']))->assertRedirect();
+        $this->wizardPost(3, array_replace($location, ['preferred_date' => 'invalid']))->assertSessionHasErrors('preferred_date');
+        $draft = Crypt::decrypt(session('collection_draft'));
+        $this->assertTrue(PickupPoint::confirmed($draft));
+        $this->assertStringNotContainsString($location['latitude'], session('collection_draft'));
+        $this->assertStringNotContainsString($location['address'], session('collection_draft'));
+        $this->assertNull(session('_old_input'));
+        $this->wizardPost(1, array_intersect_key($draft['fields'], array_flip(['items', 'estimated_kg'])))->assertRedirect();
+        $this->wizardPost(2, ['mode' => 'pickup'])->assertRedirect();
+        $this->get('/requests/create/3')->assertSee('Selected pickup point confirmed.')->assertSee('value="Synthetic landmark only"', false);
+        $this->wizardPost(3, $location)->assertRedirect('/requests/create/4');
+        $this->wizardPost(2, ['mode' => 'drop_off'])->assertRedirect();
+        $draft = Crypt::decrypt(session('collection_draft'));
+        $this->assertArrayNotHasKey('pickup_confirmation', $draft);
+        $this->assertArrayNotHasKey('latitude', $draft['fields']);
+        $this->get('/requests/create/3')->assertDontSee('data-pickup-location', false)->assertSee('Compatible drop-off point');
+    }
+
+    public function test_confirmation_rejects_invalid_out_of_area_and_inactive_coordinates(): void
+    {
+        $location = $this->pickupLocation();
+        foreach ([['latitude' => '91'], ['longitude' => '181'], ['latitude' => []], ['latitude' => '-1.1234567'], ['latitude' => '-2']] as $invalid) {
+            $this->wizardPost(3, array_merge($location, $invalid, ['intent' => 'confirm_pickup']))->assertSessionHasErrors();
+            $this->assertArrayNotHasKey('pickup_confirmation', Crypt::decrypt(session('collection_draft')));
+        }
+        $this->wizardPost(3, array_merge($location, ['intent' => 'confirm_pickup']))->assertRedirect();
+        DB::table('service_areas')->where('id', $location['service_area_id'])->update(['active' => false]);
+        $this->wizardPost(3, $location)->assertSessionHasErrors('latitude');
+        $this->assertDatabaseCount('requests', 0);
+    }
+
+    public function test_old_unconfirmed_draft_returns_to_location_but_successful_historical_retry_still_replays(): void
+    {
+        $location = $this->pickupLocation();
+        $draft = Crypt::decrypt(session('collection_draft'));
+        $draft['fields'] = array_merge($draft['fields'], $location);
+        $draft['completed'] = 3;
+        $this->withSession(['collection_draft' => Crypt::encrypt($draft)]);
+        session()->save();
+        $this->get('/requests/create/4')->assertSee('Pickup point needs confirmation.')->assertDontSee('Selected point confirmed.');
+        $final = ['privacy_ack' => '1', 'idempotency_key' => $draft['fields']['idempotency_key']];
+        $this->wizardPost(4, $final)->assertRedirect('/requests/create/3')->assertSessionHasErrors('pickup_point');
+        $this->assertDatabaseCount('requests', 0);
+        // Simulate a successful command created before map confirmation existed.
+        $id = $this->submit(array_merge($draft['fields'], $final));
+        $this->withSession(['collection_draft' => Crypt::encrypt($draft)]);
+        session()->save();
+        $this->wizardPost(4, $final)->assertRedirect('/requests/'.$id);
+        $this->assertDatabaseCount('requests', 1);
+        $draft['fields']['longitude'] = '36.830000';
+        $this->withSession(['collection_draft' => Crypt::encrypt($draft)]);
+        session()->save();
+        $this->wizardPost(4, $final)->assertConflict();
+    }
+
+    public function test_map_disabled_fallback_notice_and_server_area_checks_remain_available(): void
+    {
+        config(['maps.enabled' => false]);
+        $location = $this->pickupLocation();
+        $this->get('/requests/create/3')->assertSee('data-map-enabled="false"', false)->assertSee('Advanced location entry')->assertSee('Confirm pickup point')->assertSee('Synthetic study boundary')->assertSee('name="latitude"', false)->assertHeader('Cache-Control', 'no-store, private');
+        $this->wizardPost(3, array_merge($location, ['intent' => 'confirm_pickup']))->assertRedirect();
+        $this->wizardPost(3, $location)->assertRedirect('/requests/create/4');
+        $this->get('/privacy-notice')->assertSee('2026-10-06.2')->assertSee('approximate area')->assertSee('Advanced location entry');
+        $this->assertFileExists(resource_path('views/privacy/notices/2026-10-06-1.blade.php'));
     }
 }
