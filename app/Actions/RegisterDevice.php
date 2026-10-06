@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Item;
 use App\Models\Subject;
 use App\Models\User;
+use App\Support\Collection\Review;
 use App\Support\Devices\Identifiers;
 use App\Support\Devices\PrivatePhoto;
 use App\Support\Devices\Questions;
@@ -90,6 +91,7 @@ class RegisterDevice
     public function revise(User $actor, Item $item, #[\SensitiveParameter] array $fields): Item
     {
         return DB::transaction(function () use ($actor, $item, $fields): Item {
+            Review::lock();
             $actor = $this->lockActor($actor);
             $subject = Subject::whereKey($item->subject_id)->lockForUpdate()->firstOrFail();
             $item = Item::with('category')->where('owner_user_id', $actor->id)->lockForUpdate()->findOrFail($item->subject_id);

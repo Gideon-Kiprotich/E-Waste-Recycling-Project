@@ -10,7 +10,7 @@ use Throwable;
 
 class PrivatePhoto
 {
-    public function store(UploadedFile $file): array
+    public function store(UploadedFile $file, string $disk = 'device_photos', string $field = 'photo'): array
     {
         $key = 'device-photos/'.Str::uuid().'.png';
         try {
@@ -36,14 +36,14 @@ class PrivatePhoto
             } finally {
                 ob_end_clean();
             }
-            if (strlen($bytes) > 5242880 || ! Storage::disk('device_photos')->put($key, $bytes, ['visibility' => 'private'])) {
+            if (strlen($bytes) > 5242880 || ! Storage::disk($disk)->put($key, $bytes, ['visibility' => 'private'])) {
                 throw new \RuntimeException('Storage failed');
             }
 
             return ['storage_key' => $key, 'mime' => 'image/png', 'size_bytes' => strlen($bytes), 'checksum' => hash('sha256', $bytes)];
         } catch (Throwable) {
-            Storage::disk('device_photos')->delete($key);
-            throw ValidationException::withMessages(['photo' => 'The photo could not be saved. Use a JPEG/PNG up to 5 MiB and 16 megapixels, or register without a photo.']);
+            Storage::disk($disk)->delete($key);
+            throw ValidationException::withMessages([$field => $field === 'photo' ? 'The photo could not be saved. Use a JPEG/PNG up to 5 MiB and 16 megapixels, or register without a photo.' : 'The image could not be saved. Use a JPEG/PNG up to 5 MiB and 16 megapixels.']);
         }
     }
 }

@@ -1,0 +1,9 @@
+@extends('layouts.devices')
+@section('section-label','Administrator · Directory management')
+@section('title','Operators and places')
+@section('intro','Review project participants, evidence and acceptance capabilities. Reviewed status does not establish regulator certification or real service acceptance.')
+@section('content')
+<p><a class="primary button-link" href="{{ route('admin.directory.create','organization') }}">Add operator</a> <a class="secondary button-link" href="{{ route('admin.directory.create','place') }}">Add point or facility</a></p>
+<section class="card guidance"><h2>Operators</h2><div class="device-grid">@forelse($organizations as $org)<article><h3><a href="{{ route('admin.directory.edit',['organization',$org->id]) }}">{{ $org->name }}</a></h3><p>{{ ucfirst($org->kind) }} · {{ $org->review_status === 'approved' ? 'Active / project-reviewed' : ucfirst($org->review_status) }} · v{{ $org->version }}</p>@if($org->synthetic)<p class="hint">Synthetic study record · no real operator acceptance</p>@endif</article>@empty<p>No operators have been recorded.</p>@endforelse</div>{{ $organizations->links('devices.pagination') }}</section>
+<section class="card guidance section-title"><h2>Points, facilities and depots</h2><div class="device-grid">@forelse($places as $place)<article><h3><a href="{{ route('admin.directory.edit',['place',$place->id]) }}">{{ $place->name }}</a></h3><p>{{ $place->organization_name }} · {{ str_replace('_',' ',$place->kind) }}</p><p>{{ ucfirst($place->review_status) }} · {{ $place->active ? 'Active' : 'Inactive' }} · v{{ $place->version }}</p>@if($place->synthetic)<p class="hint">Synthetic study record · no real acceptance</p>@endif</article>@empty<p>No places have been recorded.</p>@endforelse</div>{{ $places->links('devices.pagination') }}</section>
+@endsection

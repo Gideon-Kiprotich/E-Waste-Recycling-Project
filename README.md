@@ -1,6 +1,6 @@
 # Smart E-Waste Collection, Tracking and Recycling Management Platform
 
-University final-year project for Kenya, with Nairobi County as the case study. The native Laravel/PostgreSQL foundation, account access, owned devices/standalone parts and consumer collection requests are implemented. Assignment, physical collection and processing remain for later phases. See [Phase 0](docs/phase-0-report.md), [Phase 1](docs/phase-1-report.md), [Phase 2](docs/phase-2-report.md), [Phase 2A](docs/phase-2a-report.md) and [Phase 3](docs/phase-3-report.md) for actual verification and limitations. Phase 2A is user accepted; Phase 3 remains open. The user reports the earlier collection-request behavior works; acceptance of the pickup-map enhancement remains pending.
+University final-year project for Kenya, with Nairobi County as the case study. The native Laravel/PostgreSQL foundation, account access, owned devices/standalone parts, consumer collection requests and Administrator directory/request review are implemented. Assignment, physical collection and processing remain for later phases. See [Phase 0](docs/phase-0-report.md), [Phase 1](docs/phase-1-report.md), [Phase 2](docs/phase-2-report.md), [Phase 2A](docs/phase-2a-report.md), [Phase 3](docs/phase-3-report.md) and [Phase 4](docs/phase-4-report.md) for actual verification and limitations. Phase 3 is closed with user-reported request/live-map acceptance; its specific unverified checks remain documented. Phase 4 remains open pending manual acceptance.
 
 ## Prerequisites
 
@@ -280,3 +280,19 @@ For future conflicts, stop and obtain explicit review/authorization rather than 
 Nonconflicting old identifiers retain their ciphertext/hash and acquire `legacy_unspecified` type. The migration leaves retained historic events and command hashes untouched. A request replayed with its original fields/reference still resolves the original successful registration. Serial/IMEI type is immutable in ordinary edits. Do not regenerate `APP_KEY` or use a new hash context to bypass uniqueness.
 
 [The original parts assessment and approved bounded scope](docs/device-parts-scope-change.md) preserve the distinction between standalone intake, excluded batteries and deferred processor-derived work.
+
+
+## Administrator directory and request review (Phase 4)
+
+Apply the forward migration on both dedicated databases without resetting them:
+
+```bash
+php artisan migrate
+php artisan migrate --env=testing
+```
+
+If no active Administrator exists, run `php artisan app:create-initial-administrator` in your private local terminal. Enter a new email and a private password (at least 12 characters, including letters and numbers) at the hidden prompts. The command verifies the dedicated local database/role and creates only the first Administrator. It refuses to convert existing Consumer accounts or provision further staff. No Administrator is automatically seeded by migrations; no Collector/Processor membership workflow is added.
+
+Sign in as that Administrator and open **Operators and places** or **Request review**. Record contact information privately, explicit category/subtype acceptance, hours, location, review reason and private JPEG/PNG/PDF evidence. Incomplete evidence remains pending. Active places require project-reviewed organizations and retained evidence; synthetic markers remain permanent. Project review is not regulator certification. Evidence downloads require Administrator access, remain outside public storage, and must be included with the existing application key in private backups. PDFs are download-only; no malware-scanning guarantee is made.
+
+Request review records **Ready for later allocation** or an explained **Hold**, using current observations, service area and directory versions. Safety/unknown restrictions cannot be overridden. Directory changes require fresh review; existing reservations and custody remain until an authorized later transition or Consumer cancellation. No booking, assignment, physical collection or inbox delivery is created. Consumers see only safe status/guidance, without private staff notes or evidence. See the Phase 4 report for actual checks and manual acceptance steps.

@@ -8,6 +8,8 @@
         @if($role === \App\Enums\Role::Consumer)
             <p>Register and view your own devices, retained self-report revisions and private identity labels.</p>
             <p><a class="primary button-link" href="{{ route('items.index') }}">My devices</a></p>
+        @elseif($role === \App\Enums\Role::Administrator)
+            <p><a class="primary button-link" href="{{ route('admin.directory.index') }}">Operators and places</a> <a class="secondary button-link" href="{{ route('admin.reviews.index') }}">Request review</a></p>
         @else
             <p>This page confirms access for your role. Assigned operational tools will be introduced in later phases.</p>
         @endif

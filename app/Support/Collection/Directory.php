@@ -12,8 +12,8 @@ class Directory
     public function points(): Collection
     {
         return DB::table('places')->join('organizations', 'organizations.id', '=', 'places.organization_id')
-            ->where('places.active', true)->where('places.review_status', 'approved')->where('organizations.review_status', 'approved')
-            ->select('places.*')->orderBy('places.name')->get();
+            ->where('places.kind', 'collection_point')->where('places.active', true)->where('places.review_status', 'approved')->where('organizations.review_status', 'approved')
+            ->select('places.id', 'places.name', 'places.latitude', 'places.longitude', 'places.hours', 'places.synthetic')->orderBy('places.name')->get();
     }
 
     public function compatible(object $point, Collection $items): bool
@@ -27,7 +27,7 @@ class Directory
         $point = ($lock ? $query->lockForUpdate() : $query)->first();
         $org = $point ? DB::table('organizations')->where('id', $point->organization_id) : null;
         $org = $org ? ($lock ? $org->lockForUpdate() : $org)->first() : null;
-        if (! $point || ! $point->active || $point->review_status !== 'approved' || $org?->review_status !== 'approved' || ! $this->compatible($point, $items)) {
+        if (! $point || $point->kind !== 'collection_point' || ! $point->active || $point->review_status !== 'approved' || $org?->review_status !== 'approved' || ! $this->compatible($point, $items)) {
             throw ValidationException::withMessages(['point_id' => 'Choose an active point that explicitly accepts every selected category and subtype.']);
         }
 

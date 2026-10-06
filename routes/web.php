@@ -1,6 +1,8 @@
 <?php
 
 use App\Enums\Role;
+use App\Http\Controllers\Administration\DirectoryController;
+use App\Http\Controllers\Administration\ReviewController;
 use App\Http\Controllers\Auth\PasswordRecoveryController;
 use App\Http\Controllers\Auth\RegistrationController;
 use App\Http\Controllers\Auth\SessionController;
@@ -27,6 +29,17 @@ Route::middleware('guest')->group(function (): void {
 
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 Route::middleware(['auth', 'account.current'])->group(function (): void {
+    Route::prefix('admin')->name('admin.')->middleware('role:administrator')->group(function (): void {
+        Route::get('/directory', [DirectoryController::class, 'index'])->name('directory.index');
+        Route::get('/directory/{kind}/create', [DirectoryController::class, 'form'])->where('kind', 'organization|place')->name('directory.create');
+        Route::post('/directory/{kind}', [DirectoryController::class, 'save'])->where('kind', 'organization|place')->middleware('throttle:20,1')->name('directory.store');
+        Route::get('/directory/{kind}/{record}', [DirectoryController::class, 'form'])->where('kind', 'organization|place')->whereUuid('record')->name('directory.edit');
+        Route::post('/directory/{kind}/{record}', [DirectoryController::class, 'save'])->where('kind', 'organization|place')->whereUuid('record')->middleware('throttle:20,1')->name('directory.update');
+        Route::get('/evidence/{attachment}', [DirectoryController::class, 'evidence'])->whereUuid('attachment')->name('evidence');
+        Route::get('/reviews', [ReviewController::class, 'index'])->name('reviews.index');
+        Route::get('/reviews/{collection}', [ReviewController::class, 'show'])->whereUuid('collection')->name('reviews.show');
+        Route::post('/reviews/{collection}', [ReviewController::class, 'decide'])->whereUuid('collection')->middleware('throttle:20,1')->name('reviews.decide');
+    });
     Route::middleware('role:consumer')->group(function (): void {
         Route::get('/requests', [RequestController::class, 'index'])->name('requests.index');
         Route::get('/requests/create', [RequestController::class, 'create'])->name('requests.create');

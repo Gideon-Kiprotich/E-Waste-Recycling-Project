@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Support\Collection\Directory;
 use App\Support\Collection\Eligibility;
 use App\Support\Collection\Input;
+use App\Support\Collection\Review;
 use App\Support\Devices\Identifiers;
 use App\Support\PrivacyNotice;
 use Illuminate\Database\QueryException;
@@ -28,6 +29,7 @@ class CollectionRequests
         $fields = Input::final($fields);
         try {
             return DB::transaction(function () use ($actor, $fields): string {
+                Review::lock();
                 $actor = $this->lockActor($actor);
                 $action = 'submit_request';
                 $hash = $this->hash($fields);
@@ -110,6 +112,7 @@ class CollectionRequests
         sort($fields['items']);
 
         return DB::transaction(function () use ($actor, $id, $fields): string {
+            Review::lock();
             $actor = $this->lockActor($actor);
             $request = $this->owned($actor, $id);
             $action = 'change_request:'.$id;

@@ -5,6 +5,7 @@
 @php($fieldIds = ['items'=>'change-items','reason'=>'reason','preferred_date'=>'preferred_date','operation'=>'operation'])
 @section('content')
 <section class="card guidance"><h2 class="manual-code">{{ $record->public_code }}</h2><p>{{ $record->state === 'SUBMITTED' ? 'Awaiting review' : str_replace('_',' ',ucfirst(strtolower($record->state))) }} · version {{ $record->version }}</p>
+<p><strong>{{ \App\Support\Collection\Review::LABELS[$reviewState] }}</strong>. {{ $reviewState === 'ready' ? 'Current review checks passed for later allocation; no booking or collection is confirmed.' : 'Outstanding items require current review before any later allocation. A hold or changed configuration does not cancel your reservation.' }}</p>
 <x-feedback type="info" message="Submission is not physical collection. All outstanding items await human review. Review-needed items are withheld from ordinary scheduling; no appointment or delivery is promised." />
 <dl class="facts"><dt>Method</dt><dd>{{ $record->mode === 'pickup' ? 'Pickup request' : 'Drop off' }}</dd><dt>Submitted date preference</dt><dd>{{ $record->preferred_date }} · see current per-item preferences below</dd><dt>Contact (private)</dt><dd>{{ $contact }}</dd>
 @if($address)<dt>Address (private)</dt><dd>{{ $address }}</dd><dt>Coordinates (private)</dt><dd>{{ $private->latitude }}, {{ $private->longitude }}</dd>@endif

@@ -9,6 +9,7 @@ use App\Support\Collection\Directory;
 use App\Support\Collection\Eligibility;
 use App\Support\Collection\Input;
 use App\Support\Collection\PickupPoint;
+use App\Support\Collection\Review;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -192,8 +193,9 @@ class RequestController extends Controller
         $history = DB::table('domain_events')->where('aggregate_kind', 'request')->where('aggregate_id', $collection)->orderByDesc('aggregate_version')->paginate(10);
         $point = $record->point_id ? DB::table('places')->where('id', $record->point_id)->first() : null;
         $area = DB::table('service_areas')->where('id', $record->service_area_id)->first();
+        $reviewState = app(Review::class)->state($record);
 
-        return response()->view('collection.show', compact('record', 'private', 'contact', 'address', 'rows', 'items', 'history', 'point', 'area'))->header('Cache-Control', 'private, no-store');
+        return response()->view('collection.show', compact('record', 'private', 'contact', 'address', 'rows', 'items', 'history', 'point', 'area', 'reviewState'))->header('Cache-Control', 'private, no-store');
     }
 
     public function change(Request $request, CollectionRequests $action, string $collection)
