@@ -34,7 +34,7 @@ class SetupCollectionDemo extends Command
             }
             if (! $org) {
                 $id = Str::uuid()->toString();
-                DB::table('organizations')->insert(['id' => $id, 'code' => 'synthetic-study-operator-1', 'name' => 'Synthetic study operator — no real service', 'kind' => 'collector', 'review_status' => 'approved', 'synthetic' => true, 'reviewed_at' => now(), 'review_reason' => 'Simulated study configuration, not operator certification.']);
+                DB::table('organizations')->insert(['id' => $id, 'code' => 'synthetic-study-operator-1', 'name' => 'Nairobi synthetic study operator — no real service', 'kind' => 'collector', 'review_status' => 'approved', 'synthetic' => true, 'reviewed_at' => now(), 'review_reason' => 'Simulated study configuration, not operator certification.']);
                 $org = DB::table('organizations')->where('id', $id)->first();
             }
             $area = DB::table('service_areas')->where('version_code', 'SYNTHETIC-STUDY-1.0')->first();
@@ -55,7 +55,7 @@ class SetupCollectionDemo extends Command
                     continue;
                 }
                 $id = Str::uuid()->toString();
-                DB::table('places')->insert(['id' => $id, 'organization_id' => $org->id, 'code' => $code, 'kind' => 'collection_point', 'name' => 'Synthetic demonstration: '.$suffix, 'latitude' => -1.28, 'longitude' => 36.82, 'hours' => json_encode(['note' => 'Demonstration only; no real operating hours.']), 'active' => $active, 'review_status' => 'approved', 'synthetic' => true]);
+                DB::table('places')->insert(['id' => $id, 'organization_id' => $org->id, 'code' => $code, 'kind' => 'collection_point', 'name' => 'Nairobi synthetic study point: '.$suffix, 'latitude' => -1.28, 'longitude' => 36.82, 'hours' => json_encode(['note' => 'Nairobi demonstration only; no real operating hours.']), 'active' => $active, 'review_status' => 'approved', 'synthetic' => true]);
                 foreach (DB::table('categories')->where('supported', true)->get() as $category) {
                     $subtypes = match ($category->code) {
                         'standalone_part' => $parts ? ['hdd', 'ssd', 'ict_cooling_fan'] : [], 'peripheral' => ['router', 'keyboard'], default => ['']

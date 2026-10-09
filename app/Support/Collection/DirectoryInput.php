@@ -28,17 +28,20 @@ class DirectoryInput
     public static function validate(string $kind, bool $editing, #[\SensitiveParameter] array $fields, ?UploadedFile $evidence): array
     {
         $rules = ['name' => ['required', 'string', 'max:160'], 'kind' => ['required', Rule::in($kind === 'organization' ? ['collector', 'processor', 'both'] : ['collection_point', 'facility', 'depot'])],
-            'review_status' => ['required', Rule::in(['pending', 'approved', 'suspended', 'rejected'])], 'contact' => ['required', 'string', 'max:500'], 'reason' => ['required', 'string', 'max:1000'], 'idempotency_key' => ['required', 'uuid']];
+            'review_status' => ['required', Rule::in(['pending', 'approved', 'suspended', 'rejected'])], 'contact' => ['required', 'string', 'max:500'], 'reason' => ['required', 'string', 'max:1000'], 'idempotency_key' => ['required', 'uuid'], 'duplicate_review_ack' => ['nullable', Rule::in(['1'])]];
         if ($editing) {
             $rules['expected_version'] = ['required', 'integer', 'min:1'];
         } else {
             $rules['synthetic'] = ['required', Rule::in(['0', '1'])];
         }
+        if ($kind === 'organization') {
+            $rules += ['brs_number' => ['nullable', 'string', 'max:64', 'regex:/\A(?=.*[A-Za-z0-9])[A-Za-z0-9\s\/-]+\z/'], 'identifier_verified' => ['nullable', Rule::in(['1'])]];
+        }
         if ($kind === 'place') {
             if (! $editing) {
                 $rules['organization_id'] = ['required', 'uuid'];
             }
-            $rules += ['latitude' => ['required', 'numeric', 'between:-90,90', 'regex:/\A-?\d{1,3}(?:\.\d{1,6})?\z/'], 'longitude' => ['required', 'numeric', 'between:-180,180', 'regex:/\A-?\d{1,3}(?:\.\d{1,6})?\z/'], 'hours' => ['required', 'string', 'max:500'], 'active' => ['required', Rule::in(['0', '1'])], 'capabilities' => ['required', 'array', 'min:1', 'max:10'], 'capabilities.*' => ['required', 'string', 'distinct', Rule::in(array_keys(self::capabilities()))]];
+            $rules += SiteLocation::coordinates() + ['site_confirmation' => ['nullable', 'string', 'size:64'], 'site_address' => ['nullable', 'string', 'max:500'], 'hours' => ['required', 'string', 'max:500'], 'active' => ['required', Rule::in(['0', '1'])], 'capabilities' => ['required', 'array', 'min:1', 'max:10'], 'capabilities.*' => ['required', 'string', 'distinct', Rule::in(array_keys(self::capabilities()))]];
         }
         if (array_diff(array_keys($fields), array_filter(array_keys($rules), fn ($key) => ! str_contains($key, '.')))) {
             throw ValidationException::withMessages(['submission' => 'Unsupported directory fields. Reopen the form.']);

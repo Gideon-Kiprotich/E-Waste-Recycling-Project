@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Administration;
 
 use App\Actions\ManageDirectory;
 use App\Http\Controllers\Controller;
+use App\Support\Collection\DirectoryDuplicates;
 use App\Support\Collection\DirectoryInput;
+use App\Support\Collection\SiteLocation;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Crypt;
@@ -24,6 +26,7 @@ class DirectoryController extends Controller
 
     public function form(string $kind, ?string $record = null)
     {
+        DirectoryDuplicates::requireSchema();
         $table = $kind === 'organization' ? 'organizations' : 'places';
         $entity = $record ? DB::table($table)->where('id', $record)->firstOrFail() : null;
         $organizations = DB::table('organizations')->orderBy('name')->get(['id', 'name', 'synthetic', 'review_status']);
@@ -32,14 +35,29 @@ class DirectoryController extends Controller
         $contact = $entity?->encrypted_contact ? Crypt::decryptString($entity->encrypted_contact) : '';
         $history = DB::table('directory_revisions')->where('record_kind', $kind)->where('record_id', $record)->orderByDesc('version')->paginate(10);
         $evidence = DB::table('evidence_links')->join('attachments', 'attachments.id', '=', 'evidence_links.attachment_id')->where('record_kind', $kind)->where('record_id', $record)->whereNull('redacted_at')->get(['attachments.id', 'attachments.mime', 'attachments.size_bytes']);
+        $location = $kind === 'place' ? SiteLocation::recalled($record) : [];
+        $location = $kind === 'place' ? array_replace(['latitude' => $entity ? (string) $entity->latitude : '', 'longitude' => $entity ? (string) $entity->longitude : '', 'site_address' => $entity?->site_address_ciphertext ? Crypt::decryptString($entity->site_address_ciphertext) : ''], $location) : [];
+        if ($entity && $kind === 'place' && isset($location['expected_version']) && (int) $location['expected_version'] !== (int) $entity->version) {
+            unset($location['site_confirmation']);
+        }
+        $matches = DirectoryDuplicates::matches($kind, array_replace((array) $entity, $location, session()->getOldInput()), $record);
         $linkedPlaces = $entity && $kind === 'organization' ? DB::table('places')->where('organization_id', $entity->id)->orderBy('name')->get(['id', 'name', 'kind', 'active', 'review_status']) : collect();
 
-        return response()->view('administration.directory-form', compact('kind', 'entity', 'organizations', 'options', 'selected', 'contact', 'history', 'evidence', 'linkedPlaces'))->header('Cache-Control', 'private, no-store');
+        return response()->view('administration.directory-form', compact('kind', 'entity', 'organizations', 'options', 'selected', 'contact', 'history', 'evidence', 'linkedPlaces', 'location', 'matches'))->header('Cache-Control', 'private, no-store');
     }
 
     public function save(Request $request, ManageDirectory $action, string $kind, ?string $record = null)
     {
+        if ($kind === 'place' && $request->input('intent') === 'confirm_site') {
+            $fields = $request->except('_token', 'evidence', 'intent');
+            $fields['site_confirmation'] = SiteLocation::token($request->user()->id, $record, $fields);
+            SiteLocation::remember($record, $fields);
+
+            return redirect()->route($record ? 'admin.directory.edit' : 'admin.directory.create', array_filter([$kind, $record]))->withInput(DirectoryInput::safe($fields))->with('status', 'Site entrance selected and confirmed. Complete the other fields and save. Re-select private evidence if needed.')->with('status_type', 'info');
+        }
         $id = $action->save($request->user(), $kind, $record, $request->except('_token', 'evidence'), self::upload($request));
+
+        session()->forget('directory_location');
 
         return redirect()->route('admin.directory.edit', [$kind, $id])->with('status', 'Directory review saved. Outstanding requests require fresh review.')->with('status_type', 'success');
     }

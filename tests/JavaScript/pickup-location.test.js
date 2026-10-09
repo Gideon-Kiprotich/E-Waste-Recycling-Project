@@ -63,3 +63,58 @@ test('invalid reported locations and browser restrictions produce safe fallback 
     } } }, () => assert.fail(), (text) => { message = text; }, () => {});
     assert.match(message, /restricted/);
 });
+
+const { enhancePickupLocation } = await import('../../resources/js/pickup-location.js');
+function siteFixture() {
+    const element = (value = '') => ({ value, textContent: '', disabled: false, open: true, hidden: false, required: true, handlers: {},
+        addEventListener(type, callback) { this.handlers[type] = callback; }, hasAttribute() { return false; } });
+    const nodes = Object.fromEntries(['[name="latitude"]','[name="longitude"]','[data-site-confirmation]','[data-manual-location]','[data-point-status]','[data-location-message]','[data-location-accuracy]','[data-map-panel]','[data-load-map]','[data-geolocate]','[data-map-controls]','[data-use-centre]'].map((selector) => [selector, element()]));
+    nodes['[name="latitude"]'].value = '-1.280000';
+    nodes['[name="longitude"]'].value = '36.820000';
+    nodes['[data-site-confirmation]'].value = 'synthetic-server-confirmation';
+    const root = { dataset: { locationKind: 'site', mapEnabled: 'false', confirmed: 'true' },
+        querySelector(selector) { return nodes[selector] ?? null; }, querySelectorAll() { return []; }, closest() { return { querySelector() { return null; } }; } };
+    return { root, nodes };
+}
+
+test('site enhancement retains manual selection on provider-disabled fallback and invalidates confirmation on coordinate edits', () => {
+    const { root, nodes } = siteFixture();
+    enhancePickupLocation(root, { isSecureContext: true, navigator: {} });
+    assert.equal(nodes['[data-manual-location]'].open, true);
+    assert.match(nodes['[data-location-message]'].textContent, /manual latitude/);
+    assert.equal(nodes['[data-site-confirmation]'].value, 'synthetic-server-confirmation');
+    assert.equal(nodes['[name="latitude"]'].value, '-1.280000');
+    nodes['[name="latitude"]'].value = '-1.281000';
+    nodes['[name="latitude"]'].handlers.input();
+    assert.equal(nodes['[data-site-confirmation]'].value, '');
+    assert.equal(root.dataset.confirmed, 'false');
+    assert.match(nodes['[data-point-status]'].textContent, /Confirm site entrance/);
+});
+
+test('explicit site geolocation synchronizes six-decimal inputs and warns about the device versus the facility', () => {
+    const { root, nodes } = siteFixture();
+    let calls = 0;
+    enhancePickupLocation(root, { isSecureContext: true, navigator: { geolocation: {
+        getCurrentPosition(success) { calls++; success({ coords: { latitude: -1.29, longitude: 36.83, accuracy: 275.2 } }); },
+    } } });
+    assert.equal(calls, 0);
+    nodes['[data-geolocate]'].handlers.click();
+    assert.equal(calls, 1);
+    assert.equal(nodes['[data-geolocate]'].disabled, true);
+    assert.equal(nodes['[name="latitude"]'].value, '-1.290000');
+    assert.equal(nodes['[name="longitude"]'].value, '36.830000');
+    assert.equal(nodes['[data-site-confirmation]'].value, '');
+    assert.match(nodes['[data-location-accuracy]'].textContent, /approximately ±276 metres/);
+    assert.match(nodes['[data-location-accuracy]'].textContent, /locates your device/);
+});
+
+test('site permission denial retains the original confirmed location without replacing it', () => {
+    const { root, nodes } = siteFixture();
+    enhancePickupLocation(root, { isSecureContext: true, navigator: { geolocation: {
+        getCurrentPosition(success, failure) { failure({ code: 1 }); },
+    } } });
+    nodes['[data-geolocate]'].handlers.click();
+    assert.equal(nodes['[data-site-confirmation]'].value, 'synthetic-server-confirmation');
+    assert.equal(nodes['[name="latitude"]'].value, '-1.280000');
+    assert.match(nodes['[data-location-message]'].textContent, /permission was denied/);
+});

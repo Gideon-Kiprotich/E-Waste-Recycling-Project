@@ -4,8 +4,11 @@ namespace App\Actions;
 
 use App\Models\User;
 use App\Support\Collection\AdminMutation;
+use App\Support\Collection\DirectoryDuplicates;
 use App\Support\Collection\DirectoryInput;
 use App\Support\Collection\PrivateEvidence;
+use App\Support\Collection\SiteLocation;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -37,6 +40,10 @@ class ManageDirectory
                 if ($old) {
                     abort_unless((int) $old->version === (int) $fields['expected_version'], 409, 'This directory record changed. Reload before saving.');
                 }
+                if ($kind === 'place') {
+                    SiteLocation::validate($actor->id, $id, $fields);
+                }
+                DirectoryDuplicates::validate($kind, $fields + ['organization_id' => $kind === 'place' ? $old?->organization_id : null], $id);
                 $id ??= Str::uuid()->toString();
                 $hasEvidence = $evidence !== null || DB::table('evidence_links')->join('attachments', 'attachments.id', '=', 'evidence_links.attachment_id')->where('record_kind', $kind)->where('record_id', $id)->whereNull('redacted_at')->exists();
                 if ($fields['review_status'] === 'approved' && ! $hasEvidence) {
@@ -44,6 +51,16 @@ class ManageDirectory
                 }
                 $version = $old ? (int) $old->version + 1 : 1;
                 $values = ['name' => $fields['name'], 'kind' => $fields['kind'], 'review_status' => $fields['review_status'], 'encrypted_contact' => Crypt::encryptString($fields['contact']), 'version' => $version, 'reviewed_by' => $actor->id, 'reviewed_at' => now(), 'review_reason' => Crypt::encryptString($fields['reason'])];
+                if ($kind === 'organization' && array_key_exists('brs_number', $fields)) {
+                    $number = DirectoryDuplicates::identifierKey($fields['brs_number']);
+                    if ($number !== ($old?->brs_number ?? null) && $number !== null && (($fields['identifier_verified'] ?? null) !== '1' || ! $evidence)) {
+                        throw ValidationException::withMessages(['brs_number' => 'Independently verify this BRS number, explicitly confirm the verification and upload supporting evidence. Leave it blank if unavailable.']);
+                    }
+                    if ($number === null && ($old?->brs_number ?? null) !== null) {
+                        throw ValidationException::withMessages(['brs_number' => 'An existing verified number cannot be silently removed. Record an evidenced correction instead.']);
+                    }
+                    $values += ['brs_number' => $number, 'identifier_verified_by' => $number !== null ? ($number === ($old?->brs_number ?? null) ? $old->identifier_verified_by : $actor->id) : null, 'identifier_verified_at' => $number !== null ? ($number === ($old?->brs_number ?? null) ? $old->identifier_verified_at : now()) : null];
+                }
                 if ($kind === 'place') {
                     $orgId = $old?->organization_id ?? $fields['organization_id'];
                     $org = DB::table('organizations')->where('id', $orgId)->lockForUpdate()->first();
@@ -54,6 +71,9 @@ class ManageDirectory
                         throw ValidationException::withMessages(['synthetic' => 'A place must retain its organization’s synthetic classification.']);
                     }
                     $values += ['latitude' => $fields['latitude'], 'longitude' => $fields['longitude'], 'hours' => json_encode(['description' => $fields['hours']]), 'active' => $fields['active'] === '1'];
+                    if (array_key_exists('site_address', $fields)) {
+                        $values['site_address_ciphertext'] = empty($fields['site_address']) ? null : Crypt::encryptString($fields['site_address']);
+                    }
                 }
                 if ($old) {
                     DB::table($table)->where('id', $id)->update($values);
@@ -89,6 +109,13 @@ class ManageDirectory
         } catch (Throwable $exception) {
             if ($stored) {
                 Storage::disk('directory_evidence')->delete($stored['storage_key']);
+            }
+            if ($exception instanceof QueryException && $exception->getCode() === '23505') {
+                foreach (['organizations_name_identity' => 'name', 'organizations_brs_identity' => 'brs_number', 'places_site_identity' => 'name'] as $constraint => $field) {
+                    if (str_contains($exception->getMessage(), '"'.$constraint.'"')) {
+                        throw ValidationException::withMessages([$field => 'This directory identity is already recorded. Review existing records before saving.']);
+                    }
+                }
             }
             throw $exception;
         }

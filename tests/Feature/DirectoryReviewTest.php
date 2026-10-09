@@ -10,6 +10,7 @@ use App\Enums\Role;
 use App\Models\User;
 use App\Support\Collection\DirectoryInput;
 use App\Support\Collection\Review;
+use App\Support\Collection\SiteLocation;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
@@ -30,6 +31,8 @@ class DirectoryReviewTest extends TestCase
     private User $admin;
 
     private User $owner;
+
+    private int $organizationNumber = 0;
 
     protected function setUp(): void
     {
@@ -55,12 +58,20 @@ class DirectoryReviewTest extends TestCase
 
     private function orgFields(array $extra = []): array
     {
-        return array_replace(['name' => 'Synthetic reviewed operator', 'kind' => 'both', 'review_status' => 'approved', 'contact' => 'private-contact-fixture', 'reason' => 'private-staff-note-fixture', 'synthetic' => '1', 'idempotency_key' => Str::uuid()->toString()], $extra);
+        return array_replace(['name' => 'Synthetic reviewed operator '.++$this->organizationNumber, 'kind' => 'both', 'review_status' => 'approved', 'contact' => 'private-contact-fixture', 'reason' => 'private-staff-note-fixture', 'synthetic' => '1', 'duplicate_review_ack' => '1', 'idempotency_key' => Str::uuid()->toString()], $extra);
     }
 
     private function pointFields(string $org, array $extra = []): array
     {
-        return array_replace(['name' => 'Synthetic intake', 'kind' => 'collection_point', 'organization_id' => $org, 'review_status' => 'approved', 'active' => '1', 'contact' => 'private-point-contact-fixture', 'latitude' => '-1.280000', 'longitude' => '36.820000', 'hours' => 'Mon–Fri 09:00–16:00 Africa/Nairobi; synthetic', 'reason' => 'private-point-review-fixture', 'synthetic' => '1', 'capabilities' => ['laptop:', 'standalone_part:hdd', 'standalone_part:ssd', 'standalone_part:ict_cooling_fan', 'peripheral:keyboard', 'peripheral:router'], 'idempotency_key' => Str::uuid()->toString()], $extra);
+        $fields = array_replace(['name' => 'Synthetic intake', 'kind' => 'collection_point', 'organization_id' => $org, 'review_status' => 'approved', 'active' => '1', 'contact' => 'private-point-contact-fixture', 'latitude' => '-1.280000', 'longitude' => '36.820000', 'hours' => 'Mon–Fri 09:00–16:00 Africa/Nairobi; synthetic', 'reason' => 'private-point-review-fixture', 'synthetic' => '1', 'capabilities' => ['laptop:', 'standalone_part:hdd', 'standalone_part:ssd', 'standalone_part:ict_cooling_fan', 'peripheral:keyboard', 'peripheral:router'], 'idempotency_key' => Str::uuid()->toString()], $extra);
+        try {
+            $fields['site_confirmation'] = SiteLocation::token($this->admin->id, null, $fields);
+        } catch (ValidationException) {
+            $fields['site_confirmation'] = str_repeat('0', 64);
+        }
+        $fields['duplicate_review_ack'] = '1';
+
+        return $fields;
     }
 
     private function request(array $extra = [], string $mode = 'pickup'): string
@@ -231,6 +242,7 @@ class DirectoryReviewTest extends TestCase
         $pointFields['expected_version'] = 1;
         $pointFields['idempotency_key'] = Str::uuid()->toString();
         $pointFields['capabilities'] = ['laptop:'];
+        $pointFields['site_confirmation'] = SiteLocation::token($this->admin->id, $point, $pointFields);
         app(ManageDirectory::class)->save($this->admin, 'place', $point, $pointFields);
         $this->assertDatabaseHas('requests', ['id' => $id, 'review_state' => 'stale', 'version' => 3]);
         $this->assertContains('location_or_compatibility_changed', app(Review::class)->assess(DB::table('requests')->where('id', $id)->first())['blockers']);
@@ -238,6 +250,7 @@ class DirectoryReviewTest extends TestCase
         $pointFields['expected_version'] = 2;
         $pointFields['active'] = '0';
         $pointFields['idempotency_key'] = Str::uuid()->toString();
+        $pointFields['site_confirmation'] = SiteLocation::token($this->admin->id, $point, $pointFields);
         app(ManageDirectory::class)->save($this->admin, 'place', $point, $pointFields);
         $orgFields = $this->orgFields(['review_status' => 'suspended', 'expected_version' => 1]);
         unset($orgFields['synthetic']);

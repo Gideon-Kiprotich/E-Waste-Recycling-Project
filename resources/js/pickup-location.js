@@ -6,13 +6,14 @@ export function readPoint(latitude, longitude) {
     return { lat: Number(lat.toFixed(6)), lng: Number(lng.toFixed(6)) };
 }
 
-export function requestLocation(browser, success, message, started) {
+export function requestLocation(browser, success, message, started, site = false) {
+    const alternative = site ? 'manual latitude / longitude entry' : 'Advanced location entry';
     if (!browser.isSecureContext) {
-        message('Browser location requires HTTPS or localhost. Select a point on the map or use Advanced location entry.');
+        message(`Browser location requires HTTPS or localhost. Select a point on the map or use ${alternative}.`);
         return;
     }
     if (!browser.navigator.geolocation) {
-        message('This browser does not support location. Select a point on the map or use Advanced location entry.');
+        message(`This browser does not support location. Select a point on the map or use ${alternative}.`);
         return;
     }
     started();
@@ -25,21 +26,25 @@ export function requestLocation(browser, success, message, started) {
                 return;
             }
             success(point, accuracy);
-            message(`Browser location accuracy is approximately ±${Math.ceil(accuracy)} metres. It may be inaccurate; check and adjust the entrance or meeting point before confirming.`);
+            message(`Browser location accuracy is approximately ±${Math.ceil(accuracy)} metres. It may be inaccurate; check and adjust the ${site ? 'actual facility entrance (your device may be elsewhere)' : 'entrance or meeting point'} before confirming.`);
         }, (error) => {
             const reason = {
                 1: 'Location permission was denied.',
                 2: 'Your location is unavailable.',
                 3: 'The location request timed out.',
             }[error.code] ?? 'Your browser could not provide a location.';
-            message(`${reason} Select a point on the map or use Advanced location entry. No location was substituted.`);
+            message(`${reason} Select a point on the map or use ${alternative}. No location was substituted.`);
         }, { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
     } catch {
-        message('Browser location is restricted. Select a point on the map or use Advanced location entry.');
+        message(`Browser location is restricted. Select a point on the map or use ${alternative}.`);
     }
 }
 
 export function enhancePickupLocation(root, browser = window) {
+    const site = root.dataset.locationKind === 'site';
+    const subject = site ? 'site entrance' : 'pickup point';
+    const confirmLabel = site ? 'Confirm site entrance' : 'Confirm pickup point';
+    const confirmation = root.querySelector('[data-site-confirmation]');
     const latitude = root.querySelector('[name="latitude"]');
     const longitude = root.querySelector('[name="longitude"]');
     const area = root.closest('form').querySelector('[name="service_area_id"]');
@@ -55,9 +60,10 @@ export function enhancePickupLocation(root, browser = window) {
     let map, marker, L, loading;
     const announce = (text) => { message.textContent = text; };
     const invalidate = () => {
-        changed.disabled = false;
+        if (changed) changed.disabled = false;
+        if (confirmation) confirmation.value = '';
         root.dataset.confirmed = 'false';
-        status.textContent = 'ⓘ Point changed or not yet confirmed. Press Confirm pickup point before continuing.';
+        status.textContent = `ⓘ Point changed or not yet confirmed. Press ${confirmLabel} before continuing.`;
         accuracyMessage.textContent = '';
     };
     const showMarker = () => {
@@ -70,7 +76,7 @@ export function enhancePickupLocation(root, browser = window) {
         if (marker) marker.setLatLng(point);
         else {
             marker = L.marker(point, {
-                draggable: true, keyboard: false, title: 'Selected pickup point; use map centre as an alternative to dragging',
+                draggable: true, keyboard: false, title: `Selected ${subject}; use map centre as an alternative to dragging`,
                 icon: L.divIcon({ className: 'pickup-pin', html: '<span aria-hidden="true">●</span>', iconSize: [48, 48], iconAnchor: [24, 24] }),
             }).addTo(map);
             marker.on('dragstart', invalidate);
@@ -87,7 +93,7 @@ export function enhancePickupLocation(root, browser = window) {
     };
     const fallback = () => {
         manual.open = true;
-        announce('The map is unavailable. Use Advanced location entry, then confirm the point. Your existing selection is retained.');
+        announce(`The map is unavailable. Use ${site ? 'manual latitude / longitude entry' : 'Advanced location entry'}, then confirm the point. Your existing selection is retained.`);
     };
     const ensureMap = () => {
         if (map) return Promise.resolve();
@@ -113,9 +119,9 @@ export function enhancePickupLocation(root, browser = window) {
             link.target = '_blank';
             link.rel = 'noopener noreferrer';
             map.attributionControl.addAttribution(link.outerHTML);
-            map.on('click', (event) => { select(event.latlng); announce('Pickup point selected. Check the point and press Confirm pickup point.'); });
+            map.on('click', (event) => { select(event.latlng); announce(`Selected ${subject}. Check the point and press ${confirmLabel}.`); });
             showMarker();
-            load.textContent = 'Pickup map loaded';
+            load.textContent = site ? 'Site map loaded' : 'Pickup map loaded';
             load.disabled = true;
             announce('Map ready. Its starting centre is a view only; no pickup point is chosen automatically.');
         }).catch(() => { loading = null; fallback(); });
@@ -125,31 +131,34 @@ export function enhancePickupLocation(root, browser = window) {
     // Coordinate validity and confirmation are checked by the server, including without JS.
     latitude.required = false;
     longitude.required = false;
-    if (!latitude.hasAttribute('aria-invalid') && !longitude.hasAttribute('aria-invalid')) manual.open = false;
+    if (!site && !latitude.hasAttribute('aria-invalid') && !longitude.hasAttribute('aria-invalid')) manual.open = false;
     for (const input of [latitude, longitude]) input.addEventListener('input', () => {
         point = readPoint(latitude.value, longitude.value);
         invalidate();
         showMarker();
     });
-    area.addEventListener('change', invalidate);
+    for (const input of [latitude, longitude]) input.addEventListener('change', () => {
+        if (map && point) map.panTo(point, { animate: false });
+    });
+    area?.addEventListener('change', invalidate);
     load.addEventListener('click', ensureMap);
     if (root.dataset.mapEnabled !== 'true') { load.disabled = true; fallback(); }
     locate.addEventListener('click', () => requestLocation(browser, (next, accuracy) => {
         select(next);
-        accuracyMessage.textContent = `Reported browser accuracy: approximately ±${Math.ceil(accuracy)} metres. This is not an exact pickup guarantee.`;
+        accuracyMessage.textContent = `Reported browser accuracy: approximately ±${Math.ceil(accuracy)} metres. ${site ? 'Verify the actual facility; this locates your device.' : 'This is not an exact pickup guarantee.'}`;
         ensureMap().then(() => { if (map) map.setView(point, 16); });
     }, announce, () => {
         // One explicit request per page load; denial never starts a permission loop.
         locate.disabled = true;
         announce('Waiting for browser location permission… You can select the point manually instead.');
-    }));
+    }, site));
     root.querySelector('[data-use-centre]').addEventListener('click', () => {
-        if (map) { select(map.getCenter()); announce('Map centre selected. Check the point and press Confirm pickup point.'); }
+        if (map) { select(map.getCenter()); announce(`Map centre selected. Check the point and press ${confirmLabel}.`); }
     });
     const directions = { north: [0, -100], south: [0, 100], east: [100, 0], west: [-100, 0] };
     root.querySelectorAll('[data-pan]').forEach((button) => button.addEventListener('click', () => {
         if (map) map.panBy(directions[button.dataset.pan], { animate: false });
     }));
     // Restored points remain private server draft data; loading tiles is always optional.
-    if (point) status.textContent = root.dataset.confirmed === 'true' ? '✓ Selected pickup point confirmed.' : 'ⓘ Selected pickup point needs confirmation.';
+    if (point) status.textContent = root.dataset.confirmed === 'true' ? `✓ Selected ${subject} confirmed.` : `ⓘ Selected ${subject} needs confirmation.`;
 }

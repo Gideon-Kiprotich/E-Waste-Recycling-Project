@@ -7,7 +7,7 @@
     <select id="{{ $fieldId }}" name="{{ $fieldName }}" @if($required) required @endif @if($errors->has($name)) aria-invalid="true" @endif
         @if($hint || $errors->has($name)) aria-describedby="{{ $hint ? $fieldId.'-hint ' : '' }}{{ $errors->has($name) ? $fieldId.'-error' : '' }}" @endif>
         <option value="">Choose an answer</option>
-        @foreach($options as $code => $text)<option value="{{ $code }}" @selected(is_string($selected) && $selected === $code)>{{ $text }}</option>@endforeach
+        @foreach($options as $code => $text)<option value="{{ $code }}" @selected(is_string($selected) && $selected === (string) $code)>{{ $text }}</option>@endforeach
     </select>
     @if($hint)<p id="{{ $fieldId }}-hint" class="hint">{{ $hint }}</p>@endif
     @error($name)<p id="{{ $fieldId }}-error" class="field-error">{{ $message }}</p>@enderror

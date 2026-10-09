@@ -1,7 +1,7 @@
 @extends('layouts.devices')
 @section('section-label','Administrator · Directory management')
-@section('title','Operators and places')
-@section('intro','Review project participants, evidence and acceptance capabilities. Reviewed status does not establish regulator certification or real service acceptance.')
+@section('title','Nairobi operators and places')
+@section('intro','Review project participants, evidence and acceptance capabilities for the Nairobi study. Westlands, Kilimani and Kasarani are locality references, not verified acceptance sites. Reviewed status does not establish regulator certification or real service acceptance.')
 @section('content')
 <p><a class="primary button-link" href="{{ route('admin.directory.create','organization') }}">Add operator</a> <a class="secondary button-link" href="{{ route('admin.directory.create','place') }}">Add point or facility</a></p>
 <section class="card guidance"><h2>Operators</h2><div class="device-grid">@forelse($organizations as $org)<article><h3><a href="{{ route('admin.directory.edit',['organization',$org->id]) }}">{{ $org->name }}</a></h3><p>{{ ucfirst($org->kind) }} · {{ $org->review_status === 'approved' ? 'Active / project-reviewed' : ucfirst($org->review_status) }} · v{{ $org->version }}</p>@if($org->synthetic)<p class="hint">Synthetic study record · no real operator acceptance</p>@endif</article>@empty<p>No operators have been recorded.</p>@endforelse</div>{{ $organizations->links('devices.pagination') }}</section>
