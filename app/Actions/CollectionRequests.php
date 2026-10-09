@@ -5,6 +5,7 @@ namespace App\Actions;
 use App\Enums\Role;
 use App\Models\Item;
 use App\Models\User;
+use App\Support\Assignments\History;
 use App\Support\Collection\Directory;
 use App\Support\Collection\Eligibility;
 use App\Support\Collection\Input;
@@ -144,6 +145,7 @@ class CollectionRequests
             DB::table('requests')->where('id', $id)->update(['version' => $version, 'state' => $state]);
             $command = $this->command($actor, $action, $fields['idempotency_key'], $hash, $id);
             $this->event($actor, $id, $version, $fields['operation'] === 'cancel' ? 'request_items_cancelled' : 'request_date_preference_changed', $command, ['item_ids' => $fields['items'], 'preferred_date' => $fields['preferred_date'] ?? null, 'reason_ciphertext' => Crypt::encryptString($fields['reason'])]);
+            History::invalidate($actor, $id, $command, 'request_changed');
 
             return $id;
         });
@@ -165,6 +167,7 @@ class CollectionRequests
         $version = (int) $request->version + 1;
         DB::table('requests')->where('id', $request->id)->update(['version' => $version]);
         $this->event($actor, $request->id, $version, 'request_eligibility_revalidated', DB::table('domain_events')->where('id', $itemEvent)->value('command_id'), ['item_id' => $item->subject_id, 'observation_id' => $snapshot['observation_id'], 'review_reasons' => $snapshot['review_reasons'], 'normal_scheduling_cleared' => false]);
+        History::invalidate($actor, $request->id, DB::table('domain_events')->where('id', $itemEvent)->value('command_id'), 'observation_changed');
     }
 
     public function owned(User $actor, string $id): object

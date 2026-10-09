@@ -3,6 +3,9 @@
 use App\Enums\Role;
 use App\Http\Controllers\Administration\DirectoryController;
 use App\Http\Controllers\Administration\ReviewController;
+use App\Http\Controllers\Assignments\AllocationController;
+use App\Http\Controllers\Assignments\CollectorAccessController;
+use App\Http\Controllers\Assignments\NoticeController;
 use App\Http\Controllers\Auth\PasswordRecoveryController;
 use App\Http\Controllers\Auth\RegistrationController;
 use App\Http\Controllers\Auth\SessionController;
@@ -30,6 +33,14 @@ Route::middleware('guest')->group(function (): void {
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 Route::middleware(['auth', 'account.current'])->group(function (): void {
     Route::prefix('admin')->name('admin.')->middleware('role:administrator')->group(function (): void {
+        Route::get('/collectors', [CollectorAccessController::class, 'index'])->name('collectors.index');
+        Route::get('/collectors/create', [CollectorAccessController::class, 'form'])->name('collectors.create');
+        Route::post('/collectors', [CollectorAccessController::class, 'save'])->middleware('throttle:20,1')->name('collectors.store');
+        Route::get('/collectors/{collector}', [CollectorAccessController::class, 'form'])->whereUuid('collector')->name('collectors.edit');
+        Route::post('/collectors/{collector}', [CollectorAccessController::class, 'save'])->whereUuid('collector')->middleware('throttle:20,1')->name('collectors.update');
+        Route::get('/assignments', [AllocationController::class, 'index'])->name('assignments.index');
+        Route::get('/assignments/{collection}', [AllocationController::class, 'show'])->whereUuid('collection')->name('assignments.show');
+        Route::post('/assignments/{collection}', [AllocationController::class, 'save'])->whereUuid('collection')->middleware('throttle:20,1')->name('assignments.save');
         Route::get('/directory', [DirectoryController::class, 'index'])->name('directory.index');
         Route::get('/directory/{kind}/create', [DirectoryController::class, 'form'])->where('kind', 'organization|place')->name('directory.create');
         Route::post('/directory/{kind}', [DirectoryController::class, 'save'])->where('kind', 'organization|place')->middleware('throttle:20,1')->name('directory.store');
@@ -40,6 +51,13 @@ Route::middleware(['auth', 'account.current'])->group(function (): void {
         Route::get('/reviews/{collection}', [ReviewController::class, 'show'])->whereUuid('collection')->name('reviews.show');
         Route::post('/reviews/{collection}', [ReviewController::class, 'decide'])->whereUuid('collection')->middleware('throttle:20,1')->name('reviews.decide');
     });
+    Route::middleware('role:collector')->group(function (): void {
+        Route::get('/collector/assignments', [AllocationController::class, 'work'])->name('collector.assignments.index');
+        Route::get('/collector/assignments/{assignment}', [AllocationController::class, 'job'])->whereUuid('assignment')->name('collector.assignments.show');
+        Route::post('/collector/assignments/{assignment}', [AllocationController::class, 'respond'])->whereUuid('assignment')->middleware('throttle:20,1')->name('collector.assignments.respond');
+    });
+    Route::get('/assignment-notices', [NoticeController::class, 'index'])->name('assignment.notices');
+    Route::post('/assignment-notices/{notice}/read', [NoticeController::class, 'read'])->whereUuid('notice')->name('assignment.notices.read');
     Route::middleware('role:consumer')->group(function (): void {
         Route::get('/requests', [RequestController::class, 'index'])->name('requests.index');
         Route::get('/requests/create', [RequestController::class, 'create'])->name('requests.create');

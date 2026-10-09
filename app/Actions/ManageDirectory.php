@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Models\User;
+use App\Support\Assignments\History;
 use App\Support\Collection\AdminMutation;
 use App\Support\Collection\DirectoryDuplicates;
 use App\Support\Collection\DirectoryInput;
@@ -129,6 +130,7 @@ class ManageDirectory
             DB::table('requests')->where('id', $request->id)->update(['version' => $version, 'review_state' => 'stale']);
             $event = AdminMutation::event($actor, 'request', $request->id, $version, 'request_directory_changed', $command, ['record_kind' => $kind, 'record_id' => $id, 'review_required' => true]);
             DB::table('notification_outbox')->insert(['id' => Str::uuid()->toString(), 'event_id' => $event, 'recipient_id' => $request->consumer_id, 'channel' => 'in_app', 'state' => 'pending']);
+            History::invalidate($actor, $request->id, $command, 'directory_changed');
         }
     }
 }

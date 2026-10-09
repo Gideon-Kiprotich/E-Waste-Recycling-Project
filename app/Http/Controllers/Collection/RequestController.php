@@ -195,7 +195,10 @@ class RequestController extends Controller
         $area = DB::table('service_areas')->where('id', $record->service_area_id)->first();
         $reviewState = app(Review::class)->state($record);
 
-        return response()->view('collection.show', compact('record', 'private', 'contact', 'address', 'rows', 'items', 'history', 'point', 'area', 'reviewState'))->header('Cache-Control', 'private, no-store');
+        $assignment = DB::getSchemaBuilder()->hasTable('assignments') ? DB::table('assignments as a')->join('organizations as o', 'o.id', '=', 'a.operator_id')->join('places as p', 'p.id', '=', 'a.facility_id')->where('a.request_id', $collection)->orderByDesc('a.created_at')->orderByDesc('a.id')->first(['a.*', 'o.name as operator_name', 'p.name as facility_name']) : null;
+        $assignmentCurrent = $assignment && app(\App\Support\Assignments\Eligibility::class)->current($assignment);
+
+        return response()->view('collection.show', compact('record', 'private', 'contact', 'address', 'rows', 'items', 'history', 'point', 'area', 'reviewState', 'assignment', 'assignmentCurrent'))->header('Cache-Control', 'private, no-store');
     }
 
     public function change(Request $request, CollectionRequests $action, string $collection)

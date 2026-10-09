@@ -14,6 +14,6 @@ class Membership extends Model
 
     protected function casts(): array
     {
-        return ['role' => Role::class, 'active' => 'boolean'];
+        return ['role' => Role::class, 'active' => 'boolean', 'version' => 'integer'];
     }
 }

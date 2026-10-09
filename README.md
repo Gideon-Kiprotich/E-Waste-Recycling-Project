@@ -165,7 +165,7 @@ php artisan app:provision-staff processor
 php artisan app:provision-staff administrator
 ```
 
-The command requires `APP_ENV=local`, validates the email/password, refuses existing emails, and never changes an existing account. Use synthetic account information and choose private passwords; no default credentials are shipped. Use each account at `/login`, then check `/consumer`, `/collector`, `/processor` or `/administrator`. Each account reaches its own minimal landing page; other role pages deny access. These pages do not grant organization/facility permissions or implement later operational tools.
+The command requires `APP_ENV=local`, validates the email/password, refuses existing emails, and never changes an existing account. Use synthetic account information and choose private passwords; no default credentials are shipped. Use each account at `/login`, then check `/consumer`, `/collector`, `/processor` or `/administrator`. Other role pages deny access. Bootstrap Collector accounts remain unscoped until an Administrator grants the bounded Phase 5 operator access below; no operator link is inferred. Processor/facility tools remain deferred.
 
 ### Local password recovery
 
@@ -206,7 +206,7 @@ After applying both dedicated migrations and building assets, start `composer ru
 
 Collector, Processor and Administrator roles have no device access in this phase; assignment/facility scope is not yet implemented. There are no collection, scheduling, camera-scanning or processing controls. Device history is registration and retained self-report only.
 
-Back up the private `APP_KEY` with the database and private photos. It protects identifiers and context-separated comparison/command hashes (`app-key-context-1`). Do not regenerate it after storing records: reviewed key rotation must rewrap encrypted identifiers and maintain/recompute comparison hashes and retained retry hashes. No automated key rotation, redaction, malware scanning or notification worker is claimed. The small transactional outbox retains pending event references for a later notification phase.
+Back up the private `APP_KEY` with the database and private photos. It protects identifiers and context-separated comparison/command hashes (`app-key-context-1`). Do not regenerate it after storing records: reviewed key rotation must rewrap encrypted identifiers and maintain/recompute comparison hashes and retained retry hashes. No automated key rotation, redaction, malware scanning or general notification worker is claimed. Phase 5 delivers only explicitly supported new assignment events in-app; earlier pending outbox rows remain for a later notification increment.
 
 The identifier revision passes development/testing migrations and required automated/runtime checks after the user-authorized cleanup of three repeated test registrations. The fourth device and all accounts were preserved. The user has confirmed duplicate rejection, IMEI validation and all remaining manual checks; Phase 2 is accepted for closure. Actual automated results and distinct user-performed acceptance are recorded in [the Phase 2 report](docs/phase-2-report.md#user-performed-acceptance-and-closure-review--5-october-2026). Real inbox delivery remains unconfigured/unverified.
 
@@ -310,3 +310,23 @@ Place forms share the existing Leaflet tile configuration. Choose **Load site ma
 Press **Confirm site entrance** before Save. Confirmation is bound to the coordinates, account, record, expected version and command reference. Changing location clears it; stale edits are rejected. Confirmation/error redirects retain permitted private values in encrypted server-session data for up to 30 minutes, never plaintext flashed input or browser storage. Upload files must be selected again. Manual entry works without JavaScript or provider access; map failure never substitutes a location. Capabilities remain ten exact visible choices grouped as whole devices, peripherals and standalone parts, in a responsive three/two/one-column grid.
 
 The retained privacy notice is now version `2026-10-09.1`, describing optional Administrator site maps as well as pickup maps. Previous notices/acknowledgments remain. No geocoder, API key, dependency change or external mail is introduced. Live tile/device-permission, full screen-reader and touch acceptance remain manual checks; headless verification uses local synthetic tiles.
+
+## Collector allocation and assignment handling (Phase 5)
+
+Apply the forward migration on both dedicated databases using `php artisan migrate` and `php artisan migrate --env=testing`; never reset them. It preserves old account/history/request/identifier/custody data and backfills no organization links or assignments.
+
+As Administrator, open **Collector access** (`/admin/collectors`) to create a Collector with private credentials or link/deactivate an existing Collector at one project-reviewed collector/both operator. Consumers cannot be promoted. Access changes revoke sessions and invalidate active assignments. Bootstrap staff remain unscoped until linked. Share credentials through your established private channel; no email is sent. Existing local log-based recovery remains available privately.
+
+Open **Pickup allocation** (`/admin/assignments`). Only current Ready pickup jobs with valid reservations/observations, service-area/date/safety checks and explicit category/subtype capabilities can be offered. Choose a scoped Collector and an active reviewed facility/collection point under a processor/both operator; depots are excluded. Reason fields are private. Withdraw or replace active assignments explicitly; replacement requires fresh Collector acknowledgment.
+
+The named Collector opens **Offers and accepted work** (`/collector/assignments`) and accepts or declines. Offered jobs hide contact/address/coordinates; these become available only for still-eligible Accepted work. **Accepted — not scheduled** is not an appointment, dispatch, receipt or custody transfer. Changed or revoked eligibility removes that access. Consumer overview/request detail shows only owned safe assignment milestones. Cancellation releases only selected-item reservations; assignment changes never change custody. Drop-off behavior is unchanged.
+
+Assignment-only in-app delivery uses the committed outbox. Run a private local one-shot when needed:
+
+```bash
+php artisan app:deliver-assignment-notices --limit=100
+```
+
+For automatic local delivery, run `php artisan schedule:work` in a separate terminal and stop it when finished. The application schedule runs this assignment-only command every minute; hosting can use Laravel's normal `schedule:run` setup. Do not run it against an unrelated connection. It processes only supported new assignment event types, deduplicates by outbox ID, and leaves historical pending non-assignment rows untouched. No external email is sent. Users open **Assignment notices** (`/assignment-notices`) and mark only their own notices read; linked pages reauthorize current access. A pending worker does not undo a committed assignment, and assignment screens remain authoritative.
+
+See [Phase 5's report](docs/phase-5-report.md) for actual verification and remaining manual acceptance. Route planning, scheduling, receipt/transport/custody and processing are deferred. Real operator/collection-point acceptance and inbox delivery remain unverified/unconfigured.

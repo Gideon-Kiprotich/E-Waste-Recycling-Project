@@ -28,7 +28,18 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontFlash(['token', 'password', 'password_confirmation', 'current_password', 'identifier', 'photo', 'address', 'contact', 'latitude', 'longitude', 'reason']);
         $exceptions->render(function (ValidationException $exception, Request $request) {
-            if ($request->routeIs('admin.*') && ! $request->expectsJson()) {
+            if ($request->routeIs('admin.assignments.save', 'admin.collectors.store', 'admin.collectors.update', 'collector.assignments.respond') && ! $request->expectsJson()) {
+                $route = match ($request->route()->getName()) {
+                    'admin.assignments.save' => 'admin.assignments.show',
+                    'admin.collectors.store' => 'admin.collectors.create',
+                    'admin.collectors.update' => 'admin.collectors.edit',
+                    default => 'collector.assignments.show',
+                };
+                $parameters = array_filter([$request->route('collection') ?? $request->route('collector') ?? $request->route('assignment')]);
+
+                return redirect()->route($route, $parameters)->withErrors($exception->errors())->withInput(App\Support\Assignments\Input::safe($request->all()));
+            }
+            if ($request->routeIs('admin.directory.*', 'admin.reviews.*') && ! $request->expectsJson()) {
                 if ($request->route('kind') === 'place') {
                     SiteLocation::remember($request->route('record'), $request->all());
                 }

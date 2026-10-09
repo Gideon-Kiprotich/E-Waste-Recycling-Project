@@ -4,6 +4,7 @@
 @section('intro','Only your own request is shown. Changes do not create a scheduled appointment.')
 @php($fieldIds = ['items'=>'change-items','reason'=>'reason','preferred_date'=>'preferred_date','operation'=>'operation'])
 @section('content')
+@if($assignment)<section class="card guidance"><h2>Collector assignment</h2><p>{{ $assignment->active && !$assignmentCurrent ? 'Assignment changed — fresh allocation required' : \App\Support\Assignments\History::LABELS[$assignment->state] }}</p><p>{{ $assignment->operator_name }} · receiving destination {{ $assignment->facility_name }}</p><p>No appointment, dispatch or physical collection is confirmed.</p></section>@endif
 <section class="card guidance"><h2 class="manual-code">{{ $record->public_code }}</h2><p>{{ $record->state === 'SUBMITTED' ? 'Awaiting review' : str_replace('_',' ',ucfirst(strtolower($record->state))) }} · version {{ $record->version }}</p>
 <p><strong>{{ \App\Support\Collection\Review::LABELS[$reviewState] }}</strong>. {{ $reviewState === 'ready' ? 'Current review checks passed for later allocation; no booking or collection is confirmed.' : 'Outstanding items require current review before any later allocation. A hold or changed configuration does not cancel your reservation.' }}</p>
 <x-feedback type="info" message="Submission is not physical collection. All outstanding items await human review. Review-needed items are withheld from ordinary scheduling; no appointment or delivery is promised." />

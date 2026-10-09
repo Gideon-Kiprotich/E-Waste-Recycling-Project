@@ -39,16 +39,20 @@ class CollectionMigrationTest extends TestCase
             DB::statement('SET CONSTRAINTS ALL IMMEDIATE');
             $before = [];
             foreach (DB::select('SELECT tablename FROM pg_tables WHERE schemaname=? ORDER BY tablename', [$schema]) as $table) {
-                $before[$table->tablename] = DB::table($table->tablename)->get()->toJson();
+                $columns = Schema::getColumnListing($table->tablename);
+                $before[$table->tablename] = [$columns, DB::table($table->tablename)->select($columns)->get()->toJson()];
             }
             foreach ($files as $file) {
                 if (basename($file) >= '2026_10_06_000002_create_collection_requests.php') {
                     DB::transaction(fn () => (require $file)->up());
                 }
             }
-            foreach ($before as $table => $rows) {
-                $this->assertSame($rows, DB::table($table)->get()->toJson(), $table);
+            foreach ($before as $table => [$columns, $rows]) {
+                $this->assertSame($rows, DB::table($table)->select($columns)->get()->toJson(), $table);
             }
+            $this->assertSame(0, DB::table('memberships')->whereNotNull('organization_id')->count());
+            $this->assertSame(0, DB::table('memberships')->where('version', '<>', 1)->count());
+            $this->assertDatabaseCount('assignments', 0);
             foreach (['organizations', 'places', 'place_categories', 'service_areas', 'requests', 'request_items', 'request_private_details'] as $table) {
                 $this->assertDatabaseCount($table, 0);
             }

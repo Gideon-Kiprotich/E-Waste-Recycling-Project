@@ -3,6 +3,7 @@
 namespace App\Actions;
 
 use App\Models\User;
+use App\Support\Assignments\History;
 use App\Support\Collection\AdminMutation;
 use App\Support\Collection\PrivateEvidence;
 use App\Support\Collection\Review;
@@ -61,6 +62,7 @@ class ReviewRequest
                 }
                 DB::table('requests')->where('id', $id)->update(['version' => $version, 'review_state' => $fields['decision'], 'review_id' => $review]);
                 DB::table('notification_outbox')->insert(['id' => Str::uuid()->toString(), 'event_id' => $event, 'recipient_id' => $request->consumer_id, 'channel' => 'in_app', 'state' => 'pending']);
+                History::invalidate($actor, $id, $command, 'review_changed');
 
                 return $id;
             });
