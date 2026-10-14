@@ -330,3 +330,31 @@ php artisan app:deliver-assignment-notices --limit=100
 For automatic local delivery, run `php artisan schedule:work` in a separate terminal and stop it when finished. The application schedule runs this assignment-only command every minute; hosting can use Laravel's normal `schedule:run` setup. Do not run it against an unrelated connection. It processes only supported new assignment event types, deduplicates by outbox ID, and leaves historical pending non-assignment rows untouched. No external email is sent. Users open **Assignment notices** (`/assignment-notices`) and mark only their own notices read; linked pages reauthorize current access. A pending worker does not undo a committed assignment, and assignment screens remain authoritative.
 
 Follow [the exact setup/review/offer/acceptance walkthrough](docs/phase-5-report.md#exact-walkthrough-for-one-pickup). Missing receiving setup is separate from safety restrictions; approval alone does not add capabilities. Stale forms provide role-safe reload links. See [Phase 5's report](docs/phase-5-report.md) for actual verification and remaining manual acceptance. Route planning, scheduling, receipt/transport/custody and processing are deferred. Real operator/collection-point acceptance and inbox delivery remain unverified/unconfigured.
+
+## Bounded Nairobi demonstration setup
+
+Public reference facts and simulated operations are separated in [directory data sources](docs/directory-data-sources.md). The new `app:setup-nairobi-demo` command requires `APP_ENV=local`, the dedicated public-schema `ewaste_development` connection on `127.0.0.1:5432`, non-superuser database owner `ewaste_app`, and an **existing active Administrator UUID**. It refuses production/testing/URL/alternate-schema connections and never creates an Administrator. The pre-existing eligible synthetic study operator/point and active study rectangle must already exist; changed/ineligible study setup is retained and reported, not repaired.
+
+Preview first; the default is a read-only dry-run without password prompts:
+
+To find an existing active Administrator UUID, open local `php artisan tinker` and run `DB::table('memberships')->join('users', 'users.id', '=', 'memberships.user_id')->where('role', 'administrator')->where('active', true)->where('users.status', 'active')->pluck('users.id');`. This prints only account IDs; never dump account models or environment configuration. Exit Tinker before running setup.
+
+```bash
+php artisan app:setup-nairobi-demo ADMINISTRATOR_UUID
+```
+
+It proposes two new simulated operator references/receiving points, reuses the existing study collector operator, and adds three fictional Collectors, one unscoped Processor with only its currently supported workspace, two Consumers, a laptop/SSD/HDD and two Ready pickups. All directory/access setup completes before requests/reviews. No job is offered or accepted automatically.
+
+**Current development apply is blocked** by three existing requests with active reservations, listed safely in [the Phase 5 report](docs/phase-5-report.md#bounded-nairobi-demonstration-setup--14-october-2026). Every directory save would change their versions/reviews and append history/outbox. The command refuses this collateral change even if a review is already Stale; it does not cancel, delete, release, relink or silently repair anything. Resolve the conflict through a separately authorized scope decision; do not reset databases or remove work to make a seed pass.
+
+Only when preservation preflight permits it, save genuine source-reference evidence privately outside Git/public paths, then run from a private interactive terminal:
+
+```bash
+php artisan app:setup-nairobi-demo ADMINISTRATOR_UUID --apply --reference-evidence=/private/path/public-reference.pdf
+```
+
+Enter and confirm a separate **12–128 character password** at each hidden prompt; keep them in your private password manager. No shared password, password argument, echo fallback or non-interactive credential provisioning is supported. Passwords are normally hashed and never printed/stored in reports or command/event payloads in plaintext. New credentials exist only after the entire transaction succeeds. The account emails are `nairobi-demo-collector-1@example.test` through `collector-3`, `nairobi-demo-processor-1@example.test`, and `nairobi-demo-consumer-1@example.test` / `consumer-2`. No mail is sent. For a forgotten existing demo password, use the existing private local recovery instructions above; rerunning setup never resets it.
+
+Completed command references and existing duplicate normalization provide stable identities. Repeats skip existing records, passwords, user edits, request dates/reviews and commands rather than replaying them; another existing Administrator can reuse the same fixture. If a completed reference is missing, ambiguous, ownership/role changed, or directory eligibility is lost, stop and investigate instead of creating a replacement. A later expired/stale/cancelled demo request is left unchanged; use existing authorized Consumer/Administrator controls for a new decision. New evidence files are removed on transaction rollback only when no retained attachment references them. No pending notices are dispatched.
+
+After a successful permitted apply, the command prints the two safe request codes. Use **Amina Njeri (Nairobi demo)** (`consumer-1`) for the laptop + SSD pickup, **Kamau Mwangi (Nairobi demo)** (`collector-2`) at the simulated WEEE Centre operator, and the **WEEE Centre, Mihango office reference — simulated receiving point** destination. Administrator: **Pickup allocation → Review allocation → Offer pickup job → Record assignment action**. Kamau: **Offers and accepted work → Open assignment → Accept — not scheduled → Record response**. Amina: **My requests** shows the assignment milestone. David Ochieng (`consumer-2`) retains the HDD pickup for another offer; Akinyi Otieno (`collector-1`) uses the reused synthetic study collecting operator, and Faith Wanjiku (`collector-3`) uses the simulated WEEE Centre operator. Brian Mutiso (`processor-1`) has only the existing Processor workspace, no invented facility/intake/processing permissions. These people are fictional and do not represent real staff.
