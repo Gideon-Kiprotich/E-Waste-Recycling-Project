@@ -178,6 +178,76 @@ class NairobiDemoTest extends TestCase
         $this->assertDatabaseHas('request_items', ['request_id' => $id, 'active' => true]);
     }
 
+    public function test_exact_authorized_reviews_change_only_versions_and_history_with_reservations_custody_and_old_rows_retained(): void
+    {
+        $owner = User::factory()->create();
+        $device = $this->device($owner);
+        $id = app(CollectionRequests::class)->submit($owner, $this->requestFields([$device->subject_id]));
+        $request = (array) DB::table('requests')->where('id', $id)->first();
+        $before = $this->fingerprint();
+        $items = DB::table('request_items')->where('request_id', $id)->orderBy('id')->get()->all();
+        $custody = DB::table('custody_current')->where('subject_id', $device->subject_id)->first();
+        $data = app(NairobiDataset::class)->apply($this->admin, $this->passwords(), UploadedFile::fake()->image('isolated-source-fixture.png'), [$id => $request['version']]);
+        $request['version'] += 4;
+        $request['review_state'] = 'stale';
+        $this->assertSame($request, (array) DB::table('requests')->where('id', $id)->first());
+        $this->assertEquals($items, DB::table('request_items')->where('request_id', $id)->orderBy('id')->get()->all());
+        $this->assertEquals($custody, DB::table('custody_current')->where('subject_id', $device->subject_id)->first());
+        $after = $this->fingerprint();
+        foreach ($before as $table => $rows) {
+            if ($table !== 'requests') {
+                $this->assertSame($rows, array_values(array_intersect($rows, $after[$table])), 'Existing row changed in '.$table);
+            }
+        }
+        $this->assertSame(4, DB::table('domain_events')->where('aggregate_id', $id)->where('type', 'request_directory_changed')->count());
+        $this->assertDatabaseCount('request_reviews', 2);
+        $this->assertDatabaseCount('assignments', 0);
+        $this->assertSame(1, DB::table('domain_events')->where('type', 'nairobi_demo_review_changes_authorized')->count());
+        foreach ($data['requests'] as $newId) {
+            $this->assertDatabaseHas('requests', ['id' => $newId, 'review_state' => 'ready']);
+        }
+        $repeat = $this->fingerprint();
+        app(NairobiDataset::class)->apply($this->admin, [], null, [$id => $request['version'] - 4]);
+        $this->assertSame($repeat, $this->fingerprint());
+    }
+
+    public function test_partial_extra_stale_or_new_live_work_is_never_permitted_by_review_authorization(): void
+    {
+        $owner = User::factory()->create();
+        $first = $this->device($owner);
+        $id = app(CollectionRequests::class)->submit($owner, $this->requestFields([$first->subject_id]));
+        $dataset = app(NairobiDataset::class);
+        $before = $this->fingerprint();
+        foreach ([[], [$id => 99], [$id => 1, Str::uuid()->toString() => 1]] as $allowed) {
+            try {
+                $dataset->apply($this->admin, $this->passwords(), UploadedFile::fake()->image('isolated-source-fixture.png'), $allowed);
+                $this->fail('Unapproved/stale set must fail.');
+            } catch (DemoSetupException) {
+                $this->assertSame($before, $this->fingerprint());
+            }
+        }
+        $second = $this->device($owner);
+        app(CollectionRequests::class)->submit($owner, $this->requestFields([$second->subject_id]));
+        $before = $this->fingerprint();
+        try {
+            $dataset->apply($this->admin, $this->passwords(), UploadedFile::fake()->image('isolated-source-fixture.png'), [$id => 1]);
+            $this->fail('New live work must not expand scope.');
+        } catch (DemoSetupException $e) {
+            $this->assertStringContainsString('exact authorized request set', $e->getMessage());
+        }
+        $this->assertSame($before, $this->fingerprint());
+        $this->assertSame([], Storage::disk('directory_evidence')->allFiles());
+    }
+
+    public function test_review_only_allowlist_cannot_authorize_assignment_invalidation(): void
+    {
+        $plan = app(NairobiDataset::class)->plan($this->admin);
+        $plan['assignmentConflicts'] = [Str::uuid()->toString()];
+        $this->expectException(DemoSetupException::class);
+        $this->expectExceptionMessage('Active assignments');
+        app(NairobiDataset::class)->assertAllowedReviewChanges($plan, []);
+    }
+
     public function test_late_failure_rolls_back_accounts_directory_devices_requests_and_new_private_files(): void
     {
         $this->mock(ReviewRequest::class)->shouldReceive('decide')->once()->andThrow(new RuntimeException('Isolated late review failure'));

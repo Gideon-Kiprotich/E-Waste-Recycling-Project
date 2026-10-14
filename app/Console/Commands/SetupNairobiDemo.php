@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\User;
+use App\Support\Assignments\Input;
 use App\Support\Collection\Review;
 use App\Support\Demo\DemoSetupException;
 use App\Support\Demo\DevelopmentConnection;
@@ -17,9 +18,9 @@ use Throwable;
 
 class SetupNairobiDemo extends Command
 {
-    protected $signature = 'app:setup-nairobi-demo {administrator : Existing active Administrator UUID} {--apply : Apply only when no existing active work is affected} {--reference-evidence= : Private path to genuine downloaded public-reference PDF/PNG/JPEG; never a fabricated certificate}';
+    protected $signature = 'app:setup-nairobi-demo {administrator : Existing active Administrator UUID} {--apply : Apply only when preservation preflight passes} {--reference-evidence= : Private path to genuine public-reference PDF/PNG/JPEG} {--allow-review-change=* : Separately authorized request UUID:current-version; exact set only, no assignments}';
 
-    protected $description = 'Preview or add a bounded fictional Nairobi allocation fixture; development only, no existing-record edits';
+    protected $description = 'Preview or add a fictional Nairobi fixture; development only, exact authorization for prior review effects';
 
     public function handle(NairobiDataset $dataset): int
     {
@@ -35,14 +36,25 @@ class SetupNairobiDemo extends Command
                 return $dataset->plan($actor);
             });
             $this->preview($plan);
+            $allowed = [];
+            foreach ($this->option('allow-review-change') as $reference) {
+                Validator::make(['reference' => $reference], ['reference' => ['required', 'string', Input::referenceRule()]])->validate();
+                [$id, $version] = Input::reference($reference);
+                if (isset($allowed[$id])) {
+                    throw new DemoSetupException('Repeated review authorization reference; use each request once.');
+                }
+                $allowed[$id] = $version;
+            }
+            if ($allowed) {
+                $dataset->assertAllowedReviewChanges($plan, $allowed);
+                $this->line('Exact review-only authorization checked; active assignments remain prohibited. Rechecked under lock before any writes.');
+            }
             if (! $this->option('apply')) {
                 $this->info('Dry-run only: no writes, password prompts, files or notifications.');
 
                 return self::SUCCESS;
             }
-            if ($plan['conflicts'] || $plan['assignmentConflicts']) {
-                throw new DemoSetupException('Apply refused: directory additions would change existing active work. Resolve the listed conflict separately; no existing requests are changed here.');
-            }
+            $dataset->assertAllowedReviewChanges($plan, $allowed);
             $evidence = null;
             if (in_array(null, $plan['organizations'], true) || in_array(null, $plan['places'], true)) {
                 $path = $this->option('reference-evidence');
@@ -66,7 +78,7 @@ class SetupNairobiDemo extends Command
                 $passwords[$key] = $password;
             }
             try {
-                $result = $dataset->apply($actor, $passwords, $evidence);
+                $result = $dataset->apply($actor, $passwords, $evidence, $allowed);
             } finally {
                 unset($passwords, $password, $confirmation);
             }
@@ -113,7 +125,7 @@ class SetupNairobiDemo extends Command
             }
         }
         foreach ($plan['conflicts'] as $id) {
-            $this->warn('BLOCKED: directory save would stale request '.$id.', bump its version and append history/outbox; reservations would remain active.');
+            $this->warn('REQUIRES AUTHORIZATION: request '.$id.':'.$plan['conflictVersions'][$id].' would advance version and append directory-review history/outbox; reservations and custody retained.');
         }
         foreach ($plan['assignmentConflicts'] as $id) {
             $this->warn('BLOCKED: directory save would invalidate active assignment '.$id.'.');

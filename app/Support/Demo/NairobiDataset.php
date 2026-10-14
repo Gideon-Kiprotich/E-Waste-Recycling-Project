@@ -19,6 +19,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Ramsey\Uuid\Uuid;
 use Throwable;
@@ -119,25 +120,49 @@ class NairobiDataset
         }
         $directoryChanges = in_array(null, $plan['organizations'], true) || in_array(null, $plan['places'], true);
         if ($directoryChanges) {
-            $plan['conflicts'] = DB::table('requests')->whereExists(fn ($q) => $q->selectRaw('1')->from('request_items')->whereColumn('request_id', 'requests.id')->where('active', true))->orderBy('id')->pluck('id')->all();
+            $plan['conflictVersions'] = DB::table('requests')->whereExists(fn ($q) => $q->selectRaw('1')->from('request_items')->whereColumn('request_id', 'requests.id')->where('active', true))->orderBy('id')->pluck('version', 'id')->all();
+            $plan['conflicts'] = array_keys($plan['conflictVersions']);
             $plan['assignmentConflicts'] = DB::table('assignments')->where('active', true)->orderBy('id')->pluck('id')->all();
         } else {
+            $plan['conflictVersions'] = [];
             $plan['assignmentConflicts'] = [];
         }
 
         return $plan;
     }
 
-    public function apply(User $actor, #[\SensitiveParameter] array $passwords, ?UploadedFile $evidence): array
+    public function assertAllowedReviewChanges(array $plan, array $allowed): void
+    {
+        foreach ($allowed as $id => $version) {
+            if (! is_string($id) || ! Str::isUuid($id) || ! is_int($version) || $version < 1) {
+                throw new DemoSetupException('Review-change authorization requires exact request UUIDs and positive current versions.');
+            }
+        }
+        if ($plan['assignmentConflicts']) {
+            throw new DemoSetupException('Active assignments would be invalidated. Review-only authorization cannot permit this; apply refused.');
+        }
+        if (! $plan['conflicts']) {
+            return;
+        }
+        $actual = $plan['conflictVersions'];
+        ksort($actual);
+        ksort($allowed);
+        if (array_keys($actual) !== array_keys($allowed)) {
+            throw new DemoSetupException('Existing active work would be invalidated outside the exact authorized request set. Rerun preview; no automatic expansion is permitted.');
+        }
+        if ($actual !== $allowed) {
+            throw new DemoSetupException('An authorized request version changed. Rerun preview before private provisioning; no partial fixture committed.');
+        }
+    }
+
+    public function apply(User $actor, #[\SensitiveParameter] array $passwords, ?UploadedFile $evidence, array $allowedReviewChanges = []): array
     {
         $files = [];
         try {
-            return DB::transaction(function () use ($actor, $passwords, $evidence, &$files): array {
+            return DB::transaction(function () use ($actor, $passwords, $evidence, $allowedReviewChanges, &$files): array {
                 $actor = AdminMutation::actor($actor);
                 $plan = $this->plan($actor);
-                if ($plan['conflicts'] || $plan['assignmentConflicts']) {
-                    throw new DemoSetupException('Existing active work would be invalidated. Apply refused; inspect dry-run safe references and obtain a separately scoped resolution.');
-                }
+                $this->assertAllowedReviewChanges($plan, $allowedReviewChanges);
                 foreach ($plan['accounts'] as $key => $id) {
                     if (! $id) {
                         Validator::make(['password' => $passwords[$key] ?? null], ['password' => ['required', 'string', 'max:128', Password::min(12)]])->validate();
@@ -146,6 +171,8 @@ class NairobiDataset
                 if ((in_array(null, $plan['organizations'], true) || in_array(null, $plan['places'], true)) && ! $evidence) {
                     throw new DemoSetupException('Provide genuine public-source reference evidence privately; no evidence or certificates are fabricated by this command.');
                 }
+                $before = $this->authorizeReviewChanges($actor, $plan, $allowedReviewChanges);
+                $directoryChanges = count(array_filter(array_merge(array_values($plan['organizations']), array_values($plan['places'])), fn ($id) => $id === null));
                 foreach (self::ORGANIZATIONS as $key => $fields) {
                     if (! $plan['organizations'][$key]) {
                         $plan['organizations'][$key] = app(ManageDirectory::class)->save($actor, 'organization', null, $fields + ['synthetic' => '1', 'review_status' => 'approved', 'contact' => 'Fictional demo coordinator only: nairobi-demo-'.$key.'@example.test. Not a real operator contact.', 'reason' => self::REASON, 'idempotency_key' => self::key('organization-'.$key), 'duplicate_review_ack' => '1'], $evidence);
@@ -159,6 +186,7 @@ class NairobiDataset
                         $this->rememberFiles('place', $plan['places'][$key], $files);
                     }
                 }
+                $this->verifyReviewEffects($before, $directoryChanges);
                 foreach (self::ACCOUNTS as $key => $fields) {
                     if ($plan['accounts'][$key]) {
                         continue;
@@ -224,6 +252,39 @@ class NairobiDataset
         }
 
         return json_decode($command->safe_response, true, flags: JSON_THROW_ON_ERROR)[$field];
+    }
+
+    private function authorizeReviewChanges(User $actor, array $plan, array $allowed): array
+    {
+        if (! $plan['conflicts']) {
+            return [];
+        }
+        $requests = DB::table('requests')->whereIn('id', $plan['conflicts'])->orderBy('id')->lockForUpdate()->get();
+        $action = 'nairobi_demo_review_authorization';
+        $key = self::key('review-authorization');
+        if (DB::table('commands')->where('action', $action)->where('idempotency_key', $key)->exists()) {
+            throw new DemoSetupException('A completed authorization exists without complete directory setup; investigate rather than replay history.');
+        }
+        $command = AdminMutation::command($actor, $action, $key, AdminMutation::hash(['requests' => $allowed]), $actor->id);
+        AdminMutation::event($actor, 'command', $command, 1, 'nairobi_demo_review_changes_authorized', $command, ['request_versions' => $allowed, 'reason' => 'Explicit user-authorized normal directory review/history effects only; reservations and custody must remain unchanged.']);
+
+        return ['requests' => $requests->all(), 'items' => DB::table('request_items')->whereIn('request_id', $plan['conflicts'])->orderBy('id')->get()->all(), 'custody' => DB::table('custody_current')->orderBy('subject_id')->get()->all()];
+    }
+
+    private function verifyReviewEffects(array $before, int $changes): void
+    {
+        foreach ($before['requests'] ?? [] as $row) {
+            $expected = (array) $row;
+            $expected['version'] += $changes;
+            $expected['review_state'] = 'stale';
+            if ((array) DB::table('requests')->where('id', $row->id)->first() !== $expected) {
+                throw new DemoSetupException('Unexpected existing request changes; entire demo transaction rolled back.');
+            }
+        }
+        if ($before && ($before['items'] != DB::table('request_items')->whereIn('request_id', array_map(fn ($r) => $r->id, $before['requests']))->orderBy('id')->get()->all()
+            || $before['custody'] != DB::table('custody_current')->orderBy('subject_id')->get()->all())) {
+            throw new DemoSetupException('Unexpected reservation or custody changes; entire demo transaction rolled back.');
+        }
     }
 
     private function supportsDemo(string $place): bool
