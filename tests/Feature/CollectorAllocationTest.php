@@ -295,7 +295,8 @@ class CollectorAllocationTest extends TestCase
         $edit = ['operation' => 'link', 'organization_ref' => $org->id.':'.$org->version, 'expected_version' => 1, 'reason' => 'Synthetic edit', 'idempotency_key' => Str::uuid()->toString()];
         $this->fails(fn () => app(ManageCollector::class)->save($this->admin, $this->owner->id, $edit), null, 404);
         app(ManageCollector::class)->save($this->admin, $userId, $edit);
-        $this->assertSame(2, $user->fresh()->session_version);
+        $this->assertSame(1, $user->fresh()->session_version);
+        $edit['expected_version'] = 2;
         $edit['idempotency_key'] = Str::uuid()->toString();
         $this->fails(fn () => app(ManageCollector::class)->save($this->admin, $userId, $edit));
         $duplicate = $fields;

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Assignments;
 
 use App\Actions\AllocateCollector;
 use App\Http\Controllers\Controller;
+use App\Support\Assignments\AllocationGuide;
 use App\Support\Assignments\Eligibility;
 use App\Support\Collection\Review;
 use Illuminate\Http\Request;
@@ -25,13 +26,12 @@ class AllocationController extends Controller
         $reviewState = app(Review::class)->state($record);
         $active = DB::table('assignments')->where('request_id', $collection)->where('active', true)->first();
         $current = $active && app(Eligibility::class)->current($active);
-        $members = DB::table('memberships as m')->join('users as u', 'u.id', '=', 'm.user_id')->join('organizations as o', 'o.id', '=', 'm.organization_id')->where('m.role', 'collector')->where('m.active', true)->where('u.status', 'active')->where('o.review_status', 'approved')->whereIn('o.kind', ['collector', 'both'])->orderBy('u.display_name')->get(['m.id', 'm.version', 'u.display_name', 'o.name', 'o.synthetic']);
-        $places = DB::table('places as p')->join('organizations as o', 'o.id', '=', 'p.organization_id')->where('p.active', true)->where('p.review_status', 'approved')->whereIn('p.kind', ['facility', 'collection_point'])->where('o.review_status', 'approved')->whereIn('o.kind', ['processor', 'both'])->orderBy('p.name')->get(['p.id', 'p.version', 'p.name', 'p.synthetic']);
-        $memberOptions = $members->mapWithKeys(fn ($m) => [$m->id.':'.$m->version => $m->display_name.' · '.$m->name.($m->synthetic ? ' · Synthetic study record' : '')])->all();
-        $placeOptions = $places->mapWithKeys(fn ($p) => [$p->id.':'.$p->version => $p->name.($p->synthetic ? ' · Synthetic study record' : '')])->all();
+        $guide = app(AllocationGuide::class)->inspect($record);
+        $memberOptions = $guide['memberOptions'];
+        $placeOptions = $guide['placeOptions'];
         $history = DB::table('assignments as a')->join('domain_events as e', 'e.aggregate_id', '=', 'a.id')->leftJoin('assignment_revisions as v', 'v.event_id', '=', 'e.id')->where('a.request_id', $collection)->where('e.aggregate_kind', 'assignment')->orderByDesc('e.recorded_at')->orderByDesc('e.id')->paginate(12, ['e.type', 'e.recorded_at', 'e.aggregate_version', 'a.id', 'v.reason_ciphertext']);
 
-        return response()->view('assignments.allocate', compact('record', 'reviewState', 'active', 'current', 'memberOptions', 'placeOptions', 'history'))->header('Cache-Control', 'private, no-store');
+        return response()->view('assignments.allocate', compact('record', 'reviewState', 'active', 'current', 'memberOptions', 'placeOptions', 'history', 'guide'))->header('Cache-Control', 'private, no-store');
     }
 
     public function save(Request $request, AllocateCollector $action, string $collection)

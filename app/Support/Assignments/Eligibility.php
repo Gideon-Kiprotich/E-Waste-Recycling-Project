@@ -5,6 +5,7 @@ namespace App\Support\Assignments;
 use App\Models\Item;
 use App\Support\Collection\Directory;
 use App\Support\Collection\Review;
+use App\Support\Collection\ReviewFeedback;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -22,8 +23,15 @@ class Eligibility
             throw ValidationException::withMessages(['membership_ref' => 'Choose an active Collector linked to a reviewed collector operator.']);
         }
         $review = app(Review::class);
-        if ($request->mode !== 'pickup' || $review->state($request) !== 'ready' || $review->assess($request)['blockers']) {
-            throw ValidationException::withMessages(['eligibility' => 'This pickup needs a current Ready review. Held, changed or ineligible work cannot be assigned.']);
+        if ($request->mode !== 'pickup') {
+            throw ValidationException::withMessages(['eligibility' => 'Only pickup requests enter allocation. Drop-off keeps its existing point workflow.']);
+        }
+        $blockers = $review->assess($request)['blockers'];
+        if ($blockers) {
+            throw ValidationException::withMessages(['eligibility' => ReviewFeedback::readyError($blockers)]);
+        }
+        if ($review->state($request) !== 'ready') {
+            throw ValidationException::withMessages(['eligibility' => 'A current Ready review is required. Finish directory and Collector access setup, then open Request review and record Ready again. Setup changes can invalidate an earlier review.']);
         }
         $rowsQuery = DB::table('request_items')->where('request_id', $request->id)->where('active', true)->orderBy('item_id');
         $rows = ($lock ? $rowsQuery->lockForUpdate() : $rowsQuery)->get();

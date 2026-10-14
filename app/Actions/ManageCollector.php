@@ -51,6 +51,13 @@ class ManageCollector
                     }
                     abort_unless((int) $org->version === $orgVersion, 409, 'This operator changed. Reload before granting access.');
                 }
+                if ($user && $fields['operation'] === 'link' && $member->active && $member->organization_id === $org->id) {
+                    // Audit an unchanged access check without invalidating valid work or sessions.
+                    $command = AdminMutation::command($actor, $action, $fields['idempotency_key'], $hash, $user->id);
+                    AdminMutation::event($actor, 'command', $command, 1, 'collector_access_unchanged', $command, ['membership_id' => $member->id, 'organization_id' => $org->id, 'reason_ciphertext' => Crypt::encryptString($fields['reason'])]);
+
+                    return $user->id;
+                }
                 if (! $user) {
                     $user = User::create(['display_name' => $fields['display_name'], 'email' => $fields['email'], 'password_hash' => $fields['password']]);
                     $member = $user->membership()->create(['role' => Role::Collector, 'active' => true]);

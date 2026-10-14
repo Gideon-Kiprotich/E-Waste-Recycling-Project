@@ -22,13 +22,16 @@ class CollectorAccessController extends Controller
         $organizations = DB::table('organizations')->where('review_status', 'approved')->whereIn('kind', ['collector', 'both'])->orderBy('name')->get(['id', 'name', 'version', 'synthetic']);
         $options = $organizations->mapWithKeys(fn ($o) => [$o->id.':'.$o->version => $o->name.($o->synthetic ? ' · Synthetic study record' : '')])->all();
 
-        return response()->view('assignments.collector-form', compact('entity', 'options'))->header('Cache-Control', 'private, no-store');
+        $currentOperator = $entity?->organization_id ? DB::table('organizations')->where('id', $entity->organization_id)->first(['id', 'name', 'kind', 'review_status', 'version']) : null;
+        $organizationValue = $currentOperator && isset($options[$currentOperator->id.':'.$currentOperator->version]) ? $currentOperator->id.':'.$currentOperator->version : '';
+
+        return response()->view('assignments.collector-form', compact('entity', 'options', 'currentOperator', 'organizationValue'))->header('Cache-Control', 'private, no-store');
     }
 
     public function save(Request $request, ManageCollector $action, ?string $collector = null)
     {
         $id = $action->save($request->user(), $collector, $request->except('_token'));
 
-        return redirect()->route('admin.collectors.edit', $id)->with('status', 'Collector access saved. Changed access revokes sessions and invalidates active assignments. No email was sent.');
+        return redirect()->route('admin.collectors.edit', $id)->with('status', 'Collector access saved. Unchanged active links preserve sessions and assignments; actual access changes revoke sessions and invalidate active assignments. No email was sent.');
     }
 }

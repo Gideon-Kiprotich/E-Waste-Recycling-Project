@@ -7,6 +7,7 @@ use App\Support\Assignments\History;
 use App\Support\Collection\AdminMutation;
 use App\Support\Collection\PrivateEvidence;
 use App\Support\Collection\Review;
+use App\Support\Collection\ReviewFeedback;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -49,7 +50,7 @@ class ReviewRequest
                     throw ValidationException::withMessages(['decision' => 'There are no outstanding items to review.']);
                 }
                 if ($fields['decision'] === 'ready' && $snapshot['blockers']) {
-                    throw ValidationException::withMessages(['decision' => 'Unresolved eligibility or safety restrictions require an explained hold. They cannot be overridden here.']);
+                    throw ValidationException::withMessages(['decision' => ReviewFeedback::readyError($snapshot['blockers'])]);
                 }
                 $version = (int) $request->version + 1;
                 $command = AdminMutation::command($actor, $action, $fields['idempotency_key'], $hash, $id);

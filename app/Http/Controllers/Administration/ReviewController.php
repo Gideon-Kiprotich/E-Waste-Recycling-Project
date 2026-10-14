@@ -6,6 +6,7 @@ use App\Actions\ReviewRequest;
 use App\Http\Controllers\Controller;
 use App\Models\Item;
 use App\Support\Collection\Review;
+use App\Support\Collection\ReviewFeedback;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,7 @@ class ReviewController extends Controller
         $record = DB::table('requests')->where('id', $collection)->firstOrFail();
         $snapshot = $review->assess($record);
         $reviewState = $review->state($record);
+        $reviewReasons = ReviewFeedback::reasons($snapshot['blockers']);
         $rows = DB::table('request_items')->where('request_id', $collection)->orderBy('item_id')->get();
         $items = Item::with('subject', 'category', 'observations')->whereIn('subject_id', $rows->pluck('item_id'))->get()->keyBy('subject_id');
         $private = DB::table('request_private_details')->where('id', $record->private_details_id)->firstOrFail();
@@ -33,7 +35,7 @@ class ReviewController extends Controller
         $reviews = DB::table('request_reviews')->where('request_id', $collection)->orderByDesc('created_at')->orderByDesc('id')->paginate(10, ['*'], 'reviews_page');
         $evidence = DB::table('evidence_links')->join('attachments', 'attachments.id', '=', 'evidence_links.attachment_id')->where('record_kind', 'request_review')->whereIn('record_id', $reviews->pluck('id'))->whereNull('redacted_at')->get(['attachments.id', 'attachments.mime', 'evidence_links.record_id'])->groupBy('record_id');
 
-        return response()->view('administration.review-show', compact('record', 'snapshot', 'reviewState', 'rows', 'items', 'private', 'contact', 'address', 'history', 'reviews', 'evidence'))->header('Cache-Control', 'private, no-store');
+        return response()->view('administration.review-show', compact('record', 'snapshot', 'reviewState', 'reviewReasons', 'rows', 'items', 'private', 'contact', 'address', 'history', 'reviews', 'evidence'))->header('Cache-Control', 'private, no-store');
     }
 
     public function decide(Request $request, ReviewRequest $action, string $collection)
