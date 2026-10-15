@@ -17,9 +17,9 @@ Use labelled synthetic accounts/records, keep credentials and private evidence o
 
 **Final end-to-end acceptance is required before deployment or declaring the project fully validated.** Recheck affected journeys after later changes; this deferral permits continued development and is not a deployment or operational approval.
 
-## Phase 6 — manual acceptance pending
+## Phase 6 — provisional acceptance, detailed checks deferred
 
-No Phase 6 user acceptance is claimed. Computer-use inventory exposed no browser surfaces; automated HTTP/HTML and JavaScript assertions are separate evidence. These are unperformed checks, not established defects; record reproduced failures separately.
+On 15 October 2026 the user provisionally accepts Phase 6 for continued development under the agreed deferred-testing policy. **No user browser acceptance has been reported**; detailed checks remain deferred, not passed. The implementation's computer-use inventory exposed no browser surfaces; automated HTTP/HTML and JavaScript assertions are separate evidence. These are unperformed checks, not established defects; record reproduced failures separately. The [Phase 6 report](phase-6-report.md) preserves actual passing checks, earlier resolved failures, simulation limits and evaluation coverage differences. No known failing check or blocking defect is waived by this provisional status.
 
 - [ ] Complete reviewed operator/depot/receiving setup, Collector scope and vehicle declarations through supported Administrator controls. Confirm the documented order and fresh-review/reacknowledgment recovery after directory changes.
 - [ ] Freeze/compare eligible Accepted pickups; inspect exclusions, both ordered lists, capacities/durations/return, coverage differences, zero/negative changes and computation-limit messaging. Include standalone drives and an ineligible/changed job.
