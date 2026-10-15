@@ -8,6 +8,14 @@ Traceability: D2 FR09, FR14–FR16, FR27–FR30, FR34 and BR01–BR06/BR13–BR1
 
 Excluded: UC09 later handovers/transport/facility acceptance, processing, sanitization, receipt correction/override, generic exception management, returns/re-entry/repeat first receipt, new categories/batteries, appointments/offline queues, broad item search, paid services and external mail. Generic item state `received` prevents further Consumer edits; it does not establish an accepted facility handover or authorize processing.
 
+## Provisional acceptance — 15 October 2026
+
+The user provisionally accepts Phase 7 for continued development under the agreed deferred-testing policy. **No user browser or camera acceptance has been supplied.** Detailed manual checks remain deferred, not passed; final integrated end-to-end acceptance is required before deployment or declaring the project fully validated.
+
+The acceptance review verified implementation commit `eac62e17f4f24cbf6de58befda0fe49c5b5fb22a` (`Add physical receipts`), a clean working tree and no subsequent application changes. The recorded final **225 PHP tests / 5235 assertions**, **22 JavaScript tests**, migrations, preservation, Composer, Pint, build and HTTP checks below therefore cover the current implementation. Unchanged application suites were not rerun for this documentation update. No unresolved automated/runtime failure or blocking defect within the implemented receipt scope is recorded.
+
+[Deferred acceptance checks](deferred-acceptance-checks.md) retain full pickup/drop-off and multi-stop browser journeys, camera/manual fallback, mobile/accessibility and review of UTC-only time entry for Nairobi users. UTC storage and Africa/Nairobi display are the requirements; the usability of requiring staff to enter UTC remains unreviewed. The missing safety/mismatch correction workflow is a **known functional gap**, separate from unperformed tests: affected items remain blocked and no supported resolution/override is provided. Provisional acceptance neither resolves that gap nor authorizes bypassing its guards. Real operator/collection-point acceptance, physical safety suitability and inbox delivery remain unverified/unconfigured.
+
 ## Behavior and decisions
 
 Pickup requires the named active scoped Collector, current Accepted eligibility binding/outstanding reservations, and an approved unfinished/unconsumed proposed route stop. Drop-off requires current Ready review, the request's selected active reviewed subtype-compatible collection point, and an active Processor explicitly scoped to that point and its organization. Administrator **Point staff access** grants/revokes only existing Processor accounts; actual changes increment account/session/membership versions and delete affected sessions. Same active scope is an audited no-op. Scope/approval is checked again on use; no inferred scope or Consumer conversion exists.
