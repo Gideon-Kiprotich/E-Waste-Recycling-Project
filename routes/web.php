@@ -12,6 +12,7 @@ use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\Collection\RequestController;
 use App\Http\Controllers\Devices\DeviceController;
 use App\Http\Controllers\RoleHomeController;
+use App\Http\Controllers\RoutingController;
 use App\Support\PrivacyNotice;
 use Illuminate\Support\Facades\Route;
 
@@ -33,6 +34,15 @@ Route::middleware('guest')->group(function (): void {
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 Route::middleware(['auth', 'account.current'])->group(function (): void {
     Route::prefix('admin')->name('admin.')->middleware('role:administrator')->group(function (): void {
+        Route::get('/route-planning', [RoutingController::class, 'index'])->name('routing.index');
+        Route::get('/route-planning/vehicles/create', [RoutingController::class, 'vehicleForm'])->name('routing.vehicles.create');
+        Route::post('/route-planning/vehicles', [RoutingController::class, 'saveVehicle'])->middleware('throttle:20,1')->name('routing.vehicles.store');
+        Route::get('/route-planning/vehicles/{vehicle}', [RoutingController::class, 'vehicleForm'])->whereUuid('vehicle')->name('routing.vehicles.edit');
+        Route::post('/route-planning/vehicles/{vehicle}', [RoutingController::class, 'saveVehicle'])->whereUuid('vehicle')->middleware('throttle:20,1')->name('routing.vehicles.update');
+        Route::post('/route-planning', [RoutingController::class, 'create'])->middleware('throttle:10,1')->name('routing.create');
+        Route::get('/route-planning/runs/{run}', [RoutingController::class, 'show'])->whereUuid('run')->name('routing.show');
+        Route::post('/route-planning/runs/{run}/approve', [RoutingController::class, 'approve'])->whereUuid('run')->middleware('throttle:10,1')->name('routing.approve');
+        Route::post('/route-planning/approvals/{approval}/withdraw', [RoutingController::class, 'withdraw'])->whereUuid('approval')->middleware('throttle:10,1')->name('routing.withdraw');
         Route::get('/collectors', [CollectorAccessController::class, 'index'])->name('collectors.index');
         Route::get('/collectors/create', [CollectorAccessController::class, 'form'])->name('collectors.create');
         Route::post('/collectors', [CollectorAccessController::class, 'save'])->middleware('throttle:20,1')->name('collectors.store');
@@ -52,6 +62,8 @@ Route::middleware(['auth', 'account.current'])->group(function (): void {
         Route::post('/reviews/{collection}', [ReviewController::class, 'decide'])->whereUuid('collection')->middleware('throttle:20,1')->name('reviews.decide');
     });
     Route::middleware('role:collector')->group(function (): void {
+        Route::get('/collector/routes', [RoutingController::class, 'work'])->name('collector.routes.index');
+        Route::get('/collector/routes/{route}', [RoutingController::class, 'stops'])->whereUuid('route')->name('collector.routes.show');
         Route::get('/collector/assignments', [AllocationController::class, 'work'])->name('collector.assignments.index');
         Route::get('/collector/assignments/{assignment}', [AllocationController::class, 'job'])->whereUuid('assignment')->name('collector.assignments.show');
         Route::post('/collector/assignments/{assignment}', [AllocationController::class, 'respond'])->whereUuid('assignment')->middleware('throttle:20,1')->name('collector.assignments.respond');

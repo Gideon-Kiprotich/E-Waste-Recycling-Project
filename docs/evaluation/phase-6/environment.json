@@ -1,0 +1,59 @@
+{
+  "recorded_at_utc": "2026-10-15T09:04:40.021014+00:00",
+  "baseline": "0c31bd1ee74562431849c119b46576cf1d26c2a3",
+  "implementation_revision": "containing Git commit; source hashes below identify the measured implementation",
+  "os": "Ubuntu 26.04.1 LTS",
+  "cpu": "Intel Core i7-10610U @ 1.80 GHz",
+  "logical_cpus": 8,
+  "visible_memory_kib": 15621020,
+  "cgroup_limits": "not available at queried cgroup-v2 paths",
+  "php": "8.5.4",
+  "laravel": "13.34.0",
+  "postgresql": "16.15",
+  "node": "26.8.1",
+  "npm": "11.19.0",
+  "algorithm": "NEAREST-FEASIBLE-2OPT-1.0",
+  "matrix_mode": "HAVERSINE-SIMULATION-1.0",
+  "earth_radius_km": 6371.0088,
+  "seeds": [
+    1701,
+    2903
+  ],
+  "scenario_families": [
+    "uniform",
+    "clustered",
+    "tight_capacity",
+    "tight_duration",
+    "mixed_stress"
+  ],
+  "sizes": [
+    10,
+    25,
+    50
+  ],
+  "paired_scenarios": 30,
+  "one_factor_sensitivity_runs": 240,
+  "benchmark_repeats_per_size": 10,
+  "benchmark_vehicles": 3,
+  "timing_scope": "capture, validation, geometric calculation, independent output validation, persistence and commit; fixture creation excluded; no provider fetch",
+  "runtime_limit_seconds": 10,
+  "source_sha256": {
+    "app/Support/Routing/Planner.php": "d225a56f96bc59055ee40cfddc2f44ee6c067676a7b552328db6992314fd6be9",
+    "app/Support/Routing/Snapshot.php": "1441809f2de5c7dc6832b443c0265a039090516d3c2921f0e462f420132d8933",
+    "app/Actions/PlanRoutes.php": "7f11c0c0853e064458ba2b82710279ca2fd9ebd747abda3c519f7f2e603098b2",
+    "app/Actions/ManageVehicle.php": "56724679b0da4cacd234f2db4471746556e27b1edc308dd505e157849af625f3",
+    "database/migrations/2026_10_15_000001_create_route_planning.php": "208792446b41754d159bf01422425cccbae39bc8c94fe4835359bc822204be76",
+    "tests/Support/RoutingScenarios.php": "a879679aaaaef4d74bcbe17d2c10ec80501e8cfb2ad29dcfb3d1294ad9981b0f",
+    "tests/Feature/RoutingEvaluationTest.php": "d40ea7cb37bb64629a63117f4e4a1fae7ad640ac100b49eebd38ba0e156c39a0",
+    "composer.lock": "fcd4fc343e99c86a2575fd70e2cf18acf87ec0f86d98cc2f47c5a942d132cf80",
+    "package-lock.json": "bd26cc7ffdf91519a86edbd9454283e9d0fb91d0c1a98f62623cc862219d9705"
+  },
+  "data_classification": "synthetic only; not field observations or operational acceptance",
+  "artifact_sha256": {
+    "inputs.jsonl": "786d8dea43ae0d3eb3fc5989ecaa718c5961630a3f0189fa4a5074a756b31537",
+    "paired-results.jsonl": "22978045281ca2337c8183c7153f0b33454531d83b2f420b01fef5cc1fe6ed75",
+    "sensitivity-results.jsonl": "740aca92c1b3f93acb84bbde6b95b513f112c86eda45df21a7cf68cebad9994c",
+    "benchmark-inputs.jsonl": "bcd6e565a443532646ef7c79a162d0c7b03436e188a3a64dcf5213ca79b023ff",
+    "benchmarks.jsonl": "60c091343ec5e4a4e14c5d813252a476948aa0d6cc256cb252e7db52e5b21ead"
+  }
+}

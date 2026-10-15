@@ -8,6 +8,7 @@ use App\Enums\Role;
 use App\Models\User;
 use App\Support\Collection\Directory;
 use App\Support\Collection\PickupPoint;
+use App\Support\PrivacyNotice;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Artisan;
@@ -584,7 +585,8 @@ class CollectionRequestsTest extends TestCase
         $this->get('/requests/create/3')->assertSee('data-map-enabled="false"', false)->assertSee('Advanced location entry')->assertSee('Confirm pickup point')->assertSee('Synthetic study boundary')->assertSee('name="latitude"', false)->assertHeader('Cache-Control', 'no-store, private');
         $this->wizardPost(3, array_merge($location, ['intent' => 'confirm_pickup']))->assertRedirect();
         $this->wizardPost(3, $location)->assertRedirect('/requests/create/4');
-        $this->get('/privacy-notice')->assertSee('2026-10-09.1')->assertSee('approximate area')->assertSee('Advanced location entry');
+        $this->get('/privacy-notice')->assertSee(PrivacyNotice::VERSION)->assertSee('approximate area')->assertSee('Advanced location entry')->assertSee('authorized route map');
         $this->assertFileExists(resource_path('views/privacy/notices/2026-10-06-1.blade.php'));
+        $this->assertFileExists(resource_path('views/privacy/notices/2026-10-09-1.blade.php'));
     }
 }

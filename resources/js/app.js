@@ -15,6 +15,12 @@ if (errorSummary) {
 
 document.querySelector('[data-print-label]')?.addEventListener('click', () => window.print());
 
+document.querySelectorAll('[data-route-map]').forEach((root) => {
+    import('./route-map.js').then(({ enhanceRouteMap }) => enhanceRouteMap(root)).catch(() => {
+        root.querySelector('[role="status"]').textContent = 'Map unavailable. Use the complete ordered list.';
+    });
+});
+
 const pickupLocation = document.querySelector('[data-pickup-location]');
 if (pickupLocation) {
     import('./pickup-location.js').then(({ enhancePickupLocation }) => enhancePickupLocation(pickupLocation)).catch(() => {

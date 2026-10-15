@@ -16,3 +16,16 @@ No unresolved blocking functional defect is recorded at implementation commit `4
 Use labelled synthetic accounts/records, keep credentials and private evidence outside Git, and record date, tested revision, role, expected/actual result and any defect for each completed check. Do not check an item solely because HTML assertions or automated tests passed. Real operator/collection-point acceptance, surveyed entrances/service geometry, licensing/hours and operational suitability remain unverified. Real inbox delivery remains unconfigured/unverified.
 
 **Final end-to-end acceptance is required before deployment or declaring the project fully validated.** Recheck affected journeys after later changes; this deferral permits continued development and is not a deployment or operational approval.
+
+## Phase 6 — manual acceptance pending
+
+No Phase 6 user acceptance is claimed. Computer-use inventory exposed no browser surfaces; automated HTTP/HTML and JavaScript assertions are separate evidence. These are unperformed checks, not established defects; record reproduced failures separately.
+
+- [ ] Complete reviewed operator/depot/receiving setup, Collector scope and vehicle declarations through supported Administrator controls. Confirm the documented order and fresh-review/reacknowledgment recovery after directory changes.
+- [ ] Freeze/compare eligible Accepted pickups; inspect exclusions, both ordered lists, capacities/durations/return, coverage differences, zero/negative changes and computation-limit messaging. Include standalone drives and an ineligible/changed job.
+- [ ] Approve, attempt a conflicting approval in another session, explicitly supersede, withdraw and change source eligibility/vehicle/access. Confirm route claims release, old histories remain, item reservations follow only existing cancellation rules and custody never changes.
+- [ ] Check named Collector ordered stops, accepted-job private details and immediate loss of access after invalidation/revocation; verify another Collector, Consumer and Processor cannot cross scope.
+- [ ] Exercise optional live tiles, disabled/failed provider and JavaScript-off ordered-list fallback. Verify no external call before **Show simulated map**, visible attribution and clear geometric/non-navigation labels.
+- [ ] Complete desktop/360px and real-device/touch journeys, full keyboard navigation/focus/error recovery, screen-reader announcements and contrast checks. Record actual tools/devices/results only when performed; do not infer them from HTML or JavaScript assertions.
+
+Use synthetic data. Phase 6 does not claim real operator/point acceptance, surveyed geometry/entrances, vehicle suitability, road/traffic realism or configured inbox delivery. Final integrated end-to-end acceptance remains required before deployment/full validation.

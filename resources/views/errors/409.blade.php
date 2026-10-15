@@ -3,7 +3,11 @@
 @section('intro', 'Existing records and history are preserved. Reload current versions before making a new submission.')
 @section('content')
 <x-feedback type="error" title="Reload before submitting" :message="$exception->getMessage() ?: 'This submission conflicts with an earlier change.'" :focus="true" />
-@if(request()->routeIs('admin.assignments.save'))
+@if(request()->routeIs('admin.routing.*'))
+    <a class="secondary button-link" href="{{ route('admin.routing.index') }}">Reload Route planning</a>
+@elseif(request()->routeIs('collector.routes.*'))
+    <a class="secondary button-link" href="{{ route('collector.routes.index') }}">Return to Approved routes</a>
+@elseif(request()->routeIs('admin.assignments.save'))
     <a class="secondary button-link" href="{{ route('admin.assignments.show',request()->route('collection')) }}">Reload pickup allocation</a>
 @elseif(request()->routeIs('admin.reviews.decide'))
     <a class="secondary button-link" href="{{ route('admin.reviews.show',request()->route('collection')) }}">Reload request review</a>

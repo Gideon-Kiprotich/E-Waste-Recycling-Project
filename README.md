@@ -329,7 +329,29 @@ php artisan app:deliver-assignment-notices --limit=100
 
 For automatic local delivery, run `php artisan schedule:work` in a separate terminal and stop it when finished. The application schedule runs this assignment-only command every minute; hosting can use Laravel's normal `schedule:run` setup. Do not run it against an unrelated connection. It processes only supported new assignment event types, deduplicates by outbox ID, and leaves historical pending non-assignment rows untouched. No external email is sent. Users open **Assignment notices** (`/assignment-notices`) and mark only their own notices read; linked pages reauthorize current access. A pending worker does not undo a committed assignment, and assignment screens remain authoritative.
 
-Follow [the exact setup/review/offer/acceptance walkthrough](docs/phase-5-report.md#exact-walkthrough-for-one-pickup). Missing receiving setup is separate from safety restrictions; approval alone does not add capabilities. Stale forms provide role-safe reload links. See [Phase 5's report](docs/phase-5-report.md) for actual verification and remaining manual acceptance. Route planning, scheduling, receipt/transport/custody and processing are deferred. Real operator/collection-point acceptance and inbox delivery remain unverified/unconfigured.
+Follow [the exact setup/review/offer/acceptance walkthrough](docs/phase-5-report.md#exact-walkthrough-for-one-pickup). Missing receiving setup is separate from safety restrictions; approval alone does not add capabilities. Stale forms provide role-safe reload links. Phase 5 has provisional acceptance for continued development; its [detailed acceptance checks remain deferred](docs/deferred-acceptance-checks.md). Phase 6 adds the bounded route planning described below. Scheduling, receipt/transport/custody and processing remain deferred. Real operator/collection-point acceptance and inbox delivery remain unverified/unconfigured.
+
+## Route planning and comparison (Phase 6)
+
+Apply the forward migration separately using `php artisan migrate` and `php artisan migrate --env=testing`; never reset either dedicated database. No vehicles, routes or assignments are backfilled. Existing records, history, reservations, custody and private keys/files are retained.
+
+Administrator **Route planning** (`/admin/route-planning`) explains the setup order. Finish reviewed operator/depot/receiving directory setup and **Collector access** first; directory saves stale reviews and invalidate assignments. Then renew **Request review**, offer through **Pickup allocation**, and obtain named Collector acceptance. **Add vehicle declaration** provides the minimum code/operator/classification, scoped Collector mapping, capacity, tour limit and manually declared availability. There is no calendar or automatic fleet seed. Vehicle edits invalidate route approvals without changing request review or accepted assignment state.
+
+Choose an operator and **Load operator inputs**; select its active reviewed depot, up to three available vehicle/Collector mappings and up to 50 assignments. Explicitly select **Haversine geometric simulation**, review constant speed and per-stop service assumptions, then **Freeze and compare routes**. The default speed is 20 km/h, service is 600 seconds, vehicle capacity starts at 100 kg (synthetic fleets may use 100/200/300 kg) and duration is 21,600 seconds. These are configurable study assumptions, not Nairobi traffic or verified vehicle specifications. Missing/ineligible jobs are excluded with reasons; no private development record is repaired to make a run pass.
+
+Comparison retains the submission-order baseline and nearest-feasible/2-opt proposal on identical frozen inputs. Each tour returns to the depot, includes travel/service/return duration and respects mass and acknowledged Collector restrictions. A storage facet adds no second mass. Coverage differences suppress improvement percentages; computation/iteration limits are visible. There is no global-optimality, road navigation or fuel-savings claim.
+
+**Approve proposed plan** revalidates current frozen dependencies. Active route claims exclusively reserve served assignments, vehicles and Collectors without scheduling a time slot. **Withdraw route approval**, explicit same-operator supersession or source invalidation releases those claims, preserving item reservations and custody. Old results/history remain; rerunning creates new results. Collector **Approved routes** (`/collector/routes`) exposes only current approved ordered stops and links to independently authorized accepted-job details. Approval is not a receipt, transport event, unloading or booked appointment.
+
+**Show simulated map** is optional. It reuses installed Leaflet and `PICKUP_MAP_*` configuration, existing OpenStreetMap attribution/usage limitations and tile-provider privacy behavior. No provider call precedes that action, no names/contact/address text/request references are sent, and disabled/import/provider failure leaves the complete ordered list available. Lines are simulated straight-line legs. No road matrix service/API key, geocoder, paid dependency or external mail is introduced. Precise route snapshots are encrypted; locations are absent from URLs, logs and persistent browser storage.
+
+Run tests against the guarded dedicated PostgreSQL testing database. To reproduce the synthetic routing outputs without modifying development data:
+
+```bash
+ROUTING_EVALUATION_OUTPUT=/tmp/ewaste-routing-evaluation php artisan test --filter=RoutingEvaluationTest
+```
+
+This executes 30 fixed paired cases, 240 one-factor sensitivity cases and ten full application-path benchmarks per size (10/25/50), using an owned temporary testing schema for benchmark records. Do not substitute another database or treat generated values as field observations. See [Phase 6's report](docs/phase-6-report.md) for actual results, limits and exact walkthrough. Manual acceptance remains open and [deferred checks](docs/deferred-acceptance-checks.md) must be completed before deployment/full validation.
 
 ## Bounded Nairobi demonstration setup
 

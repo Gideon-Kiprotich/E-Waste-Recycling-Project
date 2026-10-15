@@ -28,6 +28,23 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontFlash(['token', 'password', 'password_confirmation', 'current_password', 'identifier', 'photo', 'address', 'contact', 'latitude', 'longitude', 'reason']);
         $exceptions->render(function (ValidationException $exception, Request $request) {
+            if ($request->routeIs('admin.routing.*') && ! $request->expectsJson()) {
+                $route = match ($request->route()->getName()) {
+                    'admin.routing.vehicles.store' => 'admin.routing.vehicles.create',
+                    'admin.routing.vehicles.update' => 'admin.routing.vehicles.edit',
+                    'admin.routing.approve' => 'admin.routing.show',
+                    default => 'admin.routing.index',
+                };
+                $safe = array_filter(array_intersect_key($request->all(), array_flip(['operator_id', 'depot_id', 'collector_id', 'organization_id', 'code', 'synthetic', 'capacity_kg', 'max_duration_seconds', 'available', 'speed_kmh', 'service_seconds', 'mode', 'idempotency_key', 'expected_version'])), fn ($v) => is_string($v) && strlen($v) <= 100);
+                foreach (['vehicle_refs' => 3, 'assignment_refs' => 50] as $field => $limit) {
+                    $values = $request->input($field);
+                    if (is_array($values)) {
+                        $safe[$field] = array_values(array_slice(array_filter($values, fn ($v) => is_string($v) && preg_match(substr(App\Support\Assignments\Input::referenceRule(), 6), $v)), 0, $limit));
+                    }
+                }
+
+                return redirect()->route($route, array_filter([$request->route('vehicle') ?? $request->route('run')]))->withErrors($exception->errors())->withInput($safe);
+            }
             if ($request->routeIs('admin.assignments.save', 'admin.collectors.store', 'admin.collectors.update', 'collector.assignments.respond') && ! $request->expectsJson()) {
                 $route = match ($request->route()->getName()) {
                     'admin.assignments.save' => 'admin.assignments.show',
