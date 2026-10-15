@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Actions\ManageVehicle;
 use App\Actions\PlanRoutes;
+use App\Support\Routing\Execution;
 use App\Support\Routing\Snapshot;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -79,7 +80,7 @@ class RoutingController extends Controller
         $routes = $routes->filter(function ($r) {
             $run = DB::table('route_runs')->where('id', $r->run_id)->first();
 
-            return app(Snapshot::class)->current(PlanRoutes::snapshot($run));
+            return ! DB::table('route_finishes')->where('route_id', $r->id)->exists() && app(Execution::class)->current($run->id);
         });
 
         return $this->view('routing.work', compact('routes'));
@@ -92,11 +93,13 @@ class RoutingController extends Controller
         abort_unless($approval?->state === 'approved', 409, 'This route approval is no longer active. Return to Approved routes.');
         $run = DB::table('route_runs')->where('id', $record->run_id)->firstOrFail();
         $snapshot = PlanRoutes::snapshot($run);
-        abort_unless(app(Snapshot::class)->current($snapshot), 409, 'Route inputs or eligibility changed. Ask the Administrator for a fresh comparison and approval.');
+        abort_unless(! DB::table('route_finishes')->where('route_id', $route)->exists() && app(Execution::class)->current($run->id), 409, 'Route inputs or eligibility changed. Ask the Administrator for a fresh comparison and approval.');
         $tour = collect(json_decode($run->results, true, flags: JSON_THROW_ON_ERROR)['proposed']['routes'])->firstWhere('vehicle_id', $record->vehicle_id);
         $jobs = array_column($snapshot['jobs'], null, 'id');
 
-        return $this->view('routing.stops', compact('record', 'snapshot', 'tour', 'jobs'));
+        $consumed = DB::table('route_consumptions')->where('route_id', $route)->pluck('visit_id', 'assignment_id')->all();
+
+        return $this->view('routing.stops', compact('record', 'snapshot', 'tour', 'jobs', 'consumed'));
     }
 
     private function view(string $view, array $data)

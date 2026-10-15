@@ -54,6 +54,10 @@
 /.npm
 /.composer
 *.sql
+# Reviewed schema-function source; database dumps remain ignored.
+!/database/sql/physical_receipts.sql
+!/database/sql/physical_receipt_boundaries.sql
+!/database/sql/physical_receipt_projection_guard.sql
 *.dump
 *.sqlite*
 /vendor

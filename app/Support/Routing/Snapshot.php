@@ -108,6 +108,9 @@ class Snapshot
             return;
         }
         $row = DB::table($table)->where('id', $id)->first();
+        if ($table === 'memberships' && $row && ($row->place_id ?? null) === null) {
+            unset($row->place_id);
+        }
         $dependencies[$table.':'.$id] = ['kind' => $table, 'record_id' => $id, 'fingerprint' => hash('sha256', json_encode($row, JSON_THROW_ON_ERROR))];
     }
 

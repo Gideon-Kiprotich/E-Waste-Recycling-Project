@@ -328,7 +328,11 @@ class DeviceRegistrationTest extends TestCase
             $staff->unsetRelation('membership');
             $this->signIn($staff);
             foreach ($urls as $url) {
-                $this->get($url)->assertForbidden();
+                if ($url === route('items.lookup', $item->subject->public_code)) {
+                    $this->get($url)->assertOk()->assertSee('Choose authorized work')->assertDontSee($item->subject->public_code)->assertDontSee('Private device model');
+                } else {
+                    $this->get($url)->assertForbidden();
+                }
             }
             $this->post('/items', $this->fields())->assertForbidden();
             $this->patch(route('items.update', $item->subject_id), $this->revision($item))->assertForbidden();

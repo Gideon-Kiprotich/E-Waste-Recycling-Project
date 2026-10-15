@@ -10,6 +10,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -28,6 +29,16 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontFlash(['token', 'password', 'password_confirmation', 'current_password', 'identifier', 'photo', 'address', 'contact', 'latitude', 'longitude', 'reason']);
         $exceptions->render(function (ValidationException $exception, Request $request) {
+            if ($request->routeIs('receipts.store', 'receipts.lookup', 'admin.point-staff.save', 'collector.routes.finish') && ! $request->expectsJson()) {
+                $name = $request->route()->getName();
+                $route = match ($name) {
+                    'admin.point-staff.save' => 'admin.point-staff', 'collector.routes.finish' => 'collector.routes.show', default => 'receipts.form'
+                };
+                $parameters = $name === 'admin.point-staff.save' ? [] : [$request->route('collection') ?? $request->route('route')];
+                $safe = array_filter(array_intersect_key($request->all(), array_flip(['idempotency_key'])), fn ($v) => is_string($v) && Str::isUuid($v));
+
+                return redirect()->route($route, $parameters)->withErrors($exception->errors())->withInput($safe);
+            }
             if ($request->routeIs('admin.routing.*') && ! $request->expectsJson()) {
                 $route = match ($request->route()->getName()) {
                     'admin.routing.vehicles.store' => 'admin.routing.vehicles.create',

@@ -29,3 +29,18 @@ On 15 October 2026 the user provisionally accepts Phase 6 for continued developm
 - [ ] Complete desktop/360px and real-device/touch journeys, full keyboard navigation/focus/error recovery, screen-reader announcements and contrast checks. Record actual tools/devices/results only when performed; do not infer them from HTML or JavaScript assertions.
 
 Use synthetic data. Phase 6 does not claim real operator/point acceptance, surveyed geometry/entrances, vehicle suitability, road/traffic realism or configured inbox delivery. Final integrated end-to-end acceptance remains required before deployment/full validation.
+
+## Phase 7 — implementation acceptance deferred
+
+The user authorizes implementation and continued development under the existing deferred-testing policy. **No Phase 7 user browser acceptance is reported.** Automated PostgreSQL/HTTP/JavaScript results are recorded separately in [the Phase 7 report](phase-7-report.md). The computer-use inventory exposed no browser/app surfaces. The following are unperformed acceptance checks, not known defects or passing results:
+
+- [ ] Use the supported Administrator directory, Collector/point scope, Ready review, allocation and route controls in the documented order. Verify actual scope changes sign affected staff out, old tabs cannot execute, and no Consumer/Admin receiver impersonation exists.
+- [ ] Collector pickup: open an approved stop; compare physical category/subtype/model, use manual code and optional actual camera scan, acknowledge individual receipts, record UTC time and private evidence/reference; check the owned Consumer milestone and unchanged ownership.
+- [ ] Processor drop-off: explicitly link an existing Processor to the request's point; receive only compatible Ready work. Exercise a failed visit, fresh review and later receipt without pickup offers/routes; check other points/accounts are denied.
+- [ ] Partial visit: distinguish explicit absent/refused/mismatch/safety hold from untouched omissions. Check retained reservations, no custody for failures, closed remainder-needs-review assignment and new review/offer/acceptance/route for eligible pickup remainders. Holds/mismatches must remain blocked without an override.
+- [ ] Multi-stop route: receive at stop one, continue to a still-valid stop two, then finish tour work. Separately finish with explicit unfinished stops and inspect retained assignments/reservations. Genuine remaining-input changes must block execution. No finish should imply arrival, unloading, facility receipt or processing.
+- [ ] Duplicate scans, submit/retry, changed payload, competing browser sessions, cancellation versus receipt, evidence failure and late claims: inspect safe feedback and finality. Automated races do not establish browser usability.
+- [ ] Recipient-only Receipt notices/read actions, safe old links, removal of private evidence/access after scope loss, scheduler delay/retry and historical outbox preservation. No inbox delivery is claimed.
+- [ ] Actual camera permission denial, unsupported/insecure browser, camera stop/page exit, JavaScript-off manual entry, desktop/360px/touch layouts, keyboard/focus/error recovery, screen-reader announcements and contrast. Record browser/device/assistive technology only when actually tested.
+
+Physical-discrepancy resolution, later handovers/facility delivery, processing/sanitization, return/re-entry and repeat-first-receipt workflows are outside this increment; they are not silently accepted. Real operator/point acceptance, safety suitability and inbox delivery remain unverified/unconfigured. **Final integrated end-to-end acceptance is required before deployment or declaring the project fully validated.**

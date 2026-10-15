@@ -26,7 +26,9 @@ class IdentifierMigrationTest extends TestCase
             'reason' => 'Synthetic migration fixture.', 'answers' => array_fill_keys(array_keys(Questions::tests('laptop', null)), 'UNKNOWN'),
         ], null);
         // All DDL and synthetic rows are inside the test transaction; the live schema is restored on rollback.
-        DB::statement('SET CONSTRAINTS complete_item_storage, complete_storage_item IMMEDIATE');
+        DB::statement('SET CONSTRAINTS ALL IMMEDIATE');
+        // This rollback-only legacy fixture also predates the physical-receipt item guard.
+        DB::statement('DROP TRIGGER item_receipt_consistency ON items');
         // The pre-identifier schema predates this extension's deferred item trigger.
         DB::statement('DROP TRIGGER complete_item_storage ON items');
         DB::statement('DROP TRIGGER permanent_identifier_kind ON items');

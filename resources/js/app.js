@@ -28,3 +28,9 @@ if (pickupLocation) {
         pickupLocation.querySelector('[data-location-message]').textContent = 'Map enhancement is unavailable. Use Advanced location entry, then confirm the point.';
     });
 }
+
+if (document.querySelector('[data-receipt-lookup]')) {
+    import('./receipt-camera').then(({ mountReceiptCamera }) => mountReceiptCamera()).catch(() => {
+        document.querySelector('[data-camera-status]').textContent = 'Camera enhancement unavailable. Enter the printed EWC code manually.';
+    });
+}

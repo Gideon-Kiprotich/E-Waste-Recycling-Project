@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Devices;
 
 use App\Actions\RegisterDevice;
+use App\Enums\Role;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Devices\ObservationRequest;
 use App\Http\Requests\Devices\RegisterDeviceRequest;
@@ -84,8 +85,12 @@ class DeviceController extends Controller
         return redirect()->route('items.show', $item->subject_id)->with('status', 'Your self-report was updated. Earlier revisions are retained.')->with('status_type', 'success');
     }
 
-    public function lookup(Request $request, string $public_code): RedirectResponse
+    public function lookup(Request $request, string $public_code)
     {
+        if ($request->user()->role() !== Role::Consumer) {
+            return response()->view('receipts.entry')->header('Cache-Control', 'private, no-store');
+        }
+
         $item = Item::where('owner_user_id', $request->user()->id)->whereHas('subject', fn ($query) => $query->where('public_code', $public_code))->firstOrFail();
         Gate::authorize('view', $item);
 

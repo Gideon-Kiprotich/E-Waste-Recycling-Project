@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 
 class History
 {
-    public const LABELS = ['offered' => 'Offer awaiting acknowledgment', 'accepted' => 'Accepted — not scheduled', 'declined' => 'Offer declined', 'withdrawn' => 'Assignment withdrawn', 'replaced' => 'Assignment replaced', 'invalidated' => 'Assignment changed — Administrator resolution required'];
+    public const LABELS = ['completed' => 'Pickup visit completed', 'remainder_review' => 'Visit recorded — remainder needs fresh review', 'offered' => 'Offer awaiting acknowledgment', 'accepted' => 'Accepted — not scheduled', 'declined' => 'Offer declined', 'withdrawn' => 'Assignment withdrawn', 'replaced' => 'Assignment replaced', 'invalidated' => 'Assignment changed — Administrator resolution required'];
 
     public static function record(User $actor, object $assignment, string $command, #[\SensitiveParameter] ?string $reason = null, ?string $code = null): void
     {
