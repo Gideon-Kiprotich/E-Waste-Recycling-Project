@@ -1,6 +1,16 @@
 # Phase 5 — Collector Allocation and Assignment Handling
 
-Implementation branch: `phase-5-collector-allocation`, from clean `main` at `722386ae1f30e4547115c73b97b5acfef27d1f29`. The project user's Phase 5 instruction accepts the preceding bounded plan and its defaults. Implementation is prepared for manual acceptance; Phase 5 is not closed or merged.
+Implementation branch: `phase-5-collector-allocation`, from clean `main` at `722386ae1f30e4547115c73b97b5acfef27d1f29`. The project user's Phase 5 instruction accepts the preceding bounded plan and its defaults.
+
+## Provisional acceptance — 15 October 2026
+
+The user reports a satisfactory first look and **provisionally accepts the Phase 5 implementation for continued development** because of time constraints. Detailed manual acceptance is **deferred, not passed**. This explicit authorization supersedes the earlier requirement to finish all Phase 5 manual checks before proceeding and permits fast-forward integration into `main`; it does not accept known failing checks or unresolved blocking functional defects. It is not final project validation or real operational acceptance. No screenshots, named assistive-technology results or additional detailed user evidence were supplied.
+
+The clean implementation tip was verified as `46454d98df98f9b2514d56dde942d09a473ab5e0` (`Add Nairobi demo data`), following `5f07d25` (initial guarded demo setup), `0bd6493` (`Clarify pickup allocation`) and `8953f4f` (`Add collector allocation`). The final recorded PostgreSQL result covers the latest demo authorization/application changes: **185 tests / 3769 assertions passed**, with **12 tests / 203 assertions** in the focused demo run and **33** subsequent HTTP/runtime checks as detailed below. The allocation correction has its own passing full-suite and **41 bounded browser checks**. The reported usability defects and the demo population blocker were resolved at those checkpoints; no unresolved blocking functional defect is recorded. Deferred checks are evidence gaps, not established defects.
+
+No application, schema, frontend or dependency changes follow that tested tip in this status increment. The recorded production build, JavaScript tests and Composer/platform results therefore remain applicable to their unchanged inputs; the PHP suite/build were not unnecessarily repeated. Status-increment verification: `vendor/bin/pint --test` and `git diff --check` **passed**. The documentation diff was reviewed for scope and sensitive content. No development records, pending outbox messages, credentials or private evidence were accessed or changed for this acceptance update.
+
+The [deferred acceptance checklist](deferred-acceptance-checks.md) carries the remaining manual journeys and evidence requirements. **Final end-to-end acceptance is required before deployment or declaring the project fully validated.** The dated implementation checkpoints below retain their actual results and limitations; their earlier acceptance-pending wording describes the status at those checkpoints.
 
 ## Requirements and boundaries
 
@@ -35,7 +45,7 @@ Safe original development counts: 3 accounts/memberships; 2 subjects/items/obser
 
 ## Actual verification
 
-Final full PostgreSQL suite: **166 tests passed / 3445 assertions**, **70.059 s**. Final `vendor/bin/pint --test`: **passed**. Automated checks and bounded browser observations remain distinct from user acceptance. All required implementation/migration/automated/runtime checks passed; manual acceptance remains pending.
+Original implementation checkpoint: full PostgreSQL suite **166 tests passed / 3445 assertions**, **70.059 s**. Final `vendor/bin/pint --test`: **passed**. Automated checks and bounded browser observations remain distinct from user acceptance. All required implementation/migration/automated/runtime checks passed at that checkpoint; detailed manual acceptance is now deferred under the authorization above.
 
 - Isolated PostgreSQL populated upgrade and fresh installation: **1 test / 77 assertions passed** before applying either dedicated migration. Original columns/rows are compared; no guessed scope/assignment is created; unique index and history guards are checked. Deferred prior storage protections are evaluated explicitly.
 - Focused allocation suite: **16 tests / 279 assertions passed** before the final additional Consumer overview/cache assertions. Coverage includes scope/revocation, exact parts, held/drop-off rejection, private offered/accepted/closed views, out-of-band drift with no GET writes, partial cancellation, review/date/observation/directory invalidation, stale versions, old/different retries, direct constraints, offer/accept/reassignment rollback, notice deduplication/read authorization and untouched historical outbox.
@@ -50,7 +60,7 @@ The complete staged patch was reviewed across **38 intended files**. No configur
 
 ## Limitations and manual acceptance
 
-Phase 5 awaits user acceptance. Real operator participation/collection-point acceptance and official service geometry remain unverified; synthetic labels are retained. Real inbox delivery remains unconfigured/unverified. The transaction gate deliberately serializes this bounded prototype; throughput is not claimed. No automatic expiry/acceptance window, dispatch, booked date, custody or scheduled route is inferred. Existing safety/unknown holds need a later authorized resolution workflow rather than a bypass here. Notice delivery requires the documented scheduler/one-shot command; historical notifications and general delivery remain deferred.
+Phase 5 has provisional user acceptance for continued development; the following detailed manual checks remain deferred in the linked checklist. Real operator participation/collection-point acceptance and official service geometry remain unverified; synthetic labels are retained. Real inbox delivery remains unconfigured/unverified. The transaction gate deliberately serializes this bounded prototype; throughput is not claimed. No automatic expiry/acceptance window, dispatch, booked date, custody or scheduled route is inferred. Existing safety/unknown holds need a later authorized resolution workflow rather than a bypass here. Notice delivery requires the documented scheduler/one-shot command; historical notifications and general delivery remain deferred.
 
 1. As Administrator, create a synthetic Collector privately or link an existing unscoped Collector to one reviewed operator. Verify creation errors, linking/deactivation, stale forms and session revocation; confirm Consumers cannot be promoted.
 2. Review an eligible pickup Ready, offer to an explicitly compatible Collector/receiving destination, then accept/decline as the named Collector. Confirm Offered hides contact/coordinates and Accepted says **not scheduled**. Exercise multiple items and exact HDD/SSD/fan capabilities; Held/Stale/drop-off/incompatible work must not allocate.
@@ -58,7 +68,7 @@ Phase 5 awaits user acceptance. Real operator participation/collection-point acc
 4. Process only new assignment notices with the documented command. Verify recipient-only list/read behavior, safe old notices after revocation, current-link denial and unchanged historical pending notices.
 5. Complete desktop/360px real-device tasks, full keyboard/focus/error announcements, screen-reader and contrast checks. Record actual user results separately; automated HTML/browser assertions do not establish those checks.
 
-Next increment is not started. Accepted assignments are inputs for future approved route planning; they are not receipts or permission to claim transport/custody.
+No next increment is implemented by this status update. Accepted assignments are inputs for future approved route planning; they are not receipts or permission to claim transport/custody.
 
 ## Pickup allocation usability correction — 14 October 2026
 
@@ -98,7 +108,7 @@ A browser assertion initially searched closed native-select option text in page 
 6. Named Collector: **Offers and accepted work → Open assignment → Accept — not scheduled → Record response**. Expect eligible accepted details without a booking, receipt or custody claim.
 7. Consumer: **My requests → request** (or overview) shows **Accepted — not scheduled**, without staff reasons. Use role-safe **Reload…** recovery after conflicts; after a real directory change, review and offer afresh.
 
-Phase 5 remains open. User acceptance, full keyboard/screen-reader announcements, contrast and real-device/touch checks remain manual. Real operator/collection-point acceptance, official service geometry and inbox delivery remain unverified/unconfigured. Prior operational/notice limitations remain; no routing, scheduling, receipt/transport/custody or processing is added.
+At this usability-correction checkpoint, Phase 5 remained open pending user acceptance. The later provisional acceptance above defers detailed manual checks, including full keyboard/screen-reader announcements, contrast and real-device/touch checks. Real operator/collection-point acceptance, official service geometry and inbox delivery remain unverified/unconfigured. Prior operational/notice limitations remain; no routing, scheduling, receipt/transport/custody or processing is added.
 
 Final preservation check **passed**: every development table/row fingerprint, environment/key file and existing private file matches the pre-change baseline. Temporary ports **8771/4451** are closed and the owned browser schema is removed. No development setup was changed. The approval timeout was resolved by separating workspace edits from the successful read-only check; no permission blocker remains.
 
@@ -151,7 +161,7 @@ Prepared walkthrough (not a claim that these accounts exist in development yet):
 4. Amina (`nairobi-demo-consumer-1@example.test`) opens **My requests** for the safe accepted milestone. David's HDD pickup remains available for another offer. Akinyi uses the reused study collecting operator; Faith uses the simulated WEEE Centre operator; Brian has only the existing Processor workspace.
 5. If directory data is later edited, use **Request review → Ready for later allocation (current checks must pass) → Record review decision** again before a fresh offer. If a preferred date elapsed, use the existing Consumer date-change control first. Reruns do not rewrite those decisions.
 
-Phase 5 remains open. Applying the development fixture, private credential provisioning and the user's browser walkthrough remain incomplete because of the explicit preservation conflict. Real receiving acceptance, entrances, licensing, hours/service boundary and inbox delivery remain unverified/unconfigured. Full screen-reader/contrast/real-device acceptance remains separate; no future-phase workflow is enabled.
+At this initial demo-setup checkpoint, applying the development fixture, private credential provisioning and the user's browser walkthrough remained incomplete because of the explicit preservation conflict. The authorized-population section below records its subsequent resolution; this earlier refusal is retained as history. Real receiving acceptance, entrances, licensing, hours/service boundary and inbox delivery remain unverified/unconfigured. Full screen-reader/contrast/real-device acceptance remains separate; no future-phase workflow is enabled.
 
 ## Authorized demo population — 14 October 2026
 
@@ -186,4 +196,4 @@ Both new pickups were independently reassessed as **Ready with no blockers**, wi
 4. David Ochieng's HDD request **`EWR-0FE8CA44867ACF82159B650307D780E5`** retains one active reservation and Ready review for a second offer. Amina's request retains two reservations. Akinyi is scoped to the reused study collector operator; Faith is scoped to the simulated WEEE Centre operator. Brian has only the existing Processor workspace.
 5. Use the existing Consumer date-change and Administrator fresh-review controls if facts later change; rerunning setup never refreshes dates/reviews or resets passwords. Finish setup changes before reviewing again.
 
-The population blocker is resolved and the dataset is ready for user testing. **Phase 5 remains open**: the user's live offer/acceptance browser walkthrough and remaining full keyboard/screen-reader/contrast/real-device checks are still unperformed. Real operator/point participation, physical entrance/service boundary, acceptance/capabilities/hours/licensing and inbox delivery remain unverified/unconfigured. No future-phase work, merge or push is performed.
+The population blocker is resolved and the dataset is ready for user testing. At this population checkpoint, the user's detailed live offer/acceptance browser walkthrough and full keyboard/screen-reader/contrast/real-device checks had not been reported as performed. The subsequent satisfactory first look grants only the provisional acceptance recorded above; these detailed checks remain deferred. Real operator/point participation, physical entrance/service boundary, acceptance/capabilities/hours/licensing and inbox delivery remain unverified/unconfigured. The population work itself did not implement a future phase, merge or push.
