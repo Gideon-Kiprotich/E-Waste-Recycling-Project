@@ -30,7 +30,10 @@ class Execution
             if (hash('sha256', json_encode($row, JSON_THROW_ON_ERROR)) === $d['fingerprint']) {
                 continue;
             }
-            $change = DB::table('receipt_route_changes as ch')->join('route_consumptions as co', 'co.visit_id', '=', 'ch.visit_id')->join('routes as ro', 'ro.id', '=', 'co.route_id')->join('receipt_visits as v', 'v.id', '=', 'ch.visit_id')->where('ro.run_id', $runId)->where('ch.kind', $d['kind'])->where('ch.record_id', $d['record_id'])->orderByDesc('v.recorded_at')->first(['ch.after_row']);
+            $change = DB::table('receipt_route_changes as ch')->join('route_consumptions as co', 'co.visit_id', '=', 'ch.visit_id')->join('routes as ro', 'ro.id', '=', 'co.route_id')->join('receipt_visits as v', 'v.id', '=', 'ch.visit_id')->where('ro.run_id', $runId)->where('ch.kind', $d['kind'])->where('ch.record_id', $d['record_id'])->orderByDesc('v.recorded_at')->first(['ch.after_row', 'ch.visit_id']);
+            if ($change && $d['kind'] === 'subjects' && DB::selectOne('SELECT handover_receipt_projection(?,?,?::jsonb,to_jsonb(s)) AS ok FROM subjects s WHERE id=?', [$change->visit_id, $d['record_id'], $change->after_row, $d['record_id']])?->ok) {
+                continue;
+            }
             if (! $change || ! DB::selectOne('SELECT to_jsonb(t)=?::jsonb AS matches FROM '.$d['kind'].' t WHERE id=?', [$change->after_row, $d['record_id']])?->matches) {
                 return false;
             }

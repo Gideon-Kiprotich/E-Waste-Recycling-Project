@@ -11,6 +11,7 @@ use App\Http\Controllers\Auth\RegistrationController;
 use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\Collection\RequestController;
 use App\Http\Controllers\Devices\DeviceController;
+use App\Http\Controllers\HandoverController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\RoleHomeController;
 use App\Http\Controllers\RoutingController;
@@ -34,6 +35,17 @@ Route::middleware('guest')->group(function (): void {
 
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 Route::middleware(['auth', 'account.current'])->group(function (): void {
+    Route::get('/handover-notices', [HandoverController::class, 'notices'])->name('handovers.notices');
+    Route::post('/handover-notices/{notice}/read', [HandoverController::class, 'read'])->whereUuid('notice')->name('handovers.notices.read');
+    Route::get('/handovers/{handover}', [HandoverController::class, 'show'])->whereUuid('handover')->name('handovers.show');
+    Route::middleware('role:collector,processor,administrator')->group(function (): void {
+        Route::get('/handovers', [HandoverController::class, 'index'])->name('handovers.index');
+        Route::get('/handovers/create/{recipient}', [HandoverController::class, 'create'])->whereUuid('recipient')->name('handovers.create');
+        Route::post('/handovers', [HandoverController::class, 'store'])->middleware('throttle:20,1')->name('handovers.store');
+        Route::post('/handovers/{handover}/{kind}', [HandoverController::class, 'change'])->whereUuid('handover')->where('kind', 'acknowledged|withdrawn|resolved')->middleware('throttle:20,1')->name('handovers.change');
+        Route::post('/handovers/{handover}/lookup', [HandoverController::class, 'lookup'])->whereUuid('handover')->middleware('throttle:30,1')->name('handovers.lookup');
+        Route::get('/handover-evidence/{operation}', [HandoverController::class, 'evidence'])->whereUuid('operation')->name('handovers.evidence');
+    });
     Route::get('/receipt-notices', [ReceiptController::class, 'notices'])->name('receipts.notices');
     Route::post('/receipt-notices/{notice}/read', [ReceiptController::class, 'read'])->whereUuid('notice')->name('receipts.notices.read');
     Route::get('/receipts/{visit}', [ReceiptController::class, 'result'])->whereUuid('visit')->name('receipts.result');

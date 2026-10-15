@@ -32,7 +32,7 @@ export function mountReceiptCamera(root = document) {
     };
     stop.addEventListener('click', () => { close(); status.textContent = 'Camera stopped. Manual entry remains available.'; input.focus(); });
     start.addEventListener('click', async () => {
-        if (attempted) { status.textContent = 'Use manual entry for this visit. Camera permission is not requested again.'; input.focus(); return; }
+        if (attempted) { status.textContent = 'Use manual entry for this manifest. Camera permission is not requested again.'; input.focus(); return; }
         attempted = true;
         if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia || !window.BarcodeDetector) {
             status.textContent = 'Camera scanning is unavailable in this browser or insecure context. Enter the printed EWC code manually.'; input.focus(); return;
@@ -50,7 +50,7 @@ export function mountReceiptCamera(root = document) {
                     if (!running) return;
                     for (const result of results) {
                         const code = receiptCode(result.rawValue, window.location.origin);
-                        if (code) { input.value = code; close(); status.textContent = 'Code read. Select label to check it against this visit.'; input.focus(); return; }
+                        if (code) { input.value = code; close(); status.textContent = 'Code read. Select label to check it against this manifest.'; input.focus(); return; }
                     }
                     timer = setTimeout(scan, 250);
                 } catch (error) { close(); status.textContent = cameraFailure(error); input.focus(); }

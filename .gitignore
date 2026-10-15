@@ -58,6 +58,8 @@
 !/database/sql/physical_receipts.sql
 !/database/sql/physical_receipt_boundaries.sql
 !/database/sql/physical_receipt_projection_guard.sql
+!/database/sql/custody_handovers.sql
+!/database/sql/handover_execution.sql
 *.dump
 *.sqlite*
 /vendor

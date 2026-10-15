@@ -147,6 +147,16 @@ class PartsMigrationTest extends TestCase
         $this->post('/items', $fields)->assertRedirect('/items/'.$id)->assertSessionHasNoErrors();
         $this->patch('/items/'.$id.'/observations', $legacyRevision)->assertRedirect('/items/'.$id)->assertSessionHasNoErrors();
         $this->assertSame($before, $this->snapshot());
+        // Current views require the later ledgers; retain the isolated Phase 2A preservation assertions above.
+        DB::statement('SET CONSTRAINTS ALL IMMEDIATE');
+        DB::statement('SET CONSTRAINTS ALL DEFERRED');
+        $later = glob(database_path('migrations/*.php'));
+        sort($later);
+        foreach ($later as $file) {
+            if (basename($file) > '2026_10_06_000001_create_standalone_parts_intake.php') {
+                (require $file)->up();
+            }
+        }
         $this->get('/items/'.$id)->assertOk()->assertSee(Questions::VERSION)->assertSee('Power / self-test');
         $revision = $fields;
         unset($revision['category'], $revision['identifier']);

@@ -21,7 +21,7 @@ class ReceiptController extends Controller
     public function access()
     {
         $staff = DB::table('memberships as m')->join('users as u', 'u.id', '=', 'm.user_id')->leftJoin('places as p', 'p.id', '=', 'm.place_id')->where('m.role', 'processor')->orderBy('u.display_name')->get(['m.*', 'u.display_name', 'u.status', 'p.name as point_name']);
-        $points = DB::table('places as p')->join('organizations as o', 'o.id', '=', 'p.organization_id')->where('p.kind', 'collection_point')->where('p.active', true)->where('p.review_status', 'approved')->where('o.review_status', 'approved')->whereIn('o.kind', ['processor', 'both'])->orderBy('p.name')->get(['p.id', 'p.version', 'p.name', 'o.name as operator_name']);
+        $points = DB::table('places as p')->join('organizations as o', 'o.id', '=', 'p.organization_id')->whereIn('p.kind', ['collection_point', 'facility'])->where('p.active', true)->where('p.review_status', 'approved')->where('o.review_status', 'approved')->whereIn('o.kind', ['processor', 'both'])->orderBy('p.name')->get(['p.id', 'p.version', 'p.name', 'o.name as operator_name']);
 
         return $this->view('receipts.access', compact('staff', 'points'));
     }
@@ -30,7 +30,7 @@ class ReceiptController extends Controller
     {
         $action->save($request->user(), $staff, $request->except('_token'));
 
-        return redirect()->route('admin.point-staff')->with('status', 'Point scope saved. Actual changes revoked affected sessions; sign in again before intake. Recheck Request review after any directory changes.');
+        return redirect()->route('admin.point-staff')->with('status', 'Place scope saved. Actual changes revoked affected sessions; sign in again before intake. Recheck Request review after any directory changes.');
     }
 
     public function inbox(Request $request)

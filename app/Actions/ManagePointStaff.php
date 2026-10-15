@@ -27,14 +27,14 @@ class ManagePointStaff
             $user = User::whereKey($userId)->lockForUpdate()->firstOrFail();
             $m = $user->membership()->lockForUpdate()->first();
             abort_unless($m?->role === Role::Processor, 404);
-            abort_unless((int) $m->version === (int) $fields['expected_version'], 409, 'Point access changed. Reload before saving.');
+            abort_unless((int) $m->version === (int) $fields['expected_version'], 409, 'Place access changed. Reload before saving.');
             $p = null;
             if ($fields['operation'] === 'link') {
                 [$id,$v] = Input::reference($fields['point_ref']);
                 $p = DB::table('places')->where('id', $id)->lockForUpdate()->first();
                 $org = $p ? DB::table('organizations')->where('id', $p->organization_id)->lockForUpdate()->first() : null;
-                if (! $p || ! $p->active || $p->review_status !== 'approved' || $p->kind !== 'collection_point' || $org?->review_status !== 'approved' || ! in_array($org->kind, ['processor', 'both'], true) || $user->status !== 'active') {
-                    throw ValidationException::withMessages(['point_ref' => 'Choose an active reviewed collection point under a reviewed processor/both operator for an active Processor account.']);
+                if (! $p || ! $p->active || $p->review_status !== 'approved' || ! in_array($p->kind, ['collection_point', 'facility'], true) || $org?->review_status !== 'approved' || ! in_array($org->kind, ['processor', 'both'], true) || $user->status !== 'active') {
+                    throw ValidationException::withMessages(['point_ref' => 'Choose an active reviewed collection point or facility under a reviewed processor/both operator for an active Processor account.']);
                 }
                 abort_unless((int) $p->version === $v, 409, 'Point changed. Reload the choices.');
             }

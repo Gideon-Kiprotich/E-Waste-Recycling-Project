@@ -29,6 +29,23 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontFlash(['token', 'password', 'password_confirmation', 'current_password', 'identifier', 'photo', 'address', 'contact', 'latitude', 'longitude', 'reason']);
         $exceptions->render(function (ValidationException $exception, Request $request) {
+            if ($request->routeIs('handovers.store', 'handovers.change', 'handovers.lookup') && ! $request->expectsJson()) {
+                $safe = [];
+                $key = $request->input('idempotency_key');
+                if (is_string($key) && Str::isUuid($key)) {
+                    $safe['idempotency_key'] = $key;
+                }
+                $target = $request->route('handover');
+                if ($target) {
+                    return redirect()->route('handovers.show', ['handover' => $target, 'action' => $request->route('kind')])->withErrors($exception->errors())->withInput($safe);
+                }
+                $ref = $request->input('recipient_ref');
+                if (is_string($ref) && preg_match(substr(App\Support\Assignments\Input::referenceRule(), 6), $ref)) {
+                    return redirect()->route('handovers.create', explode(':', $ref)[0])->withErrors($exception->errors())->withInput($safe);
+                }
+
+                return redirect()->route('handovers.index')->withErrors($exception->errors());
+            }
             if ($request->routeIs('receipts.store', 'receipts.lookup', 'admin.point-staff.save', 'collector.routes.finish') && ! $request->expectsJson()) {
                 $name = $request->route()->getName();
                 $route = match ($name) {

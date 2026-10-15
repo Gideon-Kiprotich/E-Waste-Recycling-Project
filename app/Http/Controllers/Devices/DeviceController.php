@@ -60,7 +60,9 @@ class DeviceController extends Controller
         $photo = DB::table('evidence_links')->join('attachments', 'attachments.id', '=', 'evidence_links.attachment_id')->where('evidence_links.subject_id', $item->subject_id)->whereNull('attachments.redacted_at')->value('attachments.id');
         $tests = Questions::tests($item->category->code, $item->subtype, $current->question_version);
 
-        return view('devices.show', compact('item', 'history', 'current', 'photo', 'tests'));
+        $handovers = DB::table('handover_items as hi')->join('handovers as h', 'h.id', '=', 'hi.handover_id')->where('hi.subject_id', $item->subject_id)->orderBy('h.created_at')->get(['h.id', 'hi.state']);
+
+        return view('devices.show', compact('item', 'history', 'current', 'photo', 'tests', 'handovers'));
     }
 
     public function edit(Request $request, string $item): View
