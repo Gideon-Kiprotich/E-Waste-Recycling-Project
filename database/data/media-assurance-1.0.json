@@ -1,0 +1,29 @@
+{
+  "version": "MEDIA-ASSURANCE-1.0",
+  "techniques": {
+    "hdd_sanitize_overwrite": {"label": "HDD firmware sanitize overwrite", "method": "clear", "media": ["hdd"], "supported": true, "software_version": true},
+    "ssd_sanitize_block_erase": {"label": "SSD firmware sanitize block erase", "method": "purge", "media": ["ssd"], "supported": true, "software_version": true},
+    "media_shredding": {"label": "Media shredding (external destruction)", "method": "destroy", "media": ["hdd", "ssd"], "supported": true, "software_version": false},
+    "other_clear": {"label": "Other clear technique — record only", "method": "clear", "media": ["hdd", "ssd"], "supported": false, "software_version": true},
+    "other_purge": {"label": "Other purge technique — record only", "method": "purge", "media": ["hdd", "ssd"], "supported": false, "software_version": true},
+    "other_destroy": {"label": "Other destruction technique — record only", "method": "destroy", "media": ["hdd", "ssd"], "supported": false, "software_version": false},
+    "unknown": {"label": "Technique unknown — record only", "method": "unknown", "media": ["hdd", "ssd"], "supported": false, "software_version": true}
+  },
+  "verification": {
+    "identity_scope": "Target identity and full treatment scope confirmed",
+    "execution_complete": "Execution/remnants and equipment show completion",
+    "no_anomalies": "No unresolved errors, anomalies or media-health concerns"
+  },
+  "validation": {
+    "media_appropriate": "Technique is supported for this actual medium/model and procedure",
+    "coverage_adequate": "Evidence and full target coverage meet the documented criterion",
+    "risk_acceptable": "Residual confidentiality risk is acceptable for the documented context"
+  },
+  "revalidation": {
+    "unchanged_control": "Media and controlled scope are unchanged since treatment",
+    "verification_applicable": "Prior satisfactory verification remains applicable to the new facts",
+    "media_appropriate": "Technique remains appropriate to the actual medium and procedure",
+    "coverage_adequate": "Prior and current evidence establish adequate coverage",
+    "risk_acceptable": "Residual confidentiality risk remains acceptable"
+  }
+}

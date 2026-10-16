@@ -61,6 +61,7 @@
 !/database/sql/custody_handovers.sql
 !/database/sql/handover_execution.sql
 !/database/sql/inspection_decisions.sql
+!/database/sql/sanitization_records.sql
 *.dump
 *.sqlite*
 /vendor

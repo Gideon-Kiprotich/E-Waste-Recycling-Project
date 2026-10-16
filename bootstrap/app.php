@@ -8,6 +8,7 @@ use App\Support\Collection\DirectoryInput;
 use App\Support\Collection\Input;
 use App\Support\Collection\SiteLocation;
 use App\Support\Devices\SafeInput;
+use App\Support\Sanitization\Policy;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -31,6 +32,26 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontFlash(['token', 'password', 'password_confirmation', 'current_password', 'identifier', 'photo', 'address', 'contact', 'latitude', 'longitude', 'reason']);
         $exceptions->render(function (ValidationException $exception, Request $request) {
+            if ($request->routeIs('sanitization.store') && ! $request->expectsJson()) {
+                $safe = [];
+                $key = $request->input('idempotency_key');
+                if (is_string($key) && Str::isUuid($key)) {
+                    $safe['idempotency_key'] = $key;
+                }
+                $kind = $request->route('kind');
+                foreach (['outcome' => ['success', 'failed', 'incomplete', 'unverifiable', 'satisfactory', 'unsatisfactory', 'accepted', 'rejected'], 'technique' => array_keys(Policy::definition()['techniques'])] as $name => $values) {
+                    if (is_string($request->input($name)) && in_array($request->input($name), $values, true)) {
+                        $safe[$name] = $request->input($name);
+                    }
+                }
+                foreach (Policy::checks($kind) as $code => $label) {
+                    if (in_array($request->input('checks.'.$code), ['YES', 'NO', 'UNKNOWN'], true)) {
+                        $safe['checks'][$code] = $request->input('checks.'.$code);
+                    }
+                }
+
+                return redirect()->route('sanitization.show', ['subject' => $request->route('subject'), 'action' => $kind])->withErrors($exception->errors())->withInput($safe);
+            }
             if ($request->routeIs('assessments.store', 'assessments.decide') && ! $request->expectsJson()) {
                 $safe = [];
                 $key = $request->input('idempotency_key');

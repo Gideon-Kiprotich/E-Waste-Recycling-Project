@@ -16,6 +16,7 @@ use App\Http\Controllers\HandoverController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\RoleHomeController;
 use App\Http\Controllers\RoutingController;
+use App\Http\Controllers\SanitizationController;
 use App\Support\PrivacyNotice;
 use Illuminate\Support\Facades\Route;
 
@@ -36,6 +37,12 @@ Route::middleware('guest')->group(function (): void {
 
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 Route::middleware(['auth', 'account.current'])->group(function (): void {
+    Route::get('/media/{subject}/sanitization', [SanitizationController::class, 'show'])->whereUuid('subject')->middleware('role:consumer,processor')->name('sanitization.show');
+    Route::middleware('role:processor')->group(function (): void {
+        Route::get('/facility/sanitization', [SanitizationController::class, 'index'])->name('sanitization.index');
+        Route::post('/media/{subject}/sanitization/{kind}', [SanitizationController::class, 'store'])->whereUuid('subject')->where('kind', 'attempt|verification|validation|revalidation')->middleware('throttle:20,1')->name('sanitization.store');
+        Route::get('/media-evidence/{record}', [SanitizationController::class, 'evidence'])->whereUuid('record')->name('sanitization.evidence');
+    });
     Route::get('/assessment-notices', [AssessmentController::class, 'notices'])->name('assessments.notices');
     Route::post('/assessment-notices/{notice}/read', [AssessmentController::class, 'read'])->whereUuid('notice')->name('assessments.notices.read');
     Route::get('/inspections/{subject}', [AssessmentController::class, 'show'])->whereUuid('subject')->middleware('role:consumer,processor')->name('assessments.show');
