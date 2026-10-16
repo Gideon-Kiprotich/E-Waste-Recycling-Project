@@ -13,7 +13,7 @@
         @elseif($role === \App\Enums\Role::Administrator)
             <p><a class="primary button-link" href="{{ route('admin.directory.index') }}">Operators and places</a> <a class="secondary button-link" href="{{ route('admin.reviews.index') }}">Request review</a> <a class="secondary button-link" href="{{ route('admin.assignments.index') }}">Pickup allocation</a> <a class="secondary button-link" href="{{ route('admin.collectors.index') }}">Collector access</a> <a class="secondary button-link" href="{{ route('admin.point-staff') }}">Place staff access</a> <a class="secondary button-link" href="{{ route('admin.routing.index') }}">Route planning</a></p>
         @elseif($role === \App\Enums\Role::Processor)
-            <p><a class="primary button-link" href="{{ route('processor.intake') }}">Point intake</a>. An Administrator must explicitly grant point scope before drop-off receipt.</p>
+            <p><a class="primary button-link" href="{{ route('processor.intake') }}">Point intake</a>. An Administrator must explicitly grant point scope before drop-off receipt.</p><p><a href="{{ route('assessments.index') }}">Assessments / Inspection</a> requires explicit facility scope and accepted facility custody.</p>
         @endif
         @if($role === \App\Enums\Role::Collector)<p><a class="primary button-link" href="{{ route('collector.assignments.index') }}">Offers and accepted work</a></p><p><a href="{{ route('collector.routes.index') }}">Approved routes</a></p><p>Operator scope must be granted by an Administrator; acceptance is not scheduling.</p>@endif
         @if($role !== \App\Enums\Role::Consumer)<p><a href="{{ route('handovers.index') }}">Custody handovers</a> · <a href="{{ route('handovers.notices') }}">Handover notices</a></p>@endif

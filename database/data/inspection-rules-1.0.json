@@ -1,0 +1,872 @@
+{
+  "ASSESS-1.0": {
+    "schema_version": "TECH-INSPECTION-1.0",
+    "rules": {
+      "R01": "Unsupported stream or restricted hazard: hold for separate review.",
+      "R02": "Safety is unknown; no safe assumption.",
+      "R03": "Missing/conflicting decisive observations or unsupported applicability; manual review.",
+      "R04": "Failed function plus evidenced human non-repairability: recycling candidate.",
+      "R05": "Failed function recorded as repairable: refurbishment candidate, not release permission.",
+      "R06": "Failed function with undetermined repairability: manual review.",
+      "R07": "All applicable decisive functions passed: refurbishment/reuse-preparation candidate; later gates remain.",
+      "R08": "No supported decision path: manual review."
+    },
+    "schemas": {
+      "laptop": {
+        "safety_concern": {
+          "label": "Restricted hazard / safety concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "physical_damage": {
+          "label": "Physical damage",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "repairability": {
+          "label": "Human repairability assessment",
+          "values": [
+            "REPAIRABLE",
+            "NON_REPAIRABLE",
+            "UNDETERMINED"
+          ],
+          "decisive": false
+        },
+        "data_status": {
+          "label": "Data-bearing capability (including configuration data)",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "power": {
+          "label": "Power / self-test",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "display": {
+          "label": "Usable display",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "input": {
+          "label": "Keyboard / input",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "system": {
+          "label": "Storage / system operation",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "enclosure": {
+          "label": "Enclosure damage/concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "charging_risk": {
+          "label": "Charging / battery safety concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "connectivity": {
+          "label": "Connectivity concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        }
+      },
+      "desktop": {
+        "safety_concern": {
+          "label": "Restricted hazard / safety concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "physical_damage": {
+          "label": "Physical damage",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "repairability": {
+          "label": "Human repairability assessment",
+          "values": [
+            "REPAIRABLE",
+            "NON_REPAIRABLE",
+            "UNDETERMINED"
+          ],
+          "decisive": false
+        },
+        "data_status": {
+          "label": "Data-bearing capability (including configuration data)",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "power": {
+          "label": "Power / self-test",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "system": {
+          "label": "Storage / system operation",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "display_input": {
+          "label": "Display / input with a test setup",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "storage": {
+          "label": "Storage operation",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "enclosure": {
+          "label": "Enclosure damage/concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "ports": {
+          "label": "Port concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "cooling": {
+          "label": "Cooling concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        }
+      },
+      "phone": {
+        "safety_concern": {
+          "label": "Restricted hazard / safety concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "physical_damage": {
+          "label": "Physical damage",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "repairability": {
+          "label": "Human repairability assessment",
+          "values": [
+            "REPAIRABLE",
+            "NON_REPAIRABLE",
+            "UNDETERMINED"
+          ],
+          "decisive": false
+        },
+        "data_status": {
+          "label": "Data-bearing capability (including configuration data)",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "power_system": {
+          "label": "Power / system operation",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "display_touch": {
+          "label": "Display / touch",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "charging": {
+          "label": "Charging function",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "connectivity": {
+          "label": "Connectivity concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "enclosure": {
+          "label": "Enclosure damage/concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "battery_risk": {
+          "label": "Battery safety concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        }
+      },
+      "flat_monitor": {
+        "safety_concern": {
+          "label": "Restricted hazard / safety concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "physical_damage": {
+          "label": "Physical damage",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "repairability": {
+          "label": "Human repairability assessment",
+          "values": [
+            "REPAIRABLE",
+            "NON_REPAIRABLE",
+            "UNDETERMINED"
+          ],
+          "decisive": false
+        },
+        "data_status": {
+          "label": "Data-bearing capability (including configuration data)",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "power": {
+          "label": "Power / self-test",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "image": {
+          "label": "Stable image with test source",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "enclosure": {
+          "label": "Enclosure damage/concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "connectors": {
+          "label": "Connector concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        }
+      },
+      "printer": {
+        "safety_concern": {
+          "label": "Restricted hazard / safety concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "physical_damage": {
+          "label": "Physical damage",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "repairability": {
+          "label": "Human repairability assessment",
+          "values": [
+            "REPAIRABLE",
+            "NON_REPAIRABLE",
+            "UNDETERMINED"
+          ],
+          "decisive": false
+        },
+        "data_status": {
+          "label": "Data-bearing capability (including configuration data)",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "power": {
+          "label": "Power / self-test",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "test_page": {
+          "label": "Test-page output",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "feed": {
+          "label": "Feed / mechanical function",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "connectivity": {
+          "label": "Connectivity concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "enclosure": {
+          "label": "Enclosure damage/concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "supplies": {
+          "label": "Supply concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        }
+      },
+      "router": {
+        "safety_concern": {
+          "label": "Restricted hazard / safety concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "physical_damage": {
+          "label": "Physical damage",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "repairability": {
+          "label": "Human repairability assessment",
+          "values": [
+            "REPAIRABLE",
+            "NON_REPAIRABLE",
+            "UNDETERMINED"
+          ],
+          "decisive": false
+        },
+        "data_status": {
+          "label": "Data-bearing capability (including configuration data)",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "power": {
+          "label": "Power / self-test",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "connectivity": {
+          "label": "Link / connectivity test",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "enclosure": {
+          "label": "Enclosure damage/concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "ports": {
+          "label": "Port concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        }
+      },
+      "keyboard": {
+        "safety_concern": {
+          "label": "Restricted hazard / safety concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "physical_damage": {
+          "label": "Physical damage",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "repairability": {
+          "label": "Human repairability assessment",
+          "values": [
+            "REPAIRABLE",
+            "NON_REPAIRABLE",
+            "UNDETERMINED"
+          ],
+          "decisive": false
+        },
+        "data_status": {
+          "label": "Data-bearing capability (including configuration data)",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "input": {
+          "label": "Keyboard / input",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "enclosure": {
+          "label": "Enclosure damage/concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "cable": {
+          "label": "Cable concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "power": {
+          "label": "Power / self-test",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN",
+            "NOT_APPLICABLE"
+          ],
+          "decisive": false
+        }
+      }
+    }
+  },
+  "PARTS-ASSESS-1.0": {
+    "schema_version": "PARTS-INSPECTION-1.0",
+    "rules": {
+      "R01": "Unsupported stream or restricted hazard: hold for separate review.",
+      "R02": "Safety is unknown; no safe assumption.",
+      "R03": "Missing/conflicting decisive observations or unsupported applicability; manual review.",
+      "R04": "Failed function plus evidenced human non-repairability: recycling candidate.",
+      "R05": "Failed function recorded as repairable: refurbishment candidate, not release permission.",
+      "R06": "Failed function with undetermined repairability: manual review.",
+      "R07": "All applicable decisive functions passed: refurbishment/reuse-preparation candidate; later gates remain.",
+      "R08": "No supported decision path: manual review."
+    },
+    "schemas": {
+      "hdd": {
+        "safety_concern": {
+          "label": "Restricted hazard / safety concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "physical_damage": {
+          "label": "Physical damage",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "repairability": {
+          "label": "Human repairability assessment",
+          "values": [
+            "REPAIRABLE",
+            "NON_REPAIRABLE",
+            "UNDETERMINED"
+          ],
+          "decisive": false
+        },
+        "detection": {
+          "label": "Safe device detection test",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "diagnostics": {
+          "label": "Safe device diagnostic function result",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "media_identified": {
+          "label": "Confirmed correct HDD/SSD media identity",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "connector_damage": {
+          "label": "Connector damage",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "unusual_noise": {
+          "label": "Unusual noise / vibration concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        }
+      },
+      "ssd": {
+        "safety_concern": {
+          "label": "Restricted hazard / safety concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "physical_damage": {
+          "label": "Physical damage",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "repairability": {
+          "label": "Human repairability assessment",
+          "values": [
+            "REPAIRABLE",
+            "NON_REPAIRABLE",
+            "UNDETERMINED"
+          ],
+          "decisive": false
+        },
+        "detection": {
+          "label": "Safe device detection test",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "diagnostics": {
+          "label": "Safe device diagnostic function result",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "media_identified": {
+          "label": "Confirmed correct HDD/SSD media identity",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "connector_damage": {
+          "label": "Connector damage",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "thermal_issue": {
+          "label": "Thermal safety concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        }
+      },
+      "ict_cooling_fan": {
+        "safety_concern": {
+          "label": "Restricted hazard / safety concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "physical_damage": {
+          "label": "Physical damage",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "repairability": {
+          "label": "Human repairability assessment",
+          "values": [
+            "REPAIRABLE",
+            "NON_REPAIRABLE",
+            "UNDETERMINED"
+          ],
+          "decisive": false
+        },
+        "rotation": {
+          "label": "Safe controlled rotation observation",
+          "values": [
+            "PASS",
+            "FAIL",
+            "UNKNOWN"
+          ],
+          "decisive": true
+        },
+        "fan_voltage": {
+          "label": "Verified rating is at most 24 V DC",
+          "values": [
+            "WITHIN",
+            "OUTSIDE",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "fan_size": {
+          "label": "Verified housing/frame is at most 140 mm (excluding free leads)",
+          "values": [
+            "WITHIN",
+            "OUTSIDE",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "fan_application": {
+          "label": "Dedicated ICT cooling application",
+          "values": [
+            "ICT",
+            "OTHER",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "fan_electronics": {
+          "label": "Integral circuitry / additional electronics",
+          "values": [
+            "BASIC",
+            "ADDITIONAL",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        },
+        "unusual_noise": {
+          "label": "Unusual noise / vibration concern",
+          "values": [
+            "YES",
+            "NO",
+            "UNKNOWN"
+          ],
+          "decisive": false
+        }
+      }
+    }
+  }
+}

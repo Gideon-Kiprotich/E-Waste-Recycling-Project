@@ -96,7 +96,7 @@ class RoutingConcurrencyTest extends TestCase
                 @unlink($file);
                 @unlink($file.'.ready');
             }
-            $this->assertFalse(DB::table('pg_namespace')->where('nspname',$schema)->exists());
+            $this->assertFalse(DB::table('pg_namespace')->where('nspname', $schema)->exists());
         }
     }
 }

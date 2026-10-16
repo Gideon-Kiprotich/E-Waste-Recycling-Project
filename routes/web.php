@@ -3,6 +3,7 @@
 use App\Enums\Role;
 use App\Http\Controllers\Administration\DirectoryController;
 use App\Http\Controllers\Administration\ReviewController;
+use App\Http\Controllers\AssessmentController;
 use App\Http\Controllers\Assignments\AllocationController;
 use App\Http\Controllers\Assignments\CollectorAccessController;
 use App\Http\Controllers\Assignments\NoticeController;
@@ -35,6 +36,15 @@ Route::middleware('guest')->group(function (): void {
 
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 Route::middleware(['auth', 'account.current'])->group(function (): void {
+    Route::get('/assessment-notices', [AssessmentController::class, 'notices'])->name('assessments.notices');
+    Route::post('/assessment-notices/{notice}/read', [AssessmentController::class, 'read'])->whereUuid('notice')->name('assessments.notices.read');
+    Route::get('/inspections/{subject}', [AssessmentController::class, 'show'])->whereUuid('subject')->middleware('role:consumer,processor')->name('assessments.show');
+    Route::middleware('role:processor')->group(function (): void {
+        Route::get('/facility/inspections', [AssessmentController::class, 'index'])->name('assessments.index');
+        Route::post('/inspections/{subject}', [AssessmentController::class, 'store'])->whereUuid('subject')->middleware('throttle:20,1')->name('assessments.store');
+        Route::post('/inspections/{subject}/decisions', [AssessmentController::class, 'decide'])->whereUuid('subject')->middleware('throttle:20,1')->name('assessments.decide');
+        Route::get('/inspection-evidence/{assessment}', [AssessmentController::class, 'evidence'])->whereUuid('assessment')->name('assessments.evidence');
+    });
     Route::get('/handover-notices', [HandoverController::class, 'notices'])->name('handovers.notices');
     Route::post('/handover-notices/{notice}/read', [HandoverController::class, 'read'])->whereUuid('notice')->name('handovers.notices.read');
     Route::get('/handovers/{handover}', [HandoverController::class, 'show'])->whereUuid('handover')->name('handovers.show');

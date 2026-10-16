@@ -2,6 +2,8 @@
 
 use App\Http\Middleware\EnsureCurrentAccount;
 use App\Http\Middleware\RequireRole;
+use App\Support\Assessments\Context;
+use App\Support\Assessments\Schemas;
 use App\Support\Collection\DirectoryInput;
 use App\Support\Collection\Input;
 use App\Support\Collection\SiteLocation;
@@ -29,6 +31,29 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontFlash(['token', 'password', 'password_confirmation', 'current_password', 'identifier', 'photo', 'address', 'contact', 'latitude', 'longitude', 'reason']);
         $exceptions->render(function (ValidationException $exception, Request $request) {
+            if ($request->routeIs('assessments.store', 'assessments.decide') && ! $request->expectsJson()) {
+                $safe = [];
+                $key = $request->input('idempotency_key');
+                if (is_string($key) && Str::isUuid($key)) {
+                    $safe['idempotency_key'] = $key;
+                }
+                $row = app(Context::class)->authorized($request->user(), $request->route('subject'));
+                $schema = Schemas::definition($row->category, $row->subtype);
+                $answers = $request->input('answers');
+                if (is_array($answers)) {
+                    foreach ($schema['questions'] as $code => $question) {
+                        $value = $answers[$code] ?? null;
+                        if (is_string($value) && in_array($value, $question['values'], true)) {
+                            $safe['answers'][$code] = $value;
+                        }
+                    }
+                }
+                if (in_array($request->input('pathway'), ['refurbish', 'recycle', 'hold'], true)) {
+                    $safe['pathway'] = $request->input('pathway');
+                }
+
+                return redirect()->route('assessments.show', ['subject' => $request->route('subject'), 'action' => $request->routeIs('assessments.decide') ? 'decide' : 'inspect'])->withErrors($exception->errors())->withInput($safe);
+            }
             if ($request->routeIs('handovers.store', 'handovers.change', 'handovers.lookup') && ! $request->expectsJson()) {
                 $safe = [];
                 $key = $request->input('idempotency_key');
