@@ -17,7 +17,7 @@ class AssessmentController extends Controller
     {
         $actor = $request->user();
         $place = $ctx->scope($actor);
-        $rows = $ctx->rows($actor)->get();
+        $rows = $ctx->rows($actor)->where('i.intake_class', '<>', 'processor_derived')->get();
 
         return $this->view('assessments.index', compact('rows', 'place', 'ctx'));
     }

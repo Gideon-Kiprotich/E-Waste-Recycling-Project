@@ -48,11 +48,12 @@ class CollectionMigrationTest extends TestCase
                 }
             }
             foreach ($before as $table => [$columns, $rows]) {
-                $this->assertSame($rows, DB::table($table)->select($columns)->get()->toJson(), $table);
+                $this->assertSame($rows, DB::table($table)->select($columns)->when($table === 'categories', fn ($q) => $q->where('code', '<>', 'processor_media'))->get()->toJson(), $table);
             }
             $this->assertSame(0, DB::table('memberships')->whereNotNull('organization_id')->count());
             $this->assertSame(0, DB::table('memberships')->where('version', '<>', 1)->count());
             $this->assertDatabaseCount('assignments', 0);
+            $this->assertDatabaseHas('categories', ['code' => 'processor_media', 'supported' => false]);
             foreach (['organizations', 'places', 'place_categories', 'service_areas', 'requests', 'request_items', 'request_private_details'] as $table) {
                 $this->assertDatabaseCount($table, 0);
             }

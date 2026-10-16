@@ -315,7 +315,7 @@ class SanitizationRecordsTest extends TestCase
             app(InspectItems::class)->inspect($w['receiver'], $s, $this->inspectionFields($s, $case));
             app(InspectItems::class)->decide($w['receiver'], $s, $this->decisionFields($s));
             $this->handoverBoundary();
-            $this->receiptSignIn($w['receiver'])->get(route('sanitization.show', $s))->assertOk()->assertSee($category === 'laptop' ? 'Media inventory support pending' : 'Fans are outside')->assertDontSee('Data treatment satisfied (attested)');
+            $this->receiptSignIn($w['receiver'])->get(route('sanitization.show', $s))->assertOk()->assertSee($category === 'laptop' ? 'Media inventory' : 'Fans are outside')->assertDontSee('Data treatment satisfied (attested)');
             $this->postMedia($w, 'attempt')->assertUnprocessable();
             $this->receiptSignIn($w['owner'])->get(route('sanitization.show', $s))->assertOk()->assertDontSee('Data treatment satisfied (attested)');
         }

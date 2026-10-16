@@ -49,6 +49,10 @@ class Item extends Model
 
     public function subtypeLabel(): ?string
     {
+        if ($this->intake_class === 'processor_derived') {
+            return ['hdd' => 'HDD', 'ssd' => 'SSD', 'other_nonvolatile' => 'Other nonvolatile storage'][$this->subtype];
+        }
+
         return Questions::subtypes($this->category->code)[$this->subtype ?? ''] ?? null;
     }
 }

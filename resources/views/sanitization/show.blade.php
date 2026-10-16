@@ -4,7 +4,11 @@
 @section('intro','External work records and separate assurance reviews do not establish certification, reuse suitability, disposal or a custody change.')
 @section('content')
 <p>{{ $row->public_code }}</p>
-@if(!$supported)
+@if(!$supported && !in_array($row->category,['standalone_part','processor_media'],true))
+<p><a href="{{ route('media-inventory.show',$row->subject_id) }}">Media inventory → Review coverage</a>. Treatment is recorded against identified canonical media, not this parent.</p>
+@elseif(!$supported && $row->category === 'processor_media')
+<x-feedback type="info" message="Treatment support unavailable. Other nonvolatile media is inventory-only; no clearance is established." />
+@elseif(!$supported)
 <x-feedback type="info" :message="$row->category !== 'standalone_part' ? 'Media inventory support pending. Whole-device sanitization coverage is unavailable; no success or N/A is established.' : 'Fans are outside this standalone HDD/SSD media workflow; no clearance is established here.'" />
 @else
 <section class="card notice-content"><h2>Current data-treatment gate</h2><p><strong>{{ \App\Support\Sanitization\Context::labels()[$state] }}</strong></p>
@@ -13,6 +17,7 @@
 <p>Assurance version {{ $current?->version ?? 0 }}. Latest evidence governs; an older success cannot override newer negative evidence.</p></section>
 @endif
 @if($private)
+@if($inventoryParent)<p><a href="{{ route('media-inventory.show',$inventoryParent) }}">Parent Media inventory → Authorize media treatment / Review coverage</a></p>@endif
 <p><a href="{{ route('sanitization.index') }}">Media sanitization</a> · <a href="{{ route('assessments.show',$row->subject_id) }}">Assessments / Inspection</a> · <a href="{{ route('handovers.index') }}">Custody handovers</a></p>
 @foreach($blockers as $blocker)<x-feedback type="info" :message="$blocker" :id="'media-blocker-'.$loop->index" />@endforeach
 <p>@foreach($actions as $action=>$label)<a class="secondary button-link" href="{{ route('sanitization.show',['subject'=>$row->subject_id,'action'=>$action]) }}">{{ $label }}</a> @endforeach</p>
@@ -54,7 +59,7 @@
 <p>Actor {{ $r->display_name }} · Observed {{ \Carbon\CarbonImmutable::parse($r->observed_at)->utc()->format('j M Y H:i') }} UTC · Recorded {{ \Carbon\CarbonImmutable::parse($r->recorded_at)->setTimezone('Africa/Nairobi')->format('j M Y H:i') }} Africa/Nairobi.</p>
 <p>{{ $policy['techniques'][$r->technique]['label'] }} · {{ strtoupper($policy['techniques'][$r->technique]['method']) }} · MEDIA-ASSURANCE-1.0.</p>
 @if($policy['techniques'][$r->technique]['method'] === 'destroy')<p>{{ $r->kind === 'attempt' ? 'Destruction reported; execution not yet verified by this record.' : ($r->kind === 'verification' && $r->outcome === 'satisfactory' ? 'Destruction execution verified; adequacy validation is separate.' : (in_array($r->kind,['validation','revalidation'],true) && $r->outcome === 'accepted' ? 'Destruction adequacy accepted (attested); non-reusable, no disposal recorded.' : 'Destruction assurance unresolved or rejected.')) }}</p>@endif
-<p>Record {{ $r->id }} · Attempt {{ $r->attempt_id }}@if($r->previous_attempt_id) · Previous attempt {{ $r->previous_attempt_id }}@endif. Frozen subject {{ $r->source_subject_version }}, inspection/decision {{ $r->assessment_version }}, custody {{ $r->custody_version }}.</p>
+<p>Record {{ $r->id }} · Attempt {{ $r->attempt_id }}@if($r->previous_attempt_id) · Previous attempt {{ $r->previous_attempt_id }}@endif. Authorization context {{ $r->authorization_context_version }} · {{ $r->authorization_context_version === 2 ? 'Explicit parent authorization' : 'Own inspection/decision' }}. Frozen subject {{ $r->source_subject_version }}, inspection/decision {{ $r->assessment_version }}, custody {{ $r->custody_version }}.</p>
 <p>{{ \Illuminate\Support\Facades\Crypt::decryptString($r->reason_ciphertext) }}</p>
 <dl class="facts">@foreach(['executor'=>'Executing operator','tool'=>'Tool/equipment','tool_version'=>'Tool version','scope'=>'Scope','procedure'=>'Procedure and criterion'] as $key=>$label)@if($r->{$key.'_ciphertext'})<dt>{{ $label }}</dt><dd>{{ \Illuminate\Support\Facades\Crypt::decryptString($r->{$key.'_ciphertext'}) }}</dd>@endif @endforeach
 @foreach(json_decode($r->checks,true,flags:JSON_THROW_ON_ERROR) as $key=>$answer)<dt>{{ $policy[$r->kind][$key] }}</dt><dd>{{ $answer }}</dd>@endforeach</dl>

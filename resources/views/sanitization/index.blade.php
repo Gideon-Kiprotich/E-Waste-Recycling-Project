@@ -10,7 +10,10 @@
 @forelse($rows as $row)
 <section class="card notice-content section-title"><h2>{{ $row->public_code }}</h2><p>{{ $row->category_label }} · {{ $row->subtype }} · {{ $row->model }}</p>
 @foreach($ctx->blockers($row) as $blocker)<p>{{ $blocker }}</p>@endforeach
-<p><a href="{{ route('sanitization.show',$row->subject_id) }}">Open media assurance and history</a> · <a href="{{ route('assessments.show',$row->subject_id) }}">Open inspection and decisions</a></p></section>
+<p><a href="{{ route('sanitization.show',$row->subject_id) }}">Open media assurance and history</a>@if($row->category === 'processor_media')
+@php($parent=\Illuminate\Support\Facades\DB::table('media_origins')->where('subject_id',$row->subject_id)->value('parent_id'))
+ · <a href="{{ route('media-inventory.show',$parent) }}">Parent Media inventory</a>
+@else · <a href="{{ route('assessments.show',$row->subject_id) }}">Open inspection and decisions</a>@endif</p></section>
 @empty<x-feedback type="info" message="No items in this facility's confirmed custody. Actual facility handover must be acknowledged through Custody handovers; no demonstration receipts are created here." />@endforelse
 @endif
 @endsection

@@ -2,6 +2,7 @@
 @section('title', $item->isPart() ? 'Standalone part detail' : 'Device detail')
 @section('intro', 'Your permanent identity and retained consumer self-report.')
 @section('content')
+@if($item->intake_class === 'whole_device')<p><a href="{{ route('media-inventory.show',$item->subject_id) }}">View your media coverage</a></p>@endif
     <div class="workspace">
         <section class="card notice-content">
             <p class="eyebrow">{{ $item->category->label }}{{ $item->subtypeLabel() ? ' · '.$item->subtypeLabel() : '' }}</p><h2>{{ $item->model ?? 'Model unknown' }}</h2>

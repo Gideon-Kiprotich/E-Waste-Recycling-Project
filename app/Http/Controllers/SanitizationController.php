@@ -29,11 +29,12 @@ class SanitizationController extends Controller
             abort_unless($request->user()->role() === Role::Consumer, 403);
             $row = DB::table('items as i')->join('subjects as s', 's.id', '=', 'i.subject_id')->join('categories as c', 'c.id', '=', 'i.category_id')->where('i.subject_id', $subject)->where('i.owner_user_id', $request->user()->id)->firstOrFail(['i.subject_id', 'i.subtype', 's.public_code', 'c.code as category']);
         }
-        $supported = $row->category === 'standalone_part' && in_array($row->subtype, ['hdd', 'ssd'], true);
+        $inventoryParent = $row->category === 'processor_media' ? DB::table('media_origins')->where('subject_id', $subject)->value('parent_id') : null;
+        $supported = in_array($row->category, ['standalone_part', 'processor_media'], true) && in_array($row->subtype, ['hdd', 'ssd'], true);
         $current = $ctx->current($subject);
         $state = $supported ? $ctx->state($subject) : null;
         $history = DB::table('sanitization_records as r')->join('users as u', 'u.id', '=', 'r.actor_id')->where('r.subject_id', $subject)->orderByDesc('r.version')->select($private ? ['r.*', 'u.display_name'] : ['r.id', 'r.version', 'r.kind', 'r.outcome', 'r.observed_at'])->get();
-        $blockers = $private ? $ctx->blockers($row) : [];
+        $blockers = $private ? $ctx->blockers($row, $request->user()) : [];
         $actions = $private && ! $blockers ? $ctx->actions($current) : [];
         $requestedAction = $request->query('action');
         $mode = is_string($requestedAction) && isset($actions[$requestedAction]) ? $requestedAction : null;
@@ -44,7 +45,7 @@ class SanitizationController extends Controller
             $fieldIds['checks.'.$code] = 'checks_'.$code;
         }
 
-        return $this->view('sanitization.show', compact('private', 'row', 'supported', 'current', 'state', 'history', 'blockers', 'actions', 'mode', 'contextToken', 'policy', 'fieldIds'));
+        return $this->view('sanitization.show', compact('inventoryParent', 'private', 'row', 'supported', 'current', 'state', 'history', 'blockers', 'actions', 'mode', 'contextToken', 'policy', 'fieldIds'));
     }
 
     public function store(Request $request, RecordSanitization $action, string $subject, string $kind)

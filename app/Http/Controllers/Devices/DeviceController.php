@@ -9,6 +9,7 @@ use App\Http\Requests\Devices\ObservationRequest;
 use App\Http\Requests\Devices\RegisterDeviceRequest;
 use App\Models\Category;
 use App\Models\Item;
+use App\Support\Assessments\Context;
 use App\Support\Devices\Questions;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
@@ -55,6 +56,11 @@ class DeviceController extends Controller
     public function show(Request $request, string $item): View
     {
         $item = $this->owned($request, $item);
+        if ($item->intake_class === 'processor_derived') {
+            $origin = DB::table('media_origins')->where('subject_id', $item->subject_id)->firstOrFail();
+
+            return view('devices.derived', compact('item', 'origin'));
+        }
         $history = $item->observations()->orderByDesc('revision')->paginate(10);
         $current = $item->observations()->orderByDesc('revision')->firstOrFail();
         $photo = DB::table('evidence_links')->join('attachments', 'attachments.id', '=', 'evidence_links.attachment_id')->where('evidence_links.subject_id', $item->subject_id)->whereNull('attachments.redacted_at')->value('attachments.id');
@@ -90,6 +96,16 @@ class DeviceController extends Controller
     public function lookup(Request $request, string $public_code)
     {
         if ($request->user()->role() !== Role::Consumer) {
+            if ($request->user()->role() === Role::Processor) {
+                $row = app(Context::class)->rows($request->user())->where('s.public_code', $public_code)->first();
+                if ($row && (in_array($row->category, ['processor_media', 'standalone_part'], true) && in_array($row->subtype, ['hdd', 'ssd', 'other_nonvolatile'], true))) {
+                    return redirect()->route('sanitization.show', $row->subject_id);
+                }
+                if ($row && DB::table('items')->where('subject_id', $row->subject_id)->value('intake_class') === 'whole_device') {
+                    return redirect()->route('media-inventory.show', $row->subject_id);
+                }
+            }
+
             return response()->view('receipts.entry')->header('Cache-Control', 'private, no-store');
         }
 

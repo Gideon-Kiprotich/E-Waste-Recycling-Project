@@ -8,10 +8,18 @@ use Illuminate\Support\Facades\DB;
 
 class Context
 {
-    public function blockers(object $row): array
+    public function blockers(object $row, ?User $actor = null): array
     {
+        if ($row->category === 'processor_media') {
+            if ($row->subtype === 'other_nonvolatile') {
+                return ['Treatment support unavailable. This medium is inventory-only; no HDD/SSD method eligibility is implied.'];
+            }
+
+            return DB::selectOne('SELECT sanitization_ready(?,?) AS ready', [$row->subject_id, $actor?->id ?? auth()->id() ?? '00000000-0000-0000-0000-000000000000'])->ready
+                ? [] : ['Current parent-based treatment authorization is required. Open the parent Media inventory, attest current facts and Authorize media treatment; unresolved restrictions cannot be cleared here.'];
+        }
         if ($row->category !== 'standalone_part') {
-            return ['Media inventory support pending. Whole-device coverage requires Phase 10B; no success or N/A is established.'];
+            return ['Whole-device treatment is recorded per identified medium. Open Media inventory to review coverage; direct parent attempts are not supported.'];
         }
         if (! in_array($row->subtype, ['hdd', 'ssd'], true) || ! DB::table('storage_assets')->where('subject_id', $row->subject_id)->where('media_kind', $row->subtype)->exists()) {
             return ['Only existing canonical standalone HDD/SSD storage facets are supported. Fans are outside this media workflow.'];
@@ -31,10 +39,11 @@ class Context
 
     public function snapshot(User $actor, object $row): array
     {
-        $ac = DB::table('assessment_current')->where('subject_id', $row->subject_id)->first();
+        $authorization = $row->category === 'processor_media' ? DB::table('media_authorization_current as mc')->join('media_authorizations as a', 'a.id', '=', 'mc.record_id')->where('mc.subject_id', $row->subject_id)->select('a.*')->first() : null;
+        $ac = DB::table('assessment_current')->where('subject_id', $authorization?->parent_id ?? $row->subject_id)->first();
         $place = DB::table('parties as p')->join('places as l', 'l.id', '=', 'p.place_id')->join('organizations as o', 'o.id', '=', 'l.organization_id')->where('p.id', $row->party_id)->first(['l.version as facility_version', 'o.version as operator_version']);
 
-        return ['source_subject_version' => (int) $row->subject_version, 'assessment_version' => (int) ($ac?->version ?? 0), 'assessment_id' => $ac?->assessment_id, 'decision_id' => $ac?->decision_id, 'facility_party_id' => $row->party_id, 'facility_version' => (int) $place->facility_version, 'operator_version' => (int) $place->operator_version, 'custody_event_id' => $row->last_event_id, 'custody_version' => (int) $row->custody_version, 'membership_id' => $actor->membership->id, 'membership_version' => (int) $actor->membership->version, 'actor_session_version' => (int) $actor->session_version];
+        return ['placement_record_id' => DB::table('media_inventory_entries')->where('medium_id', $row->subject_id)->value('record_id'), 'authorization_context_version' => $row->category === 'processor_media' ? 2 : 1, 'authorization_id' => $authorization?->id, 'source_subject_version' => (int) $row->subject_version, 'assessment_version' => (int) ($ac?->version ?? 0), 'assessment_id' => $ac?->assessment_id, 'decision_id' => $ac?->decision_id, 'facility_party_id' => $row->party_id, 'facility_version' => (int) $place->facility_version, 'operator_version' => (int) $place->operator_version, 'custody_event_id' => $row->last_event_id, 'custody_version' => (int) $row->custody_version, 'membership_id' => $actor->membership->id, 'membership_version' => (int) $actor->membership->version, 'actor_session_version' => (int) $actor->session_version];
     }
 
     public function token(User $actor, object $row): string

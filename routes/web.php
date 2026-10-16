@@ -13,6 +13,7 @@ use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\Collection\RequestController;
 use App\Http\Controllers\Devices\DeviceController;
 use App\Http\Controllers\HandoverController;
+use App\Http\Controllers\MediaInventoryController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\RoleHomeController;
 use App\Http\Controllers\RoutingController;
@@ -133,6 +134,11 @@ Route::middleware(['auth', 'account.current'])->group(function (): void {
         Route::get('/subjects/{item}/qr', [DeviceController::class, 'qr'])->whereUuid('item')->name('items.qr');
         Route::get('/items/{item}/photos/{attachment}', [DeviceController::class, 'photo'])->whereUuid(['item', 'attachment'])->name('items.photo');
     });
+    Route::get('/media-inventory/media/{medium}/label', [MediaInventoryController::class, 'label'])->middleware('role:processor')->whereUuid('medium')->name('media-inventory.label');
+    Route::get('/media-inventory/media/{medium}/qr', [MediaInventoryController::class, 'qr'])->middleware('role:processor')->whereUuid('medium')->name('media-inventory.qr');
+    Route::get('/items/{subject}/media-inventory', [MediaInventoryController::class, 'show'])->middleware('role:consumer,processor')->whereUuid('subject')->name('media-inventory.show');
+    Route::post('/items/{subject}/media-inventory/{kind}', [MediaInventoryController::class, 'store'])->middleware('role:processor')->whereUuid('subject')->middleware('throttle:20,1')->name('media-inventory.store');
+    Route::get('/media-inventory/evidence/{kind}/{record}', [MediaInventoryController::class, 'evidence'])->middleware('role:processor')->whereUuid('record')->name('media-inventory.evidence');
     Route::get('/dashboard', [RoleHomeController::class, 'index'])->name('dashboard');
     foreach (Role::cases() as $role) {
         Route::get('/'.$role->value, [RoleHomeController::class, 'show'])

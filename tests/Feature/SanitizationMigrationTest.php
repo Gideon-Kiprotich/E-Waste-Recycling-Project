@@ -44,8 +44,11 @@ class SanitizationMigrationTest extends TestCase
                 (require database_path('migrations/2026_10_16_000003_create_sanitization_records.php'))->up();
                 (require database_path('migrations/2026_10_16_000004_protect_sanitization_evidence.php'))->up();
                 (require database_path('migrations/2026_10_16_000005_complete_sanitization_references.php'))->up();
+                (require database_path('migrations/2026_10_16_000006_create_media_inventory.php'))->up();
+                (require database_path('migrations/2026_10_16_000007_protect_processor_media_boundary.php'))->up();
+                (require database_path('migrations/2026_10_16_000008_require_explicit_media_na.php'))->up();
                 foreach ($before as $t => $rows) {
-                    $this->assertSame($rows, DB::table($t)->get()->toJson(), $t);
+                    $this->assertSame($rows, DB::table($t)->when($t === 'categories', fn ($q) => $q->where('code', '<>', 'processor_media'))->get()->toJson(), $t);
                 }
                 $this->assertDatabaseCount('sanitization_policies', 1);
                 $this->assertDatabaseCount('sanitization_records', 0);

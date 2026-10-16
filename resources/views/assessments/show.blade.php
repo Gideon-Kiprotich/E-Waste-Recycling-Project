@@ -3,6 +3,9 @@
 @section('section-label','Facility assessment · Separate human approval')
 @section('intro','Recommendations and pathway decisions do not establish work completion, sanitization, release or disposal.')
 @section('content')
+@if($private && $row->category !== 'standalone_part' && $row->category !== 'processor_media')
+<p><a href="{{ route('media-inventory.show',$row->subject_id) }}">Media inventory</a> — whole-device inventory and coverage, separate from treatment.</p>
+@endif
 <p>{{ $row->public_code }}</p>
 @if($private)
 <p><a href="{{ route('assessments.index') }}">Assessments / Inspection</a> · <a href="{{ route('handovers.index') }}">Custody handovers</a></p>

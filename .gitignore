@@ -62,6 +62,8 @@
 !/database/sql/handover_execution.sql
 !/database/sql/inspection_decisions.sql
 !/database/sql/sanitization_records.sql
+!/database/sql/media_inventory.sql
+!/database/sql/media_inventory_assurance.sql
 *.dump
 *.sqlite*
 /vendor

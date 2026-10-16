@@ -3,7 +3,9 @@
 @section('intro', 'Existing records and history are preserved. Reload current versions before making a new submission.')
 @section('content')
 <x-feedback type="error" title="Reload before submitting" :message="$exception->getMessage() ?: 'This submission conflicts with an earlier change.'" :focus="true" />
-@if(request()->routeIs('sanitization.store'))
+@if(request()->routeIs('media-inventory.store'))
+    <a class="secondary button-link" href="{{ route('media-inventory.show',request()->route('subject')) }}">Reload Media inventory</a>
+@elseif(request()->routeIs('sanitization.store'))
     <a class="secondary button-link" href="{{ route('sanitization.show',request()->route('subject')) }}">Reload media assurance and history</a>
 @elseif(request()->routeIs('admin.routing.*'))
     <a class="secondary button-link" href="{{ route('admin.routing.index') }}">Reload Route planning</a>
