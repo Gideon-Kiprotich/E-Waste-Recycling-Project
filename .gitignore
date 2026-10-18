@@ -64,6 +64,8 @@
 !/database/sql/sanitization_records.sql
 !/database/sql/media_inventory.sql
 !/database/sql/media_inventory_assurance.sql
+!/database/sql/refurbishment.sql
+!/database/sql/reuse_recipient_context.sql
 *.dump
 *.sqlite*
 /vendor

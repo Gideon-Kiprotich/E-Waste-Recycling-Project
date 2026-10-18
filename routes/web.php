@@ -15,6 +15,7 @@ use App\Http\Controllers\Devices\DeviceController;
 use App\Http\Controllers\HandoverController;
 use App\Http\Controllers\MediaInventoryController;
 use App\Http\Controllers\ReceiptController;
+use App\Http\Controllers\RefurbishmentController;
 use App\Http\Controllers\RoleHomeController;
 use App\Http\Controllers\RoutingController;
 use App\Http\Controllers\SanitizationController;
@@ -38,6 +39,10 @@ Route::middleware('guest')->group(function (): void {
 
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 Route::middleware(['auth', 'account.current'])->group(function (): void {
+    Route::get('/facility/refurbishment', [RefurbishmentController::class, 'index'])->middleware('role:processor')->name('refurbishment.index');
+    Route::get('/items/{subject}/refurbishment', [RefurbishmentController::class, 'show'])->whereUuid('subject')->middleware('role:consumer,processor')->name('refurbishment.show');
+    Route::post('/items/{subject}/refurbishment/{kind}', [RefurbishmentController::class, 'store'])->whereUuid('subject')->where('kind', 'work|test|fan_na|authorize|withdraw|exception|acknowledge')->middleware(['role:consumer,processor', 'throttle:20,1'])->name('refurbishment.store');
+    Route::get('/work-evidence/{record}', [RefurbishmentController::class, 'evidence'])->whereUuid('record')->middleware('role:processor')->name('refurbishment.evidence');
     Route::get('/media/{subject}/sanitization', [SanitizationController::class, 'show'])->whereUuid('subject')->middleware('role:consumer,processor')->name('sanitization.show');
     Route::middleware('role:processor')->group(function (): void {
         Route::get('/facility/sanitization', [SanitizationController::class, 'index'])->name('sanitization.index');

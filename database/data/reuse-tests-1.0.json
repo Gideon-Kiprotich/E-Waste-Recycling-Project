@@ -1,0 +1,386 @@
+{
+  "version": "REUSE-TEST-1.0",
+  "profiles": {
+    "laptop": {
+      "safety": {
+        "label": "Functional/safety examination shows no unresolved risk",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "configuration": {
+        "label": "Physical configuration is unchanged and understood",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "power": {
+        "label": "Power / self-test",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "display": {
+        "label": "Usable display",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "input": {
+        "label": "Keyboard / input",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "system": {
+        "label": "Storage / system operation",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      }
+    },
+    "desktop": {
+      "safety": {
+        "label": "Functional/safety examination shows no unresolved risk",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "configuration": {
+        "label": "Physical configuration is unchanged and understood",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "power": {
+        "label": "Power / self-test",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "system": {
+        "label": "Storage / system operation",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "display_input": {
+        "label": "Display / input with a test setup",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "storage": {
+        "label": "Storage operation",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      }
+    },
+    "phone": {
+      "safety": {
+        "label": "Functional/safety examination shows no unresolved risk",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "configuration": {
+        "label": "Physical configuration is unchanged and understood",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "power_system": {
+        "label": "Power / system operation",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "display_touch": {
+        "label": "Display / touch",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "charging": {
+        "label": "Charging function",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      }
+    },
+    "flat_monitor": {
+      "safety": {
+        "label": "Functional/safety examination shows no unresolved risk",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "configuration": {
+        "label": "Physical configuration is unchanged and understood",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "power": {
+        "label": "Power / self-test",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "image": {
+        "label": "Stable image with test source",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      }
+    },
+    "printer": {
+      "safety": {
+        "label": "Functional/safety examination shows no unresolved risk",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "configuration": {
+        "label": "Physical configuration is unchanged and understood",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "power": {
+        "label": "Power / self-test",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "test_page": {
+        "label": "Test-page output",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "feed": {
+        "label": "Feed / mechanical function",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      }
+    },
+    "router": {
+      "safety": {
+        "label": "Functional/safety examination shows no unresolved risk",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "configuration": {
+        "label": "Physical configuration is unchanged and understood",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "power": {
+        "label": "Power / self-test",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "connectivity": {
+        "label": "Link / connectivity test",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      }
+    },
+    "keyboard": {
+      "safety": {
+        "label": "Functional/safety examination shows no unresolved risk",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "configuration": {
+        "label": "Physical configuration is unchanged and understood",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "input": {
+        "label": "Keyboard / input",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "power": {
+        "label": "Power / self-test",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN",
+          "NOT_APPLICABLE"
+        ]
+      }
+    },
+    "hdd": {
+      "safety": {
+        "label": "Functional/safety examination shows no unresolved risk",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "configuration": {
+        "label": "Physical configuration is unchanged and understood",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "detection": {
+        "label": "Safe device detection test",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "diagnostics": {
+        "label": "Safe device diagnostic function result",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      }
+    },
+    "ssd": {
+      "safety": {
+        "label": "Functional/safety examination shows no unresolved risk",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "configuration": {
+        "label": "Physical configuration is unchanged and understood",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "detection": {
+        "label": "Safe device detection test",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "diagnostics": {
+        "label": "Safe device diagnostic function result",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      }
+    },
+    "ict_cooling_fan": {
+      "safety": {
+        "label": "Functional/safety examination shows no unresolved risk",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "configuration": {
+        "label": "Physical configuration is unchanged and understood",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      },
+      "rotation": {
+        "label": "Safe controlled rotation observation",
+        "values": [
+          "PASS",
+          "FAIL",
+          "UNKNOWN"
+        ]
+      }
+    }
+  }
+}

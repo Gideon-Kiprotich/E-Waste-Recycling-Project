@@ -32,6 +32,12 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontFlash(['token', 'password', 'password_confirmation', 'current_password', 'identifier', 'photo', 'address', 'contact', 'latitude', 'longitude', 'reason']);
         $exceptions->render(function (ValidationException $exception, Request $request) {
+            if ($request->routeIs('refurbishment.store') && ! $request->expectsJson()) {
+                $key = $request->input('idempotency_key');
+                $safe = is_string($key) && Str::isUuid($key) ? ['idempotency_key' => $key] : [];
+
+                return redirect()->route('refurbishment.show', ['subject' => $request->route('subject'), 'action' => $request->route('kind')])->withErrors($exception->errors())->withInput($safe);
+            }
             if ($request->routeIs('media-inventory.store') && ! $request->expectsJson()) {
                 $safe = [];
                 $key = $request->input('idempotency_key');

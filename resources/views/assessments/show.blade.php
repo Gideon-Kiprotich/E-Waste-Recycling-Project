@@ -3,6 +3,7 @@
 @section('section-label','Facility assessment · Separate human approval')
 @section('intro','Recommendations and pathway decisions do not establish work completion, sanitization, release or disposal.')
 @section('content')
+@if(($private ?? false) && ($row->category ?? '') !== 'processor_media')<p><a href="{{ route('refurbishment.show',$row->subject_id) }}">Refurbishment / Owner return</a></p>@endif
 @if($private && $row->category !== 'standalone_part' && $row->category !== 'processor_media')
 <p><a href="{{ route('media-inventory.show',$row->subject_id) }}">Media inventory</a> — whole-device inventory and coverage, separate from treatment.</p>
 @endif
