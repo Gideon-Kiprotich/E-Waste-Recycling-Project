@@ -2,11 +2,19 @@
 
 ## Scope and authority
 
-Status: implementation verified for the bounded scope; user manual acceptance remains deferred. No merge, push or later-phase work.
+Status: provisionally accepted for continued development under the user's deferred-testing policy on 18 October 2026. Detailed manual acceptance remains deferred, not passed; final integrated acceptance is required before deployment/full validation.
 
 Started from clean `main` at `5411240f06c09cb75953adfd11982002d4e66cc3` on `phase-10b-media-inventory`. The user's implementation request accepts the preceding bounded design, processor-only vocabulary, inventory-only other nonvolatile storage, evidenced facility-identification provenance and explicit derived-media parent authorization. CR-MEDIA-01 was appended to D2/D3 and [the implementation contract](design/phase-10b-media-contract.md) recorded **before application implementation**. Baseline requirements, CR-ID-01/CR-PARTS-01 and historical rule/policy resources are preserved.
 
 Traceability: D2 FR19–FR23/FR27, BR09/14/15/17/19/20; D3 US14, UC10–UC11, S10/S11, canonical storage dictionary/change entries, AT05–AT08/AT10–AT11. UC12 release and later processing are not implemented. No physical detachment/replacement, arbitrary components, actual wiping/hardware/file access, repair/release, batches or disposal is introduced. Manual acceptance remains deferred, not passed; this is not complete UC11 or universal whole-device treatment support.
+
+## Provisional acceptance — 18 October 2026
+
+The user authorizes continued development under the agreed deferred-testing policy. No user browser, bench, physical-inventory or operational acceptance has been supplied. This accepts the bounded implementation provisionally; it does not establish universal UC11 support, treatment effectiveness or deployment readiness. All unperformed checks remain in [deferred acceptance](deferred-acceptance-checks.md), and final integrated end-to-end acceptance remains required before deployment/full validation.
+
+Integration review verified implementation commit `b7306b4f9eff4a75c879a6307e6e640ae5284dc3` (`Add media inventory`), a clean `phase-10b-media-inventory` working tree matching that commit, and `main` at `5411240f06c09cb75953adfd11982002d4e66cc3` as its ancestor. The recorded full **381 tests / 7,551 assertions** and subsequent final **26 / 700** focused checks cover the implementation together, including the narrow changes after the full run. Recorded **22 JavaScript tests**, migrations/preservation, Composer/platform, Pint, production build and HTTP checks remain applicable. No failing current-code check or blocking defect is recorded for the supported scope. Unchanged suites were not rerun for this documentation-only acceptance; no application or development-data change is made. Integration is authorized by fast-forward only, with no push.
+
+Known missing functionality is not an unperformed test or waived by this status: Phase 7 safety/mismatch correction, Phase 9 inspection hard-hold correction, disputed canonical-association resolution, physical detachment/replacement/co-transfer and treatment for unsupported non-HDD/SSD media remain unavailable. Those affected paths stay blocked. Nairobi time-entry usability remains unverified. Routing variability, the historical **15.0599 s (15.06 s)** failure against the unchanged **10 s NF04** target, subsequent passing runs and evaluation-coverage limitations remain recorded below. Real operator/collection-point acceptance and inbox delivery remain unverified/unconfigured.
 
 ## Identity, provenance and inventory decisions
 
