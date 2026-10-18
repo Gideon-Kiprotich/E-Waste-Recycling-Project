@@ -140,6 +140,6 @@ class RefurbishmentConcurrencyTest extends TestCase
         foreach ($before as $t => $rows) {
             $this->assertSame($rows, DB::table($t)->get()->toJson(), $t);
         }
-        $this->assertSame(['retained.txt'],Storage::disk('directory_evidence')->allFiles());
+        $this->assertSame(['retained.txt'], Storage::disk('directory_evidence')->allFiles());
     }
 }

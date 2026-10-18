@@ -70,7 +70,7 @@ class Context
                 $messages[] = 'Open Assessments / Inspection and record a current human REFURBISH decision; a recommendation or RECYCLE/HOLD decision is insufficient.';
             }
             if (DB::table('media_inventory_entries')->where('medium_id', $subject)->exists()) {
-                $messages[] = 'This medium is claimed by a parent and cannot return independently. Use the parent Refurbishment / Owner return manifest; detachment is unavailable.';
+                $messages[] = 'This medium has a retained parent association and cannot return independently. Use the intact parent owner-return manifest, or Dismantling / Batches for permitted canonical detachment; that does not authorize an independent return.';
             }
             if (DB::table('media_inventory_entries')->where('parent_id', $subject)->whereIn('state', ['unresolved', 'disputed'])->exists()) {
                 $messages[] = 'Open Media inventory to resolve unbound uncertainty. A disputed canonical association requires unavailable reviewed correction; it cannot be omitted from a return.';

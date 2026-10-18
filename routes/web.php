@@ -10,6 +10,7 @@ use App\Http\Controllers\Assignments\NoticeController;
 use App\Http\Controllers\Auth\PasswordRecoveryController;
 use App\Http\Controllers\Auth\RegistrationController;
 use App\Http\Controllers\Auth\SessionController;
+use App\Http\Controllers\BatchController;
 use App\Http\Controllers\Collection\RequestController;
 use App\Http\Controllers\Devices\DeviceController;
 use App\Http\Controllers\HandoverController;
@@ -39,6 +40,14 @@ Route::middleware('guest')->group(function (): void {
 
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 Route::middleware(['auth', 'account.current'])->group(function (): void {
+    Route::get('/facility/batches', [BatchController::class, 'index'])->middleware('role:processor')->name('batches.index');
+    Route::get('/facility/batches/create', [BatchController::class, 'create'])->middleware('role:processor')->name('batches.create');
+    Route::get('/facility/batches/lookup', [BatchController::class, 'lookup'])->middleware('role:processor')->name('batches.lookup');
+    Route::get('/batch-labels/{subject}', [BatchController::class, 'label'])->whereUuid('subject')->middleware('role:processor')->name('batches.label');
+    Route::get('/batch-evidence/{record}', [BatchController::class, 'evidence'])->whereUuid('record')->middleware('role:processor')->name('batches.evidence');
+    Route::get('/batches/{batch}', [BatchController::class, 'show'])->whereUuid('batch')->middleware('role:consumer,processor')->name('batches.show');
+    Route::post('/batches/{batch}/{kind}', [BatchController::class, 'store'])->whereUuid('batch')->where('kind', 'draft|commit|output|measurement|accounted|discrepancy')->middleware(['role:processor', 'throttle:20,1'])->name('batches.store');
+    Route::post('/batches/{batch}/media/{medium}/authorize', [BatchController::class, 'authorize'])->whereUuid('batch')->whereUuid('medium')->middleware(['role:processor', 'throttle:20,1'])->name('batches.authorize');
     Route::get('/facility/refurbishment', [RefurbishmentController::class, 'index'])->middleware('role:processor')->name('refurbishment.index');
     Route::get('/items/{subject}/refurbishment', [RefurbishmentController::class, 'show'])->whereUuid('subject')->middleware('role:consumer,processor')->name('refurbishment.show');
     Route::post('/items/{subject}/refurbishment/{kind}', [RefurbishmentController::class, 'store'])->whereUuid('subject')->where('kind', 'work|test|fan_na|authorize|withdraw|exception|acknowledge')->middleware(['role:consumer,processor', 'throttle:20,1'])->name('refurbishment.store');

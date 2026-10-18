@@ -5,11 +5,16 @@ namespace App\Support\Sanitization;
 use App\Models\User;
 use App\Support\Collection\AdminMutation;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class Context
 {
     public function blockers(object $row, ?User $actor = null): array
     {
+        if (Schema::hasTable('batch_detachments') && DB::table('batch_detachments')->where('subject_id', $row->subject_id)->exists()) {
+            return DB::selectOne('SELECT sanitization_ready(?,?) AS ready', [$row->subject_id, $actor?->id ?? auth()->id()])->ready
+                ? [] : ['Detached media requires current batch-controlled authorization. Open Dismantling / Batches; retained restrictions and unexpected media cannot be cleared here.'];
+        }
         if ($row->category === 'processor_media') {
             if ($row->subtype === 'other_nonvolatile') {
                 return ['Treatment support unavailable. This medium is inventory-only; no HDD/SSD method eligibility is implied.'];
@@ -39,11 +44,12 @@ class Context
 
     public function snapshot(User $actor, object $row): array
     {
-        $authorization = $row->category === 'processor_media' ? DB::table('media_authorization_current as mc')->join('media_authorizations as a', 'a.id', '=', 'mc.record_id')->where('mc.subject_id', $row->subject_id)->select('a.*')->first() : null;
-        $ac = DB::table('assessment_current')->where('subject_id', $authorization?->parent_id ?? $row->subject_id)->first();
+        $detachment = Schema::hasTable('batch_detachments') ? DB::table('batch_detachments')->where('subject_id', $row->subject_id)->first() : null;
+        $authorization = ($detachment || $row->category === 'processor_media') ? DB::table('media_authorization_current as mc')->join('media_authorizations as a', 'a.id', '=', 'mc.record_id')->where('mc.subject_id', $row->subject_id)->select('a.*')->first() : null;
+        $ac = DB::table('assessment_current')->where('subject_id', $detachment?->parent_id ?? $authorization?->parent_id ?? $row->subject_id)->first();
         $place = DB::table('parties as p')->join('places as l', 'l.id', '=', 'p.place_id')->join('organizations as o', 'o.id', '=', 'l.organization_id')->where('p.id', $row->party_id)->first(['l.version as facility_version', 'o.version as operator_version']);
 
-        return ['placement_record_id' => DB::table('media_inventory_entries')->where('medium_id', $row->subject_id)->value('record_id'), 'authorization_context_version' => $row->category === 'processor_media' ? 2 : 1, 'authorization_id' => $authorization?->id, 'source_subject_version' => (int) $row->subject_version, 'assessment_version' => (int) ($ac?->version ?? 0), 'assessment_id' => $ac?->assessment_id, 'decision_id' => $ac?->decision_id, 'facility_party_id' => $row->party_id, 'facility_version' => (int) $place->facility_version, 'operator_version' => (int) $place->operator_version, 'custody_event_id' => $row->last_event_id, 'custody_version' => (int) $row->custody_version, 'membership_id' => $actor->membership->id, 'membership_version' => (int) $actor->membership->version, 'actor_session_version' => (int) $actor->session_version];
+        return ['placement_record_id' => DB::table('media_inventory_entries')->where('medium_id', $row->subject_id)->value('record_id'), 'authorization_context_version' => $detachment ? 3 : ($row->category === 'processor_media' ? 2 : 1), 'authorization_id' => $authorization?->id, 'source_subject_version' => (int) $row->subject_version, 'assessment_version' => (int) ($ac?->version ?? 0), 'assessment_id' => $ac?->assessment_id, 'decision_id' => $ac?->decision_id, 'facility_party_id' => $row->party_id, 'facility_version' => (int) $place->facility_version, 'operator_version' => (int) $place->operator_version, 'custody_event_id' => $row->last_event_id, 'custody_version' => (int) $row->custody_version, 'membership_id' => $actor->membership->id, 'membership_version' => (int) $actor->membership->version, 'actor_session_version' => (int) $actor->session_version];
     }
 
     public function token(User $actor, object $row): string

@@ -13,6 +13,7 @@ use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -32,6 +33,16 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontFlash(['token', 'password', 'password_confirmation', 'current_password', 'identifier', 'photo', 'address', 'contact', 'latitude', 'longitude', 'reason']);
         $exceptions->render(function (ValidationException $exception, Request $request) {
+            if ($request->routeIs('batches.store', 'batches.authorize') && ! $request->expectsJson()) {
+                $key = $request->input('idempotency_key');
+                $safe = is_string($key) && Str::isUuid($key) ? ['idempotency_key' => $key] : [];
+                $batch = $request->route('batch');
+                if (! DB::table('dismantling_batches')->where('subject_id', $batch)->exists()) {
+                    return redirect()->route('batches.create')->withErrors($exception->errors())->withInput($safe);
+                }
+
+                return redirect()->route('batches.show', ['batch' => $batch, 'action' => $request->routeIs('batches.authorize') ? 'authorize' : $request->route('kind'), 'target' => is_string($request->input('target_id')) && Str::isUuid($request->input('target_id')) ? $request->input('target_id') : null, 'medium' => $request->route('medium')])->withErrors($exception->errors())->withInput($safe);
+            }
             if ($request->routeIs('refurbishment.store') && ! $request->expectsJson()) {
                 $key = $request->input('idempotency_key');
                 $safe = is_string($key) && Str::isUuid($key) ? ['idempotency_key' => $key] : [];

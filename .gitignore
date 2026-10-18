@@ -73,3 +73,7 @@ _ide_helper.php
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+/storage/phase-evidence/
+!/database/sql/dismantling_batches.sql
+!/database/sql/batch_assurance.sql

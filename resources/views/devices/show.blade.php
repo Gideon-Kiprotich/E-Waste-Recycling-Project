@@ -2,6 +2,9 @@
 @section('title', $item->isPart() ? 'Standalone part detail' : 'Device detail')
 @section('intro', 'Your permanent identity and retained consumer self-report.')
 @section('content')
+@php($sourceBatch=$item->processing_state === 'dismantled' ? \Illuminate\Support\Facades\DB::table('batch_members')->where('subject_id',$item->subject_id)->value('batch_id') : null)
+@if($sourceBatch)<p><a href="{{ route('batches.show',$sourceBatch) }}">View your batch association</a> · Dismantling does not establish completed recycling.</p>@endif
+
 <p><a href="{{ route('refurbishment.show',$item->subject_id) }}">View your work and owner return</a></p>
 @if($item->intake_class === 'whole_device')<p><a href="{{ route('media-inventory.show',$item->subject_id) }}">View your media coverage</a></p>@endif
     <div class="workspace">
