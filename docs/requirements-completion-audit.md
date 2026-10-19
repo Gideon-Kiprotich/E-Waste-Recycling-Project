@@ -1,0 +1,340 @@
+# Requirements completion audit — 19 October 2026
+
+## Baseline and evidence limits
+
+Audited integrated `main` at `9e60d02693f002ff39ec278cb885ad61d974a7ca`: Phase 13 implementation `39fd7b7012798c36a5a442189944124f07bad646`, followed only by **Record phase 13 status**, then a fast-forward from `0484547f0076794d3a175a414d8a3e667699dfd9`. The working tree was clean before the audit. No application change, database write, migration, notice dispatch or unchanged-suite rerun was made for this increment.
+
+Authority is [D2](requirements/Deliverable_2_Requirements_Refinement_and_Scope_Freeze.md) §§4–8/10/12–13 and [D3](requirements/Deliverable_3_Detailed_System_Modelling_and_Design.md) §§2–8, plus their additive approved changes below. Implementation status comes from inspected actions, controllers/routes, SQL guards and test assertions, not phase reports alone. Logical endpoint names in D3 are contracts, not a requirement to duplicate the application's existing routes.
+
+Retained Phase 13 evidence confirms **467 PHP tests / 8,999 assertions**, then **23 / 409** affected and **3 / 51** final UI checks; **22 JavaScript tests**, Composer strict/platform, Pint, production build and **20 HTTP smoke checks** passed. The full run preceded localized fixes; the affected/UI runs cover those final changes. Five migrations on both dedicated databases and preservation of **83 original tables and the same 37-file scope** are recorded as passed. Both restricted private manifests remain present with mode 0600; contents/fingerprints are not reproduced. This audit inspected the retained results, not a new live database/file comparison. Keep that defined scope and manifests for future preservation checks. [Phase 13 report](phase-13-report.md) retains resolved red runs, build/tool/harness failures and preservation qualifications.
+
+**Status legend:** **I** = implemented with automated evidence for the stated approved boundary; **P** = partially implemented; **M** = missing implementation; **D** = explicitly deferred/out of scope by an approved decision. These are implementation statuses, never browser, physical or operational acceptance. For quality/acceptance criteria, P can mean that implementation exists but required validation is absent. Every remaining item has a completion-increment reference **C14–C19** below; **V** means final integrated/manual verification in C19, not another feature.
+
+No new user browser, weighing, recipient, bench or operational acceptance is claimed. Earlier user-reported acceptance in [Phases 1](phase-1-report.md), [2](phase-2-report.md), [2A](phase-2a-report.md), [3](phase-3-report.md) and [4](phase-4-report.md) remains historical evidence for those revisions. Phase 5 first-look satisfaction and Phases 5–13 provisional integration do not pass the [deferred checklist](deferred-acceptance-checks.md). Final integrated acceptance remains required before deployment/full validation.
+
+## Approved scope and precedence
+
+| Decision | Effective contract and implementation | Disposition of limits |
+|---|---|---|
+| CR-ID-01 | Global encrypted/keyed comparison namespace across owners/categories/kinds/manufacturers/states; trim, remove whitespace/ASCII hyphens, uppercase permitted ASCII, retain zeroes. Database uniqueness; optional unknowns; typed IMEI validation; successful retry first. E02. | I. Supersedes baseline duplicate **warnings** in FR06/US03/UC03/S03/AT03. Multiple IMEIs, key rotation and later returned-device lifecycle remain unimplemented; never register another identity to evade uniqueness. |
+| CR-PARTS-01 | Same-ID item/storage facet; `standalone_part`: exactly HDD, SSD, small ICT cooling fan; serial-only parts; drives always YES; fan 24 V DC/140 mm boundary, unknowns and protected-input rejection. E02. | I for intake PI01–PI09; PI10 historical user acceptance, final V still needed. Loose batteries, mains/industrial fans, arbitrary/bulk parts and resale are D, not missing P0 features. Downstream subtype/cohort duties remain binding. |
+| CR-MEDIA-01 | Evidenced canonical facility identification, versioned placements/completeness and live all-media coverage; supported HDD/SSD parent authorization; no invented receipt/detachment. E09–E10. | I for bounded inventory; disputed bound-association resolution P (C15). `other_nonvolatile` is inventory-only; universal treatment and inaccessible-media operations D. |
+| CR-REUSE-01 | Work/test then separate approval and existing-owner acknowledged whole manifest; narrow parent/all-media atomic return, unchanged identity/owner. E11. | I within supported unchanged configurations. General replacement/re-parenting, new owners and arbitrary recipients D. Work/return correction P (C15). |
+| CR-BATCH-01, Phase 12 | Actual-work attestation, permanent membership, exact all-media canonical detachment, terminal parent, batch-origin lots, measured on-site stock and controlled-media context 3. E12. | I within whole-device separable HDD/SSD/evidenced-empty or basic-fan boundary. Standalone-drive dismantling D. Unexpected-media resolution P (C15). |
+| Phase 13 CR-BATCH-01/CR-MEDIA-01 extension | In-app reviewed output profiles, named recipient, exact partial stock movements, indivisible canonical drives, context 4 assurance, separate completion and closure. E13. | I for ordinary supported paths; exception recovery P (C16). Returns/redistribution, external-only receivers, unsupported hazards/destruction and ownership changes D under this increment; do not add them implicitly as fixes. |
+| D2 §§3–4 exclusions/P1 | No rewards, blockchain, AI recognition/chat, native/offline operations, regulator integration, marketplace, illegal-dumping workflow or observer login. Rich generic component inventory, institutional bulk CSV intake, numeric reuse scores, heatmaps and prototype certificates are stretch/future. | D. No completion increment proposed. Online responsive Blade application remains the target. Real provider participation/certification is unverified, not a promised integration. |
+| Deferred-testing policy | User authorizes provisional continuation/integration; all unperformed checks and known gaps remain explicit. | Acceptance timing changed; no P0 capability, target or evidence requirement was waived. |
+
+Earlier change entries that say “later” are historical: the specific Phase 11–13 exceptions above now authorize only their stated return/detachment/movement paths. Their implementation does not enable generic component management. Treatment records attest externally performed work; software executes no physical operations or disk-wiping commands.
+
+## Concrete implementation evidence
+
+These reusable evidence references keep the matrices compact. Test names describe inspected assertions; passing totals are the retained runs above, not newly executed tests. Each feature also has its corresponding phase report for configuration and limitations.
+
+### E01 — access and account scope
+
+[Authentication actions](../app/Actions/AuthenticateAccount.php), [reset](../app/Actions/ResetAccountPassword.php), [current-account middleware](../app/Http/Middleware/EnsureCurrentAccount.php), [role middleware](../app/Http/Middleware/RequireRole.php), [registration](../app/Actions/RegisterConsumer.php) and [auth tests](../tests/Feature/AuthenticationTest.php)/[feedback tests](../tests/Feature/AuthenticationFeedbackTest.php) cover generic recovery, expiry/reuse, old-session rejection, five-failure throttling, privileged-input denial and feedback. [Collector administration](../app/Actions/ManageCollector.php), [place access](../app/Actions/ManagePointStaff.php), [local staff provisioning](../app/Console/Commands/ProvisionStaff.php) and [initial administrator](../app/Console/Commands/CreateInitialAdministrator.php) are actual supported setup controls; Processor creation currently uses local private prompts, not a complete Users screen.
+
+### E02 — physical identity and bounded parts
+
+[RegisterDevice](../app/Actions/RegisterDevice.php), [Identifiers](../app/Support/Devices/Identifiers.php), [Questions](../app/Support/Devices/Questions.php), [device controller](../app/Http/Controllers/Devices/DeviceController.php) and [identifier migration](../database/migrations/2026_10_05_000001_enforce_unique_device_identifiers.php). [DeviceRegistrationTest](../tests/Feature/DeviceRegistrationTest.php), [IdentifierMigrationTest](../tests/Feature/IdentifierMigrationTest.php), [PartsIntakeTest](../tests/Feature/PartsIntakeTest.php)/[PartsMigrationTest](../tests/Feature/PartsMigrationTest.php) cover global duplicates/unknowns, encrypted identifiers, IMEI, exact part/fan limits, same-ID reciprocal facet, legacy retries, forged null/array inputs, owner privacy, labels, photos and rollback.
+
+### E03 — directory and collection requests
+
+[ManageDirectory](../app/Actions/ManageDirectory.php), [ReviewRequest](../app/Actions/ReviewRequest.php), [CollectionRequests](../app/Actions/CollectionRequests.php), [eligibility](../app/Support/Collection/Eligibility.php), [PickupPoint](../app/Support/Collection/PickupPoint.php), [request controller](../app/Http/Controllers/Collection/RequestController.php). [DirectoryReviewTest](../tests/Feature/DirectoryReviewTest.php), [DirectoryFormsTest](../tests/Feature/DirectoryFormsTest.php), [duplicate migration](../tests/Feature/DirectoryDuplicateMigrationTest.php)/[race tests](../tests/Feature/DirectoryDuplicateConcurrencyTest.php), [CollectionRequestsTest](../tests/Feature/CollectionRequestsTest.php)/[CollectionConcurrencyTest](../tests/Feature/CollectionConcurrencyTest.php): explicit subtype/capability/status, private review history, active reservations, confirmation invalidation, Back/retry/stale wizard, partial cancellation/date change, out-of-area/hazards and atomic rollback. [Pickup JavaScript](../tests/JavaScript/pickup-location.test.js) tests permission/provider fallbacks; this is not a geolocation browser pass.
+
+### E04 — allocation and provisioning guidance
+
+[AllocateCollector](../app/Actions/AllocateCollector.php), [allocation guide](../app/Support/Assignments/AllocationGuide.php), [assignment eligibility](../app/Support/Assignments/Eligibility.php). [CollectorAllocationTest](../tests/Feature/CollectorAllocationTest.php), [AllocationGuidanceTest](../tests/Feature/AllocationGuidanceTest.php), [AssignmentConcurrencyTest](../tests/Feature/AssignmentConcurrencyTest.php): Ready review, scoped Collector/operator/destination, offer/accept/decline/withdraw/reassign, changes invalidate prerequisites, only accepted active work reveals necessary visit details. Acceptance is not scheduling or custody.
+
+### E05 — routing and reproducible comparison
+
+[PlanRoutes](../app/Actions/PlanRoutes.php), [snapshot](../app/Support/Routing/Snapshot.php), [Planner](../app/Support/Routing/Planner.php), [execution](../app/Support/Routing/Execution.php). [RoutePlanningTest](../tests/Feature/RoutePlanningTest.php), [RoutePlannerTest](../tests/Unit/RoutePlannerTest.php), [RoutingConcurrencyTest](../tests/Feature/RoutingConcurrencyTest.php), [RoutingEvaluationTest](../tests/Feature/RoutingEvaluationTest.php) cover frozen inputs, feasibility, directed 2-opt, incomparable coverage, stale approvals/claims, actual persistence-inclusive ten repeats per size and independent validation. [Retained synthetic evidence](evaluation/phase-6/README.md): 30 paired scenarios, 240 sensitivities, 16 paired served-set differences and four zero-distance baselines; geometric mode only, no road/traffic claim. [Map tests](../tests/JavaScript/route-map.test.js) verify opt-in/failure handling.
+
+### E06 — first receipt and attempts
+
+[RecordVisit](../app/Actions/RecordVisit.php), [receipt context](../app/Support/Receipts/Context.php), [SQL boundaries](../database/sql/physical_receipt_boundaries.sql)/[projections](../database/sql/physical_receipt_projection_guard.sql). [PhysicalReceiptTest](../tests/Feature/PhysicalReceiptTest.php), [ReceiptConcurrencyTest](../tests/Feature/ReceiptConcurrencyTest.php), [ReceiptMigrationTest](../tests/Feature/ReceiptMigrationTest.php) cover pickup/drop-off, partial/failed visits, first receipt exactly once, retained holds, route continuation, scope and file rollback. In particular `test_recorded_safety_hold_cannot_be_cleared_by_a_ready_review_or_receipt_override` demonstrates the retained blocker, not its resolution. [Camera tests](../tests/JavaScript/receipt-camera.test.js) mock fallback/lifecycle; no physical scan acceptance.
+
+### E07 — acknowledged handovers
+
+[CustodyHandovers](../app/Actions/CustodyHandovers.php), [handover input](../app/Support/Handovers/Input.php), [custody SQL](../database/sql/custody_handovers.sql). [CustodyHandoverTest](../tests/Feature/CustodyHandoverTest.php), [HandoverConcurrencyTest](../tests/Feature/HandoverConcurrencyTest.php), [HandoverMigrationTest](../tests/Feature/HandoverMigrationTest.php): partial acceptance, missing/damaged/mismatch, one active claim/current custodian, revoked scope, independent actual acknowledgment. `test_withdrawal_and_evidence_backed_resolution_never_transfer_or_erase_history_and_allow_fresh_initiation` proves existing **review_continues / closed_no_transfer** resolution; this does not clear receipt safety/inspection restrictions.
+
+### E08 — inspection and human decisions
+
+[InspectItems](../app/Actions/InspectItems.php), [Evaluator](../app/Support/Assessments/Evaluator.php), [Schemas](../app/Support/Assessments/Schemas.php), [Context::restricted](../app/Support/Assessments/Context.php), [inspection guards](../database/sql/inspection_decisions.sql). [InspectionDecisionsTest](../tests/Feature/InspectionDecisionsTest.php), [InspectionConcurrencyTest](../tests/Feature/InspectionConcurrencyTest.php), [AssessmentEvaluationTest](../tests/Unit/AssessmentEvaluationTest.php) and [frozen 60-case ledger](evaluation/phase-9-cases.json) include the original seven profiles plus parts, unknown/N/A/conflicts, secondary hazards, immutable recommendation/approval, overrides and hard holds. Fixture agreement is not professional diagnostic accuracy.
+
+### E09 — sanitization assurance
+
+[RecordSanitization](../app/Actions/RecordSanitization.php), [method policy](../app/Support/Sanitization/Policy.php), [sanitization context](../app/Support/Sanitization/Context.php), [ledger SQL](../database/sql/sanitization_records.sql). [SanitizationRecordsTest](../tests/Feature/SanitizationRecordsTest.php), [SanitizationConcurrencyTest](../tests/Feature/SanitizationConcurrencyTest.php), [SanitizationMigrationTest](../tests/Feature/SanitizationMigrationTest.php): attempt → separate verification → adequacy validation, justified applicability revalidation, failed/newer/unknown/destruction restrictions, unchanged custody/history, strict HDD/SSD method scope. Uploading a certificate alone cannot satisfy the live gate.
+
+### E10 — whole-device media inventory
+
+[InventoryMedia](../app/Actions/InventoryMedia.php), [inventory context](../app/Support/MediaInventory/Context.php), [inventory SQL](../database/sql/media_inventory.sql)/[assurance](../database/sql/media_inventory_assurance.sql). [MediaInventoryTest](../tests/Feature/MediaInventoryTest.php), [MediaInventoryConcurrencyTest](../tests/Feature/MediaInventoryConcurrencyTest.php), [MediaInventoryMigrationTest](../tests/Feature/MediaInventoryMigrationTest.php). Inspected unknown-entry/bound-correction assertions keep a disputed canonical medium's identity and claim, deny `not_present`, invalidate assurance and block completeness. Existing standalone recognition preserves original origin/owner/custody; unknown serials are stable identities, not guessed identifiers.
+
+### E11 — work, tests and acknowledged owner return
+
+[RefurbishItems](../app/Actions/RefurbishItems.php), [refurbishment context](../app/Support/Refurbishment/Context.php), [reuse SQL](../database/sql/refurbishment.sql)/[recipient context](../database/sql/reuse_recipient_context.sql). [RefurbishmentTest](../tests/Feature/RefurbishmentTest.php), [RefurbishmentConcurrencyTest](../tests/Feature/RefurbishmentConcurrencyTest.php), [RefurbishmentMigrationTest](../tests/Feature/RefurbishmentMigrationTest.php): unchanged-configuration work, current tests/live coverage, fresh inspection after ordinary failure, all-media atomic return, original-owner acknowledgment, revoked/stale authority, permanent destruction concern. Its retained work/test safety-uncertainty regression proves reassessment cannot erase restrictions.
+
+### E12 — dismantling and on-site accounting
+
+[DismantleBatches](../app/Actions/DismantleBatches.php), [Mass](../app/Support/Batches/Mass.php), [batch SQL](../database/sql/dismantling_batches.sql), [batch assurance](../database/sql/batch_assurance.sql), [AuthorizeBatchMedia](../app/Actions/AuthorizeBatchMedia.php). [DismantlingTest](../tests/Feature/DismantlingTest.php), [DismantlingConcurrencyTest](../tests/Feature/DismantlingConcurrencyTest.php), [DismantlingMigrationTest](../tests/Feature/DismantlingMigrationTest.php): actual-work attestation, permanent inputs, exact canonical detachments, no double mass/stock, tolerance boundaries, honest imbalance, output completeness, corrections and unexpected-media blocking. `batch_work_restricted` also checks retained linked-drive restrictions.
+
+### E13 — downstream and closure
+
+[MoveBatchOutputs](../app/Actions/MoveBatchOutputs.php), [ManageOutputProfiles](../app/Actions/ManageOutputProfiles.php), [downstream context](../app/Support/Downstream/Context.php), [movement SQL](../database/sql/downstream_movements.sql)/[controls](../database/sql/downstream_controls.sql)/[assurance](../database/sql/downstream_assurance.sql), [final origin migration](../database/migrations/2026_10_19_000005_validate_downstream_origins.php). [DownstreamTest](../tests/Feature/DownstreamTest.php), [DownstreamConcurrencyTest](../tests/Feature/DownstreamConcurrencyTest.php), [DownstreamMigrationTest](../tests/Feature/DownstreamMigrationTest.php): exact reserved/dispatch/accepted/completed fractions, canonical custody, stale assurance, post-closure contradiction, real races, direct invalid writes, forced deferred boundaries, root-COMMIT/file compensation and fresh/populated preservation. Final regressions reject forged origin and damaged ordinary completion and permit legitimate receipt after fresh accounting. `downstream_exceptions` exposes blockers but provides no resolution command.
+
+### E14 — views, notices and missing surfaces
+
+[Routes](../routes/web.php), [role home](../app/Http/Controllers/RoleHomeController.php), [owned device view](../resources/views/devices/show.blade.php) and stage controllers provide scoped workspaces/history, not a complete S13/S15/S16. Four explicit workers exist: [assignment](../app/Support/Assignments/Notices.php), [receipt](../app/Support/Receipts/Notices.php), [handover](../app/Support/Handovers/Notices.php), [assessment](../app/Support/Assessments/Notices.php), scheduled in [console routes](../routes/console.php), with recipient read routes. Their feature tests assert deduplication, private read access and unrelated-outbox preservation. Inspection of routing/work/treatment/batch/downstream actions and these workers shows no comprehensive later-stage notice path; a domain event, pending outbox row or “inbox” shipment list is not a delivered notification.
+
+No report/export controller/route, operational CSV implementation, privacy-request/redaction ledger/handler or complete Users/privacy screen exists in the inspected application/migrations. [PrivacyNotice](../app/Support/PrivacyNotice.php), [notice acknowledgment model](../app/Models/NoticeAcknowledgment.php), private storage and nullable attachment redaction metadata alone do not implement UC18. Local bootstrap and Collector/place-scope controls are not a general account lifecycle console; a complete new account-management module is not automatically a P0 requirement.
+
+Account disposition: Consumer self-registration and staff privilege-injection prevention are implemented. Suspension/inactive-membership denial is tested, but fixture status changes are not proof of an Administrator suspension/reactivation screen; Processor creation remains private local provisioning. C18 should provide only the accountable account actions needed for approved suspension/privacy duties, choosing supported UI or administrative tooling explicitly. General profile editing, new role switching, observer accounts or an invented email-verification requirement are not added to the baseline.
+
+### E15 — cross-cutting integrity and evaluation boundaries
+
+[AdminMutation](../app/Support/Collection/AdminMutation.php), [transaction gate](../app/Support/Collection/Review.php), [private evidence](../app/Support/Collection/PrivateEvidence.php), [bootstrap error handling](../bootstrap/app.php), [feedback component](../resources/views/components/feedback.blade.php), [test guard](../tests/TestCase.php) and [native connection tests](../tests/Feature/PostgresConnectionTest.php). Native PostgreSQL race/migration tests listed above evaluate deferred constraints and root transactions, rather than relying solely on rolled-back fixtures. [Synthetic demo tool](../app/Console/Commands/SetupNairobiDemo.php)/[tests](../tests/Feature/NairobiDemoTest.php) and E05/E08 supply bounded reproducibility. No reference-load p95 programme, timed complete backup/key/blob/redaction restore, complete automated accessibility scan or independent dashboard/CSV totals suite is present. Preservation fingerprints establish preservation, not backup restorability.
+
+## Functional requirements — every FR01–FR35
+
+Remaining column gives the capability gap/dependency or V where only integrated acceptance remains for that boundary. An I row does not establish that a missing feature's future endpoints are secure.
+
+| ID | Status | Implemented behavior / concrete evidence | Remaining / completion |
+|---|---|---|---|
+| FR01 | I | Consumer registration, session/login/logout/suspension denial, generic single-use recovery. E01. | V; local log delivery works, real inbox transport unconfigured/unverified. |
+| FR02 | I | Role/owner/assignment/facility reauthorization, protected evidence and opaque lookup; E01–E13 negative tests. | V; extend matrix to every new correction/report/privacy action in C14–C18. |
+| FR03 | I | Versioned operator/place approval/evidence and explicit synthetic labels; E03. | V; unified live-obligation investigation in C14. No regulator certification. |
+| FR04 | I | Active compatible points, coordinates/hours/contact, list fallback; E03. | V; actual point participation/suitability unverified. |
+| FR05 | I | One permanent physical item, optional model/serial, constrained self-report/parts; E02/E10. | V; generic components D. |
+| FR06 | I | CR-ID-01 blocking duplicates, serial/IMEI distinction, encrypted optional identifiers/photos and observation provenance; E02. | V; baseline warning criterion superseded. |
+| FR07 | I | Owned multi-item pickup/drop-off, private draft/location/contact, reservation uniqueness; E03. | V. |
+| FR08 | I | Area/subtype/hazard eligibility rechecked through review, allocation and execution; E03–E06. | V; no ordinary-route hazardous-treatment approval. Restriction correction C14. |
+| FR09 | I | Eligible partial cancellation/date changes and failed visit histories; E03/E04/E06. | V; no consumer cancellation of physically received items. |
+| FR10 | I | Admin offer, named Collector acceptance/decline, withdraw/reassign, audited scope invalidation and race guards; E04. | V; acceptance is not appointment/receipt. |
+| FR11 | I | Frozen eligible jobs/depot/fleet/estimated mass/service/matrix/provenance; E05. | V; geometric source explicitly selected, road integration optional. |
+| FR12 | I | Deterministic constrained tours with return duration, exclusions/unserved reasons; E05. | V/NF04 performance qualification; no optimality claim. |
+| FR13 | I | Same-snapshot submission-order baseline/proposal, versions, coverage-qualified comparisons; E05. | C19 retain all outcomes and evaluation coverage differences. |
+| FR14 | I | Versioned approval/claim invalidation, named ordered stops, explicit attempts/finish; E05/E06. | V; route finish implies no delivery/custody. |
+| FR15 | I | Item/media/batch/output QR/manual labels, authorized lookup and replacement without new identity; E02/E06/E10/E12/E13. | V actual printed/scanned journeys; QR is not authorization. |
+| FR16 | I | Item-level actual pickup/point receipt, evidence, observed/recorded time, partial request projection; E06. | V; C14 addresses hold recovery, not fake receipt. |
+| FR17 | I | Sender initiation and separate named receiver acknowledgment, one current custodian; E07/E11/E13. | V within approved transfer paths; no generic outward/repeated movement inferred. |
+| FR18 | I | Facility accepts/disputes individual handover items; disputed claims block processing; E07. | V; existing no-transfer closure is bounded, other exception recovery C14–C16. |
+| FR19 | I | Separate versioned technician category/part inputs, unknown/N/A/hazard/data findings; E08. | V; technical/bench accuracy unverified. |
+| FR20 | I | Versioned ordered deterministic explanation/manual review and 60 fixed cases; E08. | C19 conformance evaluation, no professional diagnostic claim. |
+| FR21 | I | Separate human decision/reasoned override; hard restrictions cannot be bypassed; E08. | V; hard-hold resolution missing C14. |
+| FR22 | I | Recorded work, functional/safety tests, live data gate, human authorization, actual owner receipt, failed-work reassessment; E11. | V within CR-REUSE-01; configuration/return contradictions C15, replacement D. |
+| FR23 | P | Supported HDD/SSD assurance ledger and explicit N/A/whole-parent coverage; E09–E10/E12–E13. | No universal UC11 clearance; unknown/unsupported media blocked by approved limits. Resolve association/correction C14–C15; broader treatment needs separate policy authorization, not guessed methods. |
+| FR24 | I | Evidenced dismantling, measured inputs, immutable membership/canonical detachment; E12. | V within CR-BATCH-01; unexpected-media recovery C15. |
+| FR25 | I | Original output production, exact kg measurements/stock, partial downstream movements without double deduction; E12–E13. | V within supported streams; post-dispatch accounting correction C16. |
+| FR26 | P | Owner reuse return and separate dispatch/receipt/completion/closure on supported ordinary batch paths; E11/E13. | C16 reviewed exception/loss/completion treatment; retain pending quantities rather than claim universal final outcomes. |
+| FR27 | P | Owned stage milestones, filtered handovers/assessments/work/coverage and safe batch association; E06–E14. | C17 integrated paginated timeline/lineage and pending/exception presentation across stages; no other-owner/private mass disclosure. |
+| FR28 | P | Append-only domain/operation history; observation, inventory and measurement corrections; E02/E07/E10/E12/E13/E15. | C14–C16 typed impact-aware corrections; no general audited supersession/resolution path yet. |
+| FR29 | P | Receipts/handover/inspection/work/media/batch/downstream blockers; bounded handover closure and some ordinary failure recovery; E06–E13. | C14 triage and receipt/inspection review; C15 media/work; C16 quantities/recipient recovery. No complete assigned Open→Review→Resolved desk. |
+| FR30 | P | Four committed-event in-app notice families, recipient reads/deduplication; E14. | C17 scheduling, work/data/batch/downstream milestones and exception updates, current-scope safe links, retry/failure visibility. Do not drain unsupported historical rows. |
+| FR31 | M | Role landing/work lists exist (E14), not metric dashboards. | C17 defined cohort/date/category/facility dashboards; independent totals, incomplete/empty denominators and first-receipt rules. |
+| FR32 | M | No operational report/CSV/export snapshot path; E14. Evaluation JSONL is not this feature. | C17 scoped CSV matching frozen filtered dashboard, generation/timezone/correction version, formula-safe text, private expiring output and export audit. |
+| FR33 | P | Versioned notice/acknowledgment, own scoped views/private data; E01/E14. | C18 tracked access/correction/deletion requests, accountable decisions, redaction/retention and backup replay. Metadata is not erasure. |
+| FR34 | I | Input/upload protection, expected versions, authorized retry-first, locked state/event commits and DB reciprocal guards; E02–E15. | V; extend to new capabilities, including outbox where relevant; no blanket claim for missing routes. |
+| FR35 | P | Guarded synthetic demo and reproducible routing/assessment fixtures/exports, frozen versions/provenance; E05/E08/E15. | C19 full quality/security/load/recovery/acceptance evidence package for finished scope; no field-data claim. |
+
+## Use cases and screens — every UC01–UC19
+
+FR matrix supplies the remaining details; this also maps all D3 stories US01–US21 without treating them as additional unapproved features.
+
+| UC / story | Status | Actual coverage / screens | Remaining / increment |
+|---|---|---|---|
+| UC01 / US01 | I | E01; S01 access/recovery. | V; no inbox acceptance. |
+| UC02 / US02 | P | E03; S05 operator/point reviews/capabilities. | C14 live-obligation/exception desk on suspension; no universal Users module assumed. |
+| UC03 / US03 | I | E02; S02–S03 and CR-ID/PARTS effective criteria. | V. |
+| UC04 / US04 | I | E03; S04 confirmed map/manual/list request. | V; synthetic service area remains explicit. |
+| UC05 / US05 | I | E03/E06; S04/S08 partial change/attempt. | V; admin recovery via new review/allocation, never custody reversal. |
+| UC06 / US06 | I | E04; S06 offer/acknowledgment. | V. |
+| UC07 / US07–US08 | I | E05; S07/S08 compare/approve/manifest. | C19 performance qualification; scheduling not custody. |
+| UC08 / US09–US10 | P | E02/E06; S08 QR/manual/physical first receipt. | C14 mismatch recovery; later-return linked lifecycle alternative not implemented (BR18), requires explicit identity contract if pursued, never a second serial identity. |
+| UC09 / US11 | I | E07; S09 partial handover/accepted custody; bounded no-transfer resolution. | V; C16 addresses new downstream recipient-revocation contract, not implicit generic transfer. |
+| UC10 / US12–US13 | I | E08; S10 separate observation/recommendation/human decision. | C14 safety hard-hold correction; V technical tasks. |
+| UC11 / US14 | P | E09/E10/E12/E13; S11 supported external work/assurance and live coverage. | C15 identity gaps; unsupported non-HDD/SSD treatment remains D unless separately approved. No hardware execution. |
+| UC12 / US14 | I | E11; S11 bounded work/test/owner release or recycling reassessment. | C15 contradiction correction; V actual owner receipt. |
+| UC13 / US15 | I | E12; S12 actual dismantling and canonical detachment. | C15 unexpected-media resolution; V weighing/physical evidence. |
+| UC14 / US15 | P | E12/E13; S12 stock, named acknowledgment, final evidence/closure for ordinary supported paths. | C16 disputed/lost fractions, corrections and recipient succession; no false recovery claims. |
+| UC15 / US16, US18 | P | E14; stage-safe views and four notice families, partial S02/S13. | C17 complete timeline/notice coverage. |
+| UC16 / US17 | P | E07/E10/E12 bounded correction/closure; blockers E06–E13. S14 missing. | C14–C16. |
+| UC17 / US19 | M | No S15 metrics/export implementation; E14. | C17. Collector scoped manifest export also absent. |
+| UC18 / US20 | P | S01 notice and own views only; no S16 action tracking/redaction; E14. | C18. |
+| UC19 / US21 | P | E05/E08/E15 local guarded tools; evaluator is not a fifth deployed role. | C19 all finished-scope protocols/raw evidence; no participant invention. |
+
+## Business rules — every BR01–BR20
+
+| Rule | Status | Evidence and remaining gap / dependency |
+|---|---|---|
+| BR01 Identity | I | E02/E10/E12/E13 permanent physical identity, global optional identifiers; V. Later lifecycle must reuse identity, not evade CR-ID. |
+| BR02 Ownership | I | Owner-bound actions/labels, retained accountability owner through canonical movements; E02/E07/E10–E13. General ownership transfer D. |
+| BR03 Active request | I | Reservation/assignment uniqueness and locked partial cancellation; E03/E04/E06. V. |
+| BR04 Operator eligibility | P | Active reviewed scope rechecked, old records preserved/stale work blocked; E03–E07/E13. C14 accountable live-obligation review; C16 dispatched named-recipient scope-loss recovery. |
+| BR05 Physical receipt | I | Actual recipient attestation/evidence, not consumer/scan/route completion; E06/E07/E11/E13. V. |
+| BR06 Custody | I | Single confirmed custodian, pending/disputed separate, ledger-backed accepted changes; E06/E07/E11/E13. C14–C16 corrections must preserve this invariant. |
+| BR07 Assessment | I | Distinct self-report/technician versions, no unknown→healthy default; E02/E08. V. |
+| BR08 Human approval | I | Deterministic recommendation separated from human authority, no scan approval; E08/E11–E13. V. |
+| BR09 Data gate | P | Live supported assurance/all-media coverage/destruction restrictions and surviving-drive controlled storage; E09–E13. Unsupported media remain blocked/D, correction C15; never treat certificate/recommendation as clearance. |
+| BR10 Dismantling | I | Terminal parent/permanent batch and canonical-media lineage, no per-fragment owner/yield invention; E12/E13. V. |
+| BR11 Mass | P | Exact kg, estimates separate, max(0.1 kg, 2%) tolerance, no double input/output/stock deduction; E05/E12/E13. C16 reviewed variance/measurement disputes after movements; honest out-of-balance records already possible. |
+| BR12 Final evidence | P | Distinct dispatch/receipt/completion and guarded closure, unknown stays pending; E13. C16 supported evidenced resolution; external-only/manual stand-in receiver is D under approved Phase 13 boundary. |
+| BR13 Reporting | P | First receipts and canonical facets distinct in operational ledgers/tests; E06/E10–E13. Missing cohort/rate/kg report implementation C17, independent reconciliation C19. |
+| BR14 Corrections | P | Immutable history and narrow append-only corrections; E07/E10/E12. C14–C16 full effective supersession and dependent-exception handling. |
+| BR15 Time | P | UTC observed/recorded times and bounds; later histories use Nairobi display. E06–E13. Earlier [owned device view](../resources/views/devices/show.blade.php) still displays UTC; consistent Nairobi display is an implementation gap, not only user testing. Shared local-entry/display improvement C17; retrospective explanation rules and usability V. Never alter historic instants. |
+| BR16 Routing | I | Exactly-once feasible jobs, mass/duration and invalidation; E05/E06. NF04 risk persists; V. |
+| BR17 Hazards | P | Ordinary ineligible streams blocked, prototype not safety certification; E03/E06/E08–E13. C14 evidenced safety-review recovery, not unrestricted hazardous acceptance. |
+| BR18 Finality | P | Terminal guards retain released/dismantled/closed facts; E11–E13. No later-return linked-lifecycle service. Treat re-entry as deferred requiring CR-ID-compatible contract, not an ordinary edit or automatic P0 replacement workflow. |
+| BR19 Truthfulness | I | Synthetic/simulation/prototype assertions, distinct controlled storage/disposal/loss/recovery, no certified/physical success inferred; E03/E05/E08–E13. V real claims; report definitions C17 must retain distinctions. |
+| BR20 Data lifecycle | P | Private fields/evidence separated from opaque event links; E01/E02/E03/E15. C18 retention/deletion decisions, redaction register and restored-backup replay; C19 restore exercise. |
+
+BR18's later-return alternative appears in approved baseline UC08 and is missing; its **implementation contract is unresolved**, rather than silently removed by a phase boundary. Recommend explicit deferral from the first deployable prototype through a user-authorized D2/D3 entry, preserving permanent identity and rejecting re-entry until a linked lifecycle is designed. If the user requires it now, add a bounded lifecycle increment before C19; do not count that authorization as already given.
+
+## Change-entry acceptance coverage
+
+The approved [parts specification](parts-intake-design-report.md) and [media](design/phase-10b-media-contract.md), [reuse](design/phase-11-reuse-contract.md) and [batch](design/phase-12-batch-contract.md) contracts add the following named criteria. These supplement, not replace, AT01–AT12. A criterion testing that a restriction remains blocked can pass while the separate resolution feature remains missing.
+
+| Criterion | Status | Code/test evidence and remaining work |
+|---|---|---|
+| PI01 vocabulary | I | E02 exact allowed/excluded subtype/fan cases; V integration. |
+| PI02 observations | I | E02 versioned unknowns, old schema, honest fan revisions; V. |
+| PI03 data/facets | I | E02 forced reciprocal same-ID facets, server-derived drive YES; V. |
+| PI04 identity/retries | I | E02 normalized global namespace, part IMEI denial, historical retry/direct competing writes; V. |
+| PI05 protected origin | I | E02 null/array/forged parent/storage rejection, no consumer derivation; later authorized processor workflows E10/E12 do not relax it. |
+| PI06 atomicity | I | E02 partial-state/file compensation tests; V. |
+| PI07 ownership | I | E01/E02 private owned label/photo/lookup and session tests; later scoped staff access has separate E06–E13 authority. |
+| PI08 migration | I | E02 fresh/populated guarded paths, no historic facets/crypto/retry changes; recorded dedicated migrations. |
+| PI09 HTML feedback | I | E02 escaped safe views, field associations/private reselection; V actual browser behavior. |
+| PI10 manual browser | P | Historical user-reported Phase 2A acceptance is retained; no new detailed/named assistive-technology evidence supplied. Finished integrated revision V, no automated substitute. |
+| F01 subtype compatibility | I | E03/E04 explicit point/operator subtype capability, no inferred real acceptance; V operations unverified. |
+| F02 canonical custody | I | E06/E07/E10/E12 single physical subject, actual acknowledgment, no first receipt at derived identification/detachment; V. |
+| F03 part inspection/release | I | E08/E11 subtype technician schemas and live release gates; correction C14–C15 separate. |
+| F04 sanitization | I | E09 supported HDD/SSD policy, failed/repeated work, unsupported treatment blocked, no consumer bypass; universal treatment D. |
+| F05 lineage/mass | I | E10/E12/E13 existing canonical output, permanent parent/batch links, no double input kg; correction C15–C16 separate. |
+| F06 reporting | P | Operational first-receipt/identity/stock ledgers exist; C17 missing cohort/export implementation and C19 independent totals. |
+| M01–M02 | I | E10 identity/serial/reuse and evidenced provenance/owner/control; no invented receipt. |
+| M03–M04 | I | E10 versioned uncertainty/dispute/omission and all-media completeness/NO-N/A. Missing bound-association resolution C15 is explicitly separate. |
+| M05–M07 | I | E09/E10 supported authorization, live assurance/reassessment and retained destruction concerns; unsupported remains blocked. |
+| M08–M10 | I | E10 native concurrency/stale/retry/revocation, actual deferred/reciprocal/file boundaries and fresh/populated upgrades. |
+| M11 | P | Physical inventory/browser/mobile/accessibility acceptance unperformed; V. |
+| R01–R04 | I | E11 complete supported journeys/profiles, new work/failure/reassessment and live data/N/A/destruction boundaries. |
+| R05–R07 | I | E11 stale approval, exact all-media manifest/origin and private owner acknowledgment/forged-field denial. |
+| R08–R10 | I | E11 real competing retry/acknowledgment, deferred/direct/root rollback/files and preservation upgrades. |
+| R11 | P | Browser/bench/mobile/accessibility and actual owner receipt unperformed; V. |
+| B01–B04 | I | E12 eligibility/exclusions, draft/actual-work distinction, canonical detachment and missing/unexpected-media blocking. Resolution still missing C15. |
+| B05–B08 | I | E12 unique production/input, exact kg/tolerance/imbalance, pending/corrected measurements and context-3 revalidation/stale parent authority. |
+| B09–B12 | I | E12 scoped privacy/forgery/revocation, actual races/retries, deferred/root rollback/files, fresh/populated preservation. |
+| B13 | P | Actual weighing/label/browser/mobile/accessibility acceptance unperformed; V. |
+
+## Acceptance and non-functional criteria
+
+No row below claims human/operational acceptance. AT references refer to both D2 §12.1 and D3 §8.1, as amended by the CR entries.
+
+| Criterion | Status | Concrete evidence / remaining validation or capability |
+|---|---|---|
+| AT01 Access | I | E01 login/suspension/recovery/reuse/session tests; historic user checks. Final V with deployed configuration. |
+| AT02 Directory/eligibility | P | E03/E04 approved/inactive/incompatible/stale tests; C14 live exception recovery; V actual setup. |
+| AT03 Intake/request/partial receipt | I | E02/E03/E06 revised duplicate rejection, multiple items/cancel/partial attempts; V integrated journey. |
+| AT04 Routing | I | E05 feasibility, comparison/invalidation, 30 paired cases; NF04 historical failure remains; C19 evaluation. |
+| AT05 Lookup/privacy | I | E02/E06/E07/E10–E13 scoped code/label/owner tests; actual camera/printed-label and integrated V remain. |
+| AT06 Custody/discrepancies | P | E06/E07/E13 actual acknowledgment/partial/race checks; missing restriction recovery C14 and downstream exceptions C16; V. |
+| AT07 Inspection | I | E08 immutable rules/answers/overrides, 60-case conformance; V bench/browser, not professional validation. |
+| AT08 Work/data/reuse | P | E09–E11 supported failed/repeated treatment, N/A, work/test/return; universal media and contradiction resolution absent (C15/approved D), V actual work. |
+| AT09 Batch/output/outcome | P | E12/E13 lineage, decimal/tolerance/stock/concurrency/closure; C15 unexpected media and C16 disputed outcomes/corrections; V physical measures/acknowledgments. |
+| AT10 Views/reports/privacy | P | E14 partial views/notices; C14–C18 missing corrections, full notice/report/export/privacy paths and independent totals. |
+| AT11 Concurrency/atomicity | I | E03–E13 native competing commands, stale/retry, direct/deferred and root-COMMIT rollback tests. Extend for C14–C18; final V multi-tab. |
+| AT12 Quality/recovery | P | E05/E08 bounded evaluation; most final reference-load/accessibility/usability/restore evidence absent. C19 after completed features. |
+
+| Criterion | Status | Actual evidence / gap / completion |
+|---|---|---|
+| NF01 Authorization/privacy | P | E01–E15 negative scope tests for implemented endpoints; missing report/export/privacy matrix awaits C17–C18. Final C19 documented complete-role matrix, zero unauthorized successes target unchanged. |
+| NF02 Authentication/input safety | P | E01/E02/E15 hashing, expiring single-use tokens, five failures/15 min, CSRF and upload tests; deployed HTTPS/cookie/TLS review unperformed. C18 account/privacy configuration and C19 deployment review; no TLS pass inferred from localhost. |
+| NF03 Routine p95 | M | No 10,000-item/50,000-event, 20-session, five-minute per-operation p95 exercise for intake/receipt/timeline/dashboard. C19 after C17; target <2 seconds unchanged. |
+| NF04 Routing ≤10 seconds | P | E05 ten actual capture/calculate/validate/persist runs per size; subsequent full-suite passes. [Phase 8](phase-8-report.md) retains **15.0599 s (15.06 s)** failure; later passes do not erase it. C19 investigate repeat-run variability on declared hardware/load, retain failures/timeouts; do not raise target or rerun for a favourable sample. |
+| NF05 Integrity | I | E02–E13 actual native races, uniqueness, single custody, ledger-backed terminal transitions, deferred/COMMIT rollback. Extend new increments; V final integration. |
+| NF06 Trace completeness | P | Reciprocal event/command/projection guards and focused assertions E06–E15. C19 aggregate all completed scenario ledgers and verify every required actor/type/object/time/reference/current projection, not merely a few fixture rows. |
+| NF07 Human usability | P | Task protocols exist in D3; no supplied ≥80% unassisted multi-role study. C19 appropriate voluntary evaluators if available; otherwise explicitly unvalidated. User provisional satisfaction and simulated fixtures cannot meet it. |
+| NF08 Accessibility/responsiveness | P | Feedback/focus/aria/360px design and HTML/JS assertions E01–E15; earlier user reports remain bounded. C19 actual core keyboard/mobile/screen-reader/contrast plus automated accessibility scans; no complete-conformance claim. |
+| NF09 Recovery | M | Private preserved-file manifests and migration comparisons are not a complete timed restore. C18 redaction-aware policy then C19 isolated DB/blobs/keys/redaction replay restore ≤60 minutes, loss ≤24 hours under daily policy; preserve originals. |
+| NF10 Dependency resilience | P | E03/E05/E06 mocked tiles/import/geolocation/camera failures, manual/list flows and atomic bounded notice workers. C17 full notice retry/failure handling, C19 injected service failures/actual browser fallback; no real email delivery evidence. |
+| NF11 Reproducibility | P | Locked stack, guarded fixtures, fresh/populated upgrades, E05/E08 evaluation exports and this traceability audit. Missing P0 capabilities mean not every requirement has acceptance evidence. C19 clean native setup rehearsal/full evidence package; no Docker/SQLite substitute. |
+| NF12 Report correctness | M | Operational ledger assertions exist, but no independent dashboard/CSV known-cohort/correction/date-boundary comparison. C17 implementation and C19 independent reconciliation, 100% predefined agreement target. |
+
+Nairobi UTC-only entry usability, UTC-only older displays, routing performance variability, simulated service areas/distances, unverified operator/recipient participation and collection-point suitability remain explicit. Local password recovery uses the documented log transport; real inbox delivery is **unconfigured/unverified**, not a broken reset mechanism. No provider credentials, external sending or paid service is introduced by this plan.
+
+## Recovery gaps and safe resolution boundaries
+
+Established authority: FR28–FR29, BR04–BR06/BR09/BR14–BR15/BR17–BR20; D3 UC16/S14/§5.5. They authorize accountable correction, not arbitrary deletion, retrospective acknowledgment or an Administrator safety override. The following actor/evidence splits are **recommended design defaults**, not stakeholder approval. An Administrator coordinates/assigns/reviews; a currently scoped Processor supplies technical findings; an actual receiving actor supplies receipt. Revoked staff may not regain old private access merely to finish an investigation.
+
+| Gap / existing blocker | Investigator, evidence and supersedable facts | Boundary / proposed increment |
+|---|---|---|
+| Receipt safety hold | E06/inspection SQL tests existence of every retained `safety_hold`; Ready review cannot clear it. Admin assigns; an authorized current technical Processor supplies dated identity-matched safety findings and private provenance. Original actor may clarify within current scope, never through an impersonated session. | C14 may append reviewed correction of a mistaken observation or evidenced reassessment of the supported safety fact. Unsupported hazard/unknown stays held. No first receipt/custody is created by resolution; a fresh real receipt is still required. Technical observation before receipt needs explicit investigation-only scope, with no intake authority. |
+| Receipt identity mismatch | E06 retains `mismatch` for the requested item. Admin investigates with original/current scoped observers, physical code/category/model comparison and reason/evidence. | C14 corrects only a proven erroneous comparison involving the **same existing subject**, or records continued review. A different physical item/owner or wrong custody identity needs C15 identity contract; do not switch a past receipt's subject. Actual receipt still requires the authorized recipient. |
+| Inspection hard hold | `Context::restricted` and SQL use any historic `hard_hold`; a newer ordinary inspection/decision cannot clear it. Current facility Processor supplies fresh same-subject technical evidence; Admin reviews the specific restriction. | C14 introduces versioned effective restriction review, preserving original answers/rule result. Fresh inspection/human decision required afterwards. Unsupported scope, uncertain identity and destroyed media remain blocked; no checkbox clears all hard holds. Completed dependents get exceptions, not rewritten history. |
+| Disputed canonical association | E10 bound correction retains the medium/claim; omission/`not_present` cannot unlink it. Admin plus current facility Processor inspect parent/medium labels, owner/control consistency and existing placement/treatment histories. | C15 requires a CR-MEDIA-01 extension for reviewed factual association supersession without identity merge/deletion or fabricated removal. Wrong-owner/conflicting-custody cases stay held. Any actual movement still needs its authorized physical workflow/acknowledgment. Destruction concern follows the physical medium forever. |
+| Unexpected post-commit media | E12 discrepancy permanently blocks the committed batch; no automatic new identity, provenance or mass. Source facility Processor and Admin investigate the actual parent/batch/medium/evidence and what was physically observed. | C15 needs explicit post-commit identification/provenance/output semantics, preserving permanent inputs and actual detachment history. May use an existing confirmed canonical subject; never invent earlier receipt/removal/ownership or a balancing lot. Cannot treat discovery as ordinary measurement correction. |
+| Work/return contradiction | E11/E12 retain configuration CHANGED/UNKNOWN, unsafe tests and incomplete/mismatched return exceptions; ordinary new decision cannot remove them. Facility Processor investigates technical facts; Admin reviews; owner may attest only actual owned receipt. | C15 append supported same-configuration fact correction; no generic replacement or unsupported repair. A real changed configuration stays blocked until separately authorized. Owner receipt cannot be inferred from work completion/resolution; exact manifest acknowledgment remains necessary. |
+| Downstream refusal/shortage/dispute | E13 outstanding dispatch fractions become blocking exceptions, with no restock or automatic return. Admin coordinates source/destination scoped Processors; require original dispatch, actual count/weight/identity, reason, times and accountable evidence. | C16 may reconcile a proven reporting error or close investigation with a separately recorded known outcome. Confirmed actual arrival still needs current named-recipient acknowledgment; no accepted kg is invented. A real physical return/reconsignment needs an explicit new custody/control contract and is D unless separately authorized. |
+| Damaged acceptance | E13 correctly records actual accepted custody/control but blocks ordinary completion and closure. Destination Processor records specific damage/safety/data assessment; Admin reviews scope with evidence. | C16 can append reviewed supported condition/disposition facts. Unknown hazard/data gate stays blocked. Recovery/disposal/completion needs its own actual evidence, not an Admin “resolved” flag. Canonical destroyed media cannot become reusable. |
+| Source/downstream loss | E13 deducts source loss once or records downstream loss against already dispatched quantity; both block ordinary closure. Source/destination accountable staff and Admin need incident/provenance/quantity investigation. | C16 requires approved terminal **lost/not recovered** allocation and surviving-media accountability rules. No second stock deduction, fictitious receipt/recovery or restoration. Unknown whereabouts cannot become controlled storage. If safe closure cannot be supported, retain pending exception. |
+| Measurement/accounting dispute | E12 append corrections before movement; E13 freezes movement-affecting correction after dispatch/loss and exposes later contradictions without erasing closure. Admin/source Processor, and receiver where accepted facts affected, review original measurement, provenance and every claim/fraction. | C16 explicit correction ledger with projection impact and invariant constraints. Supersede measured fact, not dispatch/acceptance history; no negative stock or minted production. A correction contradicting completed physical quantities opens dependent exceptions. Real extra output remains an explicit recorded-output action. |
+| Named-recipient revocation after dispatch | E13 freezes receiver membership/version; old links/actions fail; reservation withdrawal cannot undo dispatched quantities. Admin investigates destination scope/operator/profile; source and a proposed current destination Processor provide reason/evidence. | C16 needs a narrow **recipient succession** contract for the same destination and dispatched fraction, append-only assignment history and invalidated old authority. Recommend explicit successor acceptance of the administrative responsibility followed by **their own actual physical acknowledgment**, never reused old credentials. Different destination/return needs separate custody contract. Keep shipment held if no eligible recipient participates. |
+
+Existing recoveries must be reused: offer withdrawal/reoffer, fresh Ready review, route supersession, pending handover withdrawal/no-transfer closure, unbound inventory uncertainty correction, fresh inspection after ordinary failed work, justified assurance applicability review and undispatched reservation withdrawal. They are not substitutes for the missing typed corrections above. Declarations alone do not establish safe handling, correct identity or actual physical possession.
+
+## Bounded completion sequence
+
+Six provisional implementation/evaluation increments are recommended, **C14–C19**, not a fixed promise of calendar effort. Dependencies justify separating identity/custody/accounting changes from read-side reports and personal-data lifecycle. No increment is implemented or authorized merely by this audit. A requested linked re-entry lifecycle or physical return/reconsignment could add another increment; no optional P1/P2 features are included.
+
+### C14 / proposed Phase 14 — operational restriction review
+
+**References:** FR28–FR29/FR34, bounded FR03/FR08/FR18–FR21/FR27/FR30; BR04–BR08/BR14–BR15/BR17–BR19; D3 US17, UC16, S14 with links from S06/S08–S10/S13; AT02/AT06–AT07/AT10–AT11, NF01/NF05–NF06/NF10–NF11. Append a reviewed D2/D3 correction contract before code, preserving all CR history.
+
+**Include:** one scoped exception desk that projects existing typed blockers (without backfilling fabricated events); assign and investigate live obligations; actionable links/reasons. Implement resolution only for proven same-identity receipt comparison errors and supported receipt/inspection safety-observation correction. Other exception types are visible, assigned and explicitly unsupported for resolution. This removes the earliest otherwise permanent restrictions without introducing stock/custody/identity changes.
+
+**Roles/transitions:** Admin opens/assigns and reviews; authorized currently scoped Processor records fresh technical findings. Original Collector/point staff may supply their own scoped comparison clarification. Recommend author and approving reviewer are different accounts for restriction relaxation. States `open → under_review → resolved_no_change / superseded_fact`, with `review_continues` preserving the block; a new contradiction opens a linked case. Administrative resolution alone never grants technical competence or physical possession. Investigation-only access before a first receipt must be explicitly authorized, least-private, audited and incapable of recording receipt/processing. No new role.
+
+**Evidence/integrity:** target exact source record/event and individual restriction, expected versions/current scope, actor, observed and recorded times, reason, original/replacement controlled fact and private attachment or accountable reference. Preview affected request reviews, assignments/routes, assessments/decisions, media authorizations, work/releases and batches/shipments. Relax only the supported fact after reviewed evidence; unknown/unsupported hazard/identity remains held. Require fresh Ready review or fresh inspection/decision as applicable. Stale old approvals cannot revive. If already completed work conflicts, retain its history and open blocking dependent exceptions; resolution neither receives an item nor reverses custody/stock/terminal state.
+
+**Schema/service/UI reuse:** forward migration for typed case header/current projection and append-only investigation/resolution ledger with reciprocal event/command/evidence references and unique active restriction scope. Derive imported case context from original records; no edits/deletes of `receipt_discrepancies`, assessments or historic hard-hold flags. Add a common effective-restriction query used consistently by both PHP and SQL gates in receipt, inspection, assurance, inventory, reuse and batch/downstream dependencies. Snapshot its monotonic version; do not sprinkle `NOT EXISTS(resolved)` bypasses. Reuse `Review::lock`, `AdminMutation`, stable row locks, private evidence, existing feedback/focus/pagination/design tokens and supported S09 no-transfer resolution. Notices for case actions use committed outbox entries and scoped delivery, paving the way for C17.
+
+**Exclude:** identity reassignment/merge, owner changes, new receipts, proxy receiver signatures, canonical association/detachment/replacement, work-configuration changes, stock/measurement corrections, loss-as-success, return/reconsignment, unsupported hazard/treatment, generic Admin override. C15–C16 own those materially different contracts. No hardware/safety operations are performed by software.
+
+**Tests:** prove continued block before review; same-subject correction and fresh-prerequisite recovery end to end; two-account approval and exact scope; actual unsupported/unknown facts cannot clear; no receipt/custody/stock/first-count/ownership change; stale decision and revoked investigator/reviewer access; transitive invalidation and dependent exceptions after terminal work; repeat/changed commands, competing reviews, direct invalid writes, forced deferred/root-COMMIT rollback and private-file compensation; migrations on fresh/populated isolated PostgreSQL with retained histories. Run relevant suites/full PHP after application changes, JS only if changed, Pint/build/Composer when applicable, preservation with the same retained 37-file scope.
+
+**Manual acceptance:** Admin/Collector/Processor trace hold → assignment → evidence → review → fresh eligibility/inspection; deliberate denied/continued cases; private old links, focus/errors, desktop/360px/keyboard/screen-reader and Nairobi time entry. These remain deferred until exercised; no bench safety certification inferred.
+
+**Authorization needed before implementation:** approve this action/role/evidence matrix, two-account relaxation review and investigation-only pre-receipt scope. Without that scope, permit technical relaxation only where existing legitimate facility scope already exists; pre-receipt items remain held. Approve the exact effective-restriction/version invalidation contract in D2/D3. Do not authorize a universal clear-hold button.
+
+### C15 — canonical-media and work contradiction review
+
+Depends on C14 case/evidence/invalidation framework. Complete the bounded FR23/FR28–FR29/UC11–UC12/UC16 correction gaps: wrong association, unexpected media and work/return fact contradictions. First settle CR-MEDIA/CR-BATCH/CR-REUSE extensions for identity/provenance and current configuration without rewriting actual detachments/receipts or allowing duplicate serial subjects. Retain unknown provenance/control as blocked. Same-identity observation correction can proceed; real replacement/re-parenting and unsupported treatment stay excluded. Tests must preserve assurance/destruction history, owners, claims, first receipts, terminal facts and all-media coverage, including concurrent association/correction and failed COMMIT cleanup. Physical/bench acceptance deferred. The precise association and post-commit-discovery action matrix is a material authorization dependency, not already established requirements detail.
+
+### C16 — downstream exception and accounting resolution
+
+Depends on C14, and C15 for any canonical identity conflict. Complete bounded FR25–FR26/FR28–FR29 and UC14/UC16: investigated shortage/refusal/damage/loss, post-dispatch measurement dispute and same-destination recipient succession. Authorize quantity-state/custody matrices before coding. Reserve/dispatch/accept/complete partitions remain non-overlapping; receipt/completion never deduct source stock again; no adjustment mints production or counts lost mass as recovery. Closure with reviewed loss needs explicit outcome/media obligations; unresolved unknown outcomes remain pending. Different-destination returns/redistribution are not assumed necessary for ordinary compliant operation and need separate authorization if requested. Test real competing fractions, stale scope/approval, all fixed-decimal boundaries, changed post-closure evidence, exact projection reconciliation and reciprocal/deferred rollback. Real recipient/custody/measurement acceptance remains deferred.
+
+### C17 — complete milestones/notices, scoped reports and exports
+
+Can prepare read-only definitions after C14; freeze report/correction semantics after C15–C16. FR27/FR30–FR32, BR13/BR15/BR19, UC15/UC17, S02/S13/S15, AT10/NF12. Reuse stage-safe presenters and four workers; extend transactional notice producers/allowlisted delivery/read queries for approved scheduling/milestone/exception events, with visible failure/retry and no unrelated historic drain. Consolidate paginated timeline links and consistent Africa/Nairobi display/local-entry guidance; preserve UTC instants and explicit observed/recorded time.
+
+Define unique first-collection and facility-received cohorts, separate whole/standalone/derived items and storage facets, reuse-release denominators, incomplete/empty rates, estimated/measured kg, recovered/disposed/controlled-storage/lost quantities and mixed-owner batch lineage. Export the same scoped filter snapshot with generated time/timezone/correction version, text-safe CSV and logged/private expiry-controlled access; Collector gets only authorized manifest data. Independent known-cohort fixtures, repeated transfers, derived media, partial dispatch/completion, corrections, zero denominators, date boundaries and formula-like text must reconcile exactly. No per-device recovered-fragment percentages or carbon/regulator report invented. Browser/time-entry and notice acceptance deferred.
+
+### C18 — privacy requests and data lifecycle
+
+Separate destructive-data contract: FR33/BR20, UC18/S16/AT10; depends on C14 correction audit and C17 exports/cache inventory. Add tracked identity/scope-verified own access/correction/deletion requests, Admin reasoned pending/decision/completion, private own-data package, controlled field/attachment/snapshot/log/export redaction and expiry. Preserve non-identifying lineage while reviewing identifier comparison/uniqueness, command hashes, encrypted historical snapshots and actor re-identification risks. Specify backup expiry and replayable redaction register **before** deletion; no broad SQL updates to immutable ledgers or key destruction. D2's synthetic default and 90-day post-assessment evaluator-data policy remain; any operational retention exception needs a recorded decision. Extend native restore tests, revocation/read tests and account controls only where necessary for required suspension/access/privacy paths. Processor provisioning through private local tooling is existing support; a general-purpose IAM/product profile system is not authorized by this gap.
+
+### C19 — integrated acceptance and reproducible quality evidence
+
+Depends on all required capability increments and disposition of the re-entry decision. Complete UC19/FR35, AT01–AT12/NF01–NF12 with finished-revision evidence: native fresh setup/upgrade; complete scoped-role/trace audit; independent reports/CSV ledger; reference-workload p95 tests; reproducible routing/assessment results with all coverage differences and timings; daily-policy timed isolated DB/blob/key/redaction restore. Investigate the **historical 15.06-second routing failure against unchanged ten-second target**, document load/hardware and all new failures, not just passing reruns. No arbitrary target increase.
+
+Exercise the full [deferred checklist](deferred-acceptance-checks.md), including 360px/touch/desktop, actual keyboard/focus/labels/screen-reader/contrast/automated accessibility scans, camera/manual fallback, maps/service failure, Nairobi entry/display, printed labels, weighing, bench/owner/recipient acknowledgments and multi-role partial/error journeys. Use synthetic controlled fixtures and voluntary appropriate evaluators where available; otherwise leave NF07 and real operational validation explicitly unvalidated. Record revision, method and actual results; fixes reopen only affected checks. No inbox delivery pass without a configured provider and authorized successful delivery test. No deployment/full-validation declaration while known blocking defects or required acceptance gaps remain undisposed.
+
+## Decisions and audit handoff
+
+1. **Recommend C14 first**, with the bounded two-account review/investigation scope above. Its implementation requires approval of concrete effective-restriction semantics; this audit does not loosen existing gates.
+2. **Re-entry:** explicitly authorize deferral of baseline BR18/UC08 linked later-return support, or request a separate permanent-identity lifecycle increment before final acceptance. Current terminal guards remain mandatory either way.
+3. **C15/C16:** authorize only after their factual-association/provenance and quantity/recipient succession matrices are reviewed. Recommend same identity/same destination, no automatic physical returns, stock restoration or proxy receipt. Loss/unknown results stay truthful even if that prevents closure.
+4. **Privacy retention/redaction:** settle the actual disposition/backup schedule and permissible pseudonymous history before C18. No real operational dataset or provider acceptance is required to finish the software design; neither is claimed.
+
+Documentation verification: identifier/ownership/custody/assurance/retry contracts were cross-checked against the referenced code and native tests. The status matrices cover all **35 FRs, 19 UCs, 20 BRs, 12 ATs and 12 NFs**, plus approved changes and all user stories. Local documentation/code/test link targets, matrix identifier completeness/uniqueness and whitespace are checked for this increment; no application or operational verification is fabricated from those documentation checks. Future phases should update this audit with code/test evidence and acceptance status, preserving historical failures and approved exclusions.
