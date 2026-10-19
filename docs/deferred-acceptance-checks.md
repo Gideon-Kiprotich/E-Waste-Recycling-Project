@@ -131,7 +131,9 @@ On 18 October 2026 the user provisionally accepts Phase 11 for continued develop
 
 Known missing functionality remains separate: Phase 7 safety/mismatch correction, Phase 9 inspection hard-hold correction, disputed canonical association resolution and work/return safety/configuration/mismatch exception resolution; detachment/replacement/general co-transfer; unsupported non-HDD/SSD treatment; arbitrary recipients and ownership change. The bounded owner-return exception does not resolve these. Retain routing variability and the historical 15.0599 s (15.06 s) failure against the unchanged 10 s target, subsequent results and Phase 6 evaluation limitations. Real collection-point/treatment effectiveness and inbox delivery remain unverified/unconfigured. **Final integrated end-to-end acceptance remains required before deployment/full validation.**
 
-## Phase 12 — implementation, manual acceptance deferred
+## Phase 12 — provisional acceptance, detailed checks deferred
+
+On 19 October 2026 the user provisionally accepts Phase 12 for continued development and fast-forward integration under the agreed deferred-testing policy. This supersedes waiting for manual acceptance before integration; it does not mark any check passed. Recorded automated results cover the unchanged implementation; no known failing current-code check is waived. Final integrated end-to-end acceptance remains required before deployment/full validation.
 
 Phase 12 supersedes earlier blanket detachment limitations only for its evidenced same-facility canonical batch exception; general removal/replacement/co-transfer remains unavailable. Earlier manual results are not upgraded by this exception.
 
