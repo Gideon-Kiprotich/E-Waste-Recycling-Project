@@ -33,6 +33,22 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontFlash(['token', 'password', 'password_confirmation', 'current_password', 'identifier', 'photo', 'address', 'contact', 'latitude', 'longitude', 'reason']);
         $exceptions->render(function (ValidationException $exception, Request $request) {
+            if ($request->routeIs('downstream.*', 'admin.output-profiles.*') && ! $request->expectsJson()) {
+                $key = $request->input('idempotency_key');
+                $safe = is_string($key) && Str::isUuid($key) ? ['idempotency_key' => $key] : [];
+                if ($request->routeIs('admin.output-profiles.*')) {
+                    return redirect()->route('admin.output-profiles.index')->withErrors($exception->errors())->withInput($safe);
+                }
+                $shipment = $request->input('shipment_id');
+                if (is_string($shipment) && Str::isUuid($shipment)) {
+                    return redirect()->route('downstream.shipment', ['shipment' => $shipment, 'action' => $request->route('kind')])->withErrors($exception->errors())->withInput($safe);
+                }
+                if ($request->routeIs('downstream.authorize')) {
+                    return redirect()->route('downstream.index')->withErrors($exception->errors())->withInput($safe);
+                }
+
+                return redirect()->route('downstream.show', ['batch' => $request->route('batch'), 'action' => $request->route('kind')])->withErrors($exception->errors())->withInput($safe);
+            }
             if ($request->routeIs('batches.store', 'batches.authorize') && ! $request->expectsJson()) {
                 $key = $request->input('idempotency_key');
                 $safe = is_string($key) && Str::isUuid($key) ? ['idempotency_key' => $key] : [];

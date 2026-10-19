@@ -77,3 +77,7 @@ Thumbs.db
 /storage/phase-evidence/
 !/database/sql/dismantling_batches.sql
 !/database/sql/batch_assurance.sql
+
+!/database/sql/downstream_movements.sql
+!/database/sql/downstream_assurance.sql
+!/database/sql/downstream_controls.sql

@@ -9,6 +9,7 @@ use App\Support\Batches\Mass;
 use App\Support\Collection\AdminMutation;
 use App\Support\Collection\PrivateEvidence;
 use App\Support\Collection\Review;
+use App\Support\Downstream\Violation;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Crypt;
@@ -93,7 +94,7 @@ class DismantleBatches
             });
         } catch (Throwable $e) {
             $this->cleanup($stored);
-            throw $e;
+            Violation::raise($e);
         }
     }
 

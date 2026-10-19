@@ -6,6 +6,7 @@ use App\Enums\Role;
 use App\Models\User;
 use App\Support\Collection\AdminMutation;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class Context
 {
@@ -52,7 +53,12 @@ class Context
 
     public function balance(string $id): array
     {
-        return json_decode(DB::selectOne('SELECT batch_balance(?) AS balance', [$id])->balance, true, flags: JSON_THROW_ON_ERROR);
+        $balance = json_decode(DB::selectOne('SELECT batch_balance(?) AS balance', [$id])->balance, true, flags: JSON_THROW_ON_ERROR);
+        if (Schema::hasTable('downstream_records') && DB::table('downstream_records')->where('batch_id', $id)->exists()) {
+            $balance['status'] = DB::selectOne('SELECT downstream_status(?) AS status', [$id])->status;
+        }
+
+        return $balance;
     }
 
     public function blockers(User $actor, string $id): array

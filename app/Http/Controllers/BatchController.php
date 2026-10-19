@@ -10,6 +10,7 @@ use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -52,6 +53,10 @@ class BatchController extends Controller
         $outputs = $private ? DB::table('batch_outputs as o')->join('subjects as s', 's.id', '=', 'o.subject_id')->leftJoin('batch_records as r', 'r.id', '=', 'o.measurement_record_id')->where('o.batch_id', $batch)->orderBy('s.public_code')->get(['o.*', 's.public_code', 'r.net_kg', 'r.gross_kg', 'r.tare_kg']) : collect();
         $history = $private ? DB::table('batch_records')->where('batch_id', $batch)->orderByDesc('version')->get() : collect();
         $actions = $private ? ($b->state === 'draft' ? ['draft' => Context::LABELS['draft'], 'commit' => Context::LABELS['commit']] : array_diff_key(Context::LABELS, array_flip(['draft', 'commit']))) : [];
+        $downstreamClosed = Schema::hasTable('downstream_records') && DB::table('downstream_records')->where('batch_id', $batch)->where('kind', 'close')->exists();
+        if ($downstreamClosed) {
+            $actions = array_intersect_key($actions, ['discrepancy' => true]);
+        }
         $requested = $request->query('action');
         $mode = is_string($requested) && isset($actions[$requested]) ? $requested : null;
         $target = null;
@@ -63,7 +68,7 @@ class BatchController extends Controller
             $target = $candidate ?? $batch;
             $measurement = DB::table('batch_records')->where('id', $target === $batch ? $b->input_measurement_id : $outputs->firstWhere('subject_id', $target)->measurement_record_id)->first();
         }
-        if ($private && $request->query('action') === 'authorize') {
+        if ($private && ! $downstreamClosed && $request->query('action') === 'authorize') {
             $candidate = $request->query('medium');
             abort_unless(is_string($candidate) && $outputs->contains(fn ($o) => $o->subject_id === $candidate && $o->type === 'storage'), 404);
             $mode = 'authorize';
@@ -75,7 +80,7 @@ class BatchController extends Controller
         $fieldIds = $this->fields();
         $blockers = $private && $b->state === 'draft' ? collect($inputs)->mapWithKeys(fn ($s) => [$s => $ctx->blockers($request->user(), $s)]) : collect();
 
-        return $this->view('batches.show', compact('b', 'private', 'balance', 'members', 'selected', 'media', 'outputs', 'history', 'actions', 'mode', 'target', 'measurement', 'version', 'token', 'fieldIds', 'blockers'));
+        return $this->view('batches.show', compact('b', 'private', 'balance', 'members', 'selected', 'media', 'outputs', 'history', 'actions', 'mode', 'target', 'measurement', 'version', 'token', 'fieldIds', 'blockers', 'downstreamClosed'));
     }
 
     public function store(Request $request, DismantleBatches $action, string $batch, string $kind)

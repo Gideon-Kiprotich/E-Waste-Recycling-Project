@@ -13,6 +13,7 @@ use App\Http\Controllers\Auth\SessionController;
 use App\Http\Controllers\BatchController;
 use App\Http\Controllers\Collection\RequestController;
 use App\Http\Controllers\Devices\DeviceController;
+use App\Http\Controllers\DownstreamController;
 use App\Http\Controllers\HandoverController;
 use App\Http\Controllers\MediaInventoryController;
 use App\Http\Controllers\ReceiptController;
@@ -40,6 +41,19 @@ Route::middleware('guest')->group(function (): void {
 
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 Route::middleware(['auth', 'account.current'])->group(function (): void {
+    Route::middleware('role:processor')->group(function (): void {
+        Route::get('/facility/downstream', [DownstreamController::class, 'index'])->name('downstream.index');
+        Route::get('/batches/{batch}/downstream', [DownstreamController::class, 'show'])->whereUuid('batch')->name('downstream.show');
+        Route::get('/downstream/shipments/{shipment}', [DownstreamController::class, 'shipment'])->whereUuid('shipment')->name('downstream.shipment');
+        Route::get('/downstream/evidence/{record}', [DownstreamController::class, 'evidence'])->whereUuid('record')->name('downstream.evidence');
+        Route::post('/batches/{batch}/downstream/{kind}', [DownstreamController::class, 'store'])->whereUuid('batch')->where('kind', 'draft|reserve|withdraw|dispatch|accept|refuse|shortage|dispute|complete|source_loss|downstream_loss|measurement_dispute|close')->middleware('throttle:20,1')->name('downstream.store');
+        Route::post('/batches/{batch}/downstream/media/{medium}/authorize', [DownstreamController::class, 'authorize'])->whereUuid('batch')->whereUuid('medium')->middleware('throttle:20,1')->name('downstream.authorize');
+    });
+    Route::middleware('role:administrator')->group(function (): void {
+        Route::get('/admin/output-acceptance', [DownstreamController::class, 'profiles'])->name('admin.output-profiles.index');
+        Route::get('/admin/output-acceptance/{profile}', [DownstreamController::class, 'profiles'])->whereUuid('profile')->name('admin.output-profiles.edit');
+        Route::post('/admin/output-acceptance/{profile}', [DownstreamController::class, 'profileStore'])->whereUuid('profile')->middleware('throttle:20,1')->name('admin.output-profiles.store');
+    });
     Route::get('/facility/batches', [BatchController::class, 'index'])->middleware('role:processor')->name('batches.index');
     Route::get('/facility/batches/create', [BatchController::class, 'create'])->middleware('role:processor')->name('batches.create');
     Route::get('/facility/batches/lookup', [BatchController::class, 'lookup'])->middleware('role:processor')->name('batches.lookup');
