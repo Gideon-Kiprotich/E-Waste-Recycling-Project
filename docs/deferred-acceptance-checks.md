@@ -149,9 +149,9 @@ No user weighing, bench, browser, label, mobile/accessibility or operational acc
 
 Known missing functionality remains distinct: prior safety/mismatch, inspection hard-hold, disputed-association and work/return correction; newly observed unexpected-media provenance resolution; unsupported/nonseparable media operations, standalone-drive dismantling, replacement/re-parenting/general co-transfer and downstream stock dispatch/receipt/final closure. Reconciled on-site accounting is not completed recycling. Real acceptance, weighing/treatment effectiveness and inbox delivery remain unverified/unconfigured. Preserve historical routing variability and the 15.06-second failure against the unchanged ten-second target. **Final integrated end-to-end acceptance is required before deployment/full validation.**
 
-## Phase 13 — implementation, manual acceptance deferred
+## Phase 13 — provisional acceptance, detailed checks deferred
 
-No user weighing, recipient, browser/label, mobile/accessibility or operational acceptance is supplied. [The Phase 13 report](phase-13-report.md) separates automated PostgreSQL/HTTP checks from these unperformed journeys. Browser inventory exposes no apps/browsers. Final integrated end-to-end acceptance remains required before deployment/full validation.
+On 19 October 2026 the user provisionally accepts Phase 13 for integration and continued development under the deferred-testing policy. Detailed manual acceptance is deferred, not passed. No independent weighing, recipient, browser/label, mobile/accessibility or operational acceptance is supplied. [The Phase 13 report](phase-13-report.md) separates automated PostgreSQL/HTTP checks from these unperformed journeys. Browser inventory exposes no apps/browsers. Final integrated end-to-end acceptance remains required before deployment/full validation.
 
 - [ ] Administrator approval, exact output acceptance profiles and named facility scope; approve/suspend/stale-review recovery through supported controls without impersonation or manufactured operational acceptance.
 - [ ] Source draft/reserve/partial actual dispatch, remainder withdrawal, multiple outputs/shipments and exact decimal totals. Verify drafting grants no claim; receipt/completion/downstream loss never deduct source stock again.
