@@ -81,3 +81,8 @@ Thumbs.db
 !/database/sql/downstream_movements.sql
 !/database/sql/downstream_assurance.sql
 !/database/sql/downstream_controls.sql
+
+!database/sql/restriction_review.sql
+!database/sql/restriction_review_guards.sql
+!database/sql/restriction_dependencies.sql
+!database/sql/restriction_review_integrity.sql

@@ -4,6 +4,7 @@ namespace App\Support\Collection;
 
 use App\Models\Item;
 use App\Support\Devices\Questions;
+use App\Support\Restrictions\Effective;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -38,7 +39,7 @@ class Eligibility
         }
 
         if (DB::getSchemaBuilder()->hasTable('receipt_discrepancies')) {
-            $physical = DB::table('receipt_discrepancies as d')->join('receipt_outcomes as o', 'o.id', '=', 'd.outcome_id')->join('request_items as ri', 'ri.id', '=', 'o.request_item_id')->where('ri.item_id', $item->subject_id)->whereIn('d.kind', ['safety_hold', 'mismatch'])->pluck('d.kind');
+            $physical = collect(Effective::receiptKinds($item->subject_id));
             if ($physical->contains('safety_hold')) {
                 $reasons[] = 'receipt_safety_hold';
             }

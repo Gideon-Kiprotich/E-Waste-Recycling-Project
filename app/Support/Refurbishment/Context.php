@@ -63,7 +63,7 @@ class Context
             }
             $inspection = app(\App\Support\Assessments\Context::class);
             if ($inspection->restricted($subject)) {
-                $messages[] = 'A retained inspection hard hold requires the reviewed correction workflow, which is unavailable. Routine reassessment cannot clear it.';
+                $messages[] = 'A retained inspection hard hold needs Operational restriction review for a supported recording error. Routine reassessment cannot clear it.';
             }
             $decision = DB::table('assessment_current as ac')->join('decisions as d', 'd.id', '=', 'ac.decision_id')->where('ac.subject_id', $subject)->value('d.pathway');
             if ($decision !== 'refurbish') {

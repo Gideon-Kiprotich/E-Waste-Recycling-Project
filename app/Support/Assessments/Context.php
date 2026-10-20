@@ -4,6 +4,7 @@ namespace App\Support\Assessments;
 
 use App\Enums\Role;
 use App\Models\User;
+use App\Support\Restrictions\Effective;
 use Illuminate\Support\Facades\DB;
 
 class Context
@@ -43,8 +44,8 @@ class Context
         if (DB::table('handover_items')->where('subject_id', $row->subject_id)->where('active', true)->exists()) {
             $result[] = 'A pending or disputed handover still claims this item. Resolve it through Custody handovers before routine inspection.';
         }
-        if (DB::table('receipt_discrepancies as d')->join('receipt_outcomes as o', 'o.id', '=', 'd.outcome_id')->join('request_items as ri', 'ri.id', '=', 'o.request_item_id')->where('ri.item_id', $row->subject_id)->whereIn('d.kind', ['mismatch', 'safety_hold'])->exists()) {
-            $result[] = 'An unresolved physical safety/mismatch restriction blocks this item. The reviewed correction workflow remains unavailable; inspection cannot clear it.';
+        if (Effective::receiptKinds($row->subject_id)) {
+            $result[] = 'An unresolved physical safety/mismatch restriction blocks this item. Open Operational restriction review for supported recording-error investigation; inspection cannot clear it.';
         }
 
         return $result;
@@ -52,6 +53,6 @@ class Context
 
     public function restricted(string $id): bool
     {
-        return DB::table('assessments')->where('subject_id', $id)->where('hard_hold', true)->exists();
+        return Effective::inspectionBlocked($id);
     }
 }

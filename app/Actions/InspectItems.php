@@ -10,6 +10,7 @@ use App\Support\Assessments\Schemas;
 use App\Support\Collection\AdminMutation;
 use App\Support\Collection\PrivateEvidence;
 use App\Support\Collection\Review;
+use App\Support\Restrictions\Effective;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Crypt;
@@ -73,6 +74,9 @@ class InspectItems
                 $assessment = $decision ? DB::table('assessments')->where('id', $fields['assessment_id'])->where('subject_id', $subject)->first() : null;
                 if ($decision) {
                     abort_unless($assessment && $current?->assessment_id === $assessment->id, 409, 'A fresh decision must reference the latest inspection. Reload its recommendation.');
+                    if ($fields['pathway'] !== 'hold' && ! Effective::freshInspection($subject)) {
+                        throw ValidationException::withMessages(['pathway' => 'Restriction facts changed. Record a fresh inspection before a new human decision; completed dependent exceptions remain blocked.']);
+                    }
                     if ($fields['pathway'] !== 'hold' && $ctx->restricted($subject)) {
                         throw ValidationException::withMessages(['pathway' => 'A recorded safety/identity/scope restriction requires separately reviewed correction. Only HOLD can be recorded; reassessment or override cannot clear it.']);
                     }

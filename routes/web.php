@@ -18,6 +18,7 @@ use App\Http\Controllers\HandoverController;
 use App\Http\Controllers\MediaInventoryController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\RefurbishmentController;
+use App\Http\Controllers\RestrictionController;
 use App\Http\Controllers\RoleHomeController;
 use App\Http\Controllers\RoutingController;
 use App\Http\Controllers\SanitizationController;
@@ -41,6 +42,14 @@ Route::middleware('guest')->group(function (): void {
 
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 Route::middleware(['auth', 'account.current'])->group(function (): void {
+    Route::get('/restriction-review', [RestrictionController::class, 'index'])->name('restrictions.index');
+    Route::get('/restriction-notices', [RestrictionController::class, 'notices'])->name('restrictions.notices');
+    Route::post('/restriction-notices/{notice}/read', [RestrictionController::class, 'read'])->whereUuid('notice')->name('restrictions.notices.read');
+    Route::get('/restriction-review/sources/{kind}/{source}/{fact}', [RestrictionController::class, 'source'])->whereUuid('source')->where('fact', '[a-z_]+')->middleware('role:administrator')->name('restrictions.source');
+    Route::post('/restriction-review/sources/{kind}/{source}/{fact}', [RestrictionController::class, 'open'])->whereUuid('source')->where('fact', '[a-z_]+')->middleware(['role:administrator', 'throttle:20,1'])->name('restrictions.open');
+    Route::get('/restriction-review/cases/{case}', [RestrictionController::class, 'show'])->whereUuid('case')->name('restrictions.show');
+    Route::post('/restriction-review/cases/{case}/{kind}', [RestrictionController::class, 'store'])->whereUuid('case')->where('kind', 'assign|revoke|clarify|note|proposal|continue|close|approve')->middleware(['role:administrator,processor,collector', 'throttle:20,1'])->name('restrictions.store');
+    Route::get('/restriction-review/cases/{case}/evidence/{attachment}', [RestrictionController::class, 'evidence'])->whereUuid(['case', 'attachment'])->name('restrictions.evidence');
     Route::middleware('role:processor')->group(function (): void {
         Route::get('/facility/downstream', [DownstreamController::class, 'index'])->name('downstream.index');
         Route::get('/batches/{batch}/downstream', [DownstreamController::class, 'show'])->whereUuid('batch')->name('downstream.show');

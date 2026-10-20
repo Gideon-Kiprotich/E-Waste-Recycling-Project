@@ -6,6 +6,16 @@ use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
 
 Schedule::command('app:deliver-assignment-notices')->everyMinute()->withoutOverlapping();
+Schedule::command('app:deliver-restriction-notices')->everyMinute()->withoutOverlapping();
+Artisan::command('app:deliver-restriction-notices {--limit=100}', function (): void {
+    $limit = filter_var($this->option('limit'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 1000]]);
+    if ($limit === false) {
+        $this->error('Use a limit from 1 to 1000.');
+
+        return;
+    }
+    $this->info(app(App\Support\Restrictions\Notices::class)->deliver($limit).' supported restriction case notices delivered.');
+})->purpose('Deliver only supported restriction-review notices; no email or unrelated outbox dispatch');
 Schedule::command('app:deliver-receipt-notices')->everyMinute()->withoutOverlapping();
 
 Artisan::command('inspire', function () {

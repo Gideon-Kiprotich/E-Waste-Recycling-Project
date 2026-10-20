@@ -4,6 +4,7 @@ namespace App\Support\Sanitization;
 
 use App\Models\User;
 use App\Support\Collection\AdminMutation;
+use App\Support\Restrictions\Effective;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
@@ -32,7 +33,10 @@ class Context
         $inspection = app(\App\Support\Assessments\Context::class);
         $blockers = $inspection->blockers($row);
         if ($inspection->restricted($row->subject_id)) {
-            $blockers[] = 'An inspection hard restriction remains unresolved. Treatment records cannot clear it; the reviewed correction workflow is not implemented.';
+            $blockers[] = 'An inspection hard restriction remains unresolved. Treatment records cannot clear it; use Operational restriction review for supported recording-error investigation.';
+        }
+        if (! Effective::freshInspection($row->subject_id)) {
+            $blockers[] = 'Restriction facts changed. A fresh inspection and human decision are required; completed dependent exceptions cannot be resolved here.';
         }
         $decision = DB::table('assessment_current as ac')->join('decisions as d', 'd.id', '=', 'ac.decision_id')->where('ac.subject_id', $row->subject_id)->whereColumn('d.assessment_id', 'ac.assessment_id')->first(['d.pathway']);
         if (! $decision || $decision->pathway === 'hold') {

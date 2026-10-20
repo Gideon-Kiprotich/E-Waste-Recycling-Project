@@ -17,6 +17,7 @@
         @endif
         @if($role === \App\Enums\Role::Collector)<p><a class="primary button-link" href="{{ route('collector.assignments.index') }}">Offers and accepted work</a></p><p><a href="{{ route('collector.routes.index') }}">Approved routes</a></p><p>Operator scope must be granted by an Administrator; acceptance is not scheduling.</p>@endif
         @if($role !== \App\Enums\Role::Consumer)<p><a href="{{ route('handovers.index') }}">Custody handovers</a> · <a href="{{ route('handovers.notices') }}">Handover notices</a></p>@endif
+        <p><a href="{{ route('restrictions.index') }}">Operational restriction review</a> · <a href="{{ route('restrictions.notices') }}">Restriction review notices</a></p>
         <p><a href="{{ route('assignment.notices') }}">Assignment notices</a></p>
         <form method="POST" action="{{ route('logout') }}">@csrf<button class="primary" type="submit">Sign out</button></form>
     </div>

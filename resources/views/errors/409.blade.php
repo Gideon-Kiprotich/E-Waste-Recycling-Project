@@ -3,7 +3,11 @@
 @section('intro', 'Existing records and history are preserved. Reload current versions before making a new submission.')
 @section('content')
 <x-feedback type="error" title="Reload before submitting" :message="$exception->getMessage() ?: 'This submission conflicts with an earlier change.'" :focus="true" />
-@if(request()->routeIs('downstream.*'))
+@if(request()->routeIs('restrictions.store'))
+    <a class="secondary button-link" href="{{ route('restrictions.show',request()->route('case')) }}">Reload current investigation</a>
+@elseif(request()->routeIs('restrictions.*'))
+    <a class="secondary button-link" href="{{ route('restrictions.index') }}">Reload Operational restriction review</a>
+@elseif(request()->routeIs('downstream.*'))
     <a class="secondary button-link" href="{{ route('downstream.index') }}">Reload Downstream movements</a>
 @elseif(request()->routeIs('admin.output-profiles.*'))
     <a class="secondary button-link" href="{{ route('admin.output-profiles.index') }}">Reload Output acceptance profiles</a>
