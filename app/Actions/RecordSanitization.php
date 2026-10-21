@@ -42,7 +42,7 @@ class RecordSanitization
                 DB::table('sanitization_current')->where('subject_id', $subject)->lockForUpdate()->first();
                 $ctx = app(Context::class);
                 $row = $inspection->authorized($actor, $subject);
-                if ($blockers = $ctx->blockers($row, $actor)) {
+                if ($blockers = $ctx->blockers($row, $actor, $kind)) {
                     throw ValidationException::withMessages(['submission' => implode(' ', $blockers)]);
                 }
                 $current = $ctx->current($subject);

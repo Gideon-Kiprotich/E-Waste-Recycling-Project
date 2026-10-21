@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 class Context
 {
-    public const LABELS = ['open' => 'Open investigation', 'assign' => 'Assign investigation', 'revoke' => 'Revoke investigation access', 'clarify' => 'Record original-observer clarification', 'note' => 'Record investigation note', 'proposal' => 'Record technical findings and proposed fact', 'continue' => 'Continue review — restriction retained', 'close' => 'Close investigation without changing restriction', 'approve' => 'Approve evidenced fact supersession'];
+    public const LABELS = ['open' => 'Open investigation', 'assign' => 'Assign investigation', 'revoke' => 'Revoke investigation access', 'clarify' => 'Record original-observer clarification', 'note' => 'Record investigation note', 'proposal' => 'Record technical findings and proposed fact', 'continue' => 'Continue review — restriction retained', 'close' => 'Close investigation without changing restriction', 'approve' => 'Approve evidenced fact supersession', 'owner_clarify' => 'Clarify my return report', 'fulfill' => 'Verify fulfilled obligation'];
 
     public const CHECKS = ['direct_observation' => 'Direct observation and provenance support this finding', 'same_subject' => 'The same existing physical subject was compared', 'recording_error' => 'The original controlled fact was recorded erroneously', 'then_and_now' => 'Evidence supports the replacement fact at the original observation and now', 'no_remediation' => 'This does not record actual hazard remediation', 'no_movement' => 'This does not assert receipt or physical movement', 'no_configuration_change' => 'No replacement or configuration change is concealed', 'supported_known_fact' => 'The replacement fact is supported and known'];
 
@@ -30,6 +30,11 @@ class Context
     {
         if ($actor->role() === Role::Consumer) {
             return DB::table('items')->where('subject_id', $case->subject_id)->where('owner_user_id', $actor->id)->exists();
+        }
+        if (($case->contract ?? 'C14') === 'P15' && ! $case->active
+            && DB::table('restriction_records')->where('case_id', $case->id)->where('actor_id', $actor->id)->exists()
+            && DB::selectOne('SELECT media_review_scope(?,?) AS allowed', [$actor->id, $case->subject_id])->allowed) {
+            return true;
         }
 
         return (bool) DB::selectOne('SELECT restriction_admin(?) OR restriction_investigator(?,?) OR restriction_clarifier(?,?) AS allowed', [$actor->id, $case->id, $actor->id, $case->id, $actor->id])->allowed;
@@ -74,10 +79,10 @@ class Context
         return json_decode(DB::selectOne('SELECT restriction_impact_preview(?) AS data', [$subject])->data, true, flags: JSON_THROW_ON_ERROR);
     }
 
-    public function candidates(string $subject, bool $supported = true)
+    public function candidates(string $subject, bool $supported = true, bool $typed = false)
     {
-        return DB::table('users as u')->join('memberships as m', 'm.user_id', '=', 'u.id')->leftJoin('places as p', 'p.id', '=', 'm.place_id')->leftJoin('organizations as o', 'o.id', '=', 'm.organization_id')->where(function ($q) use ($subject, $supported) {
-            $q->whereRaw('restriction_staff(u.id,?)', [$subject]);
+        return DB::table('users as u')->join('memberships as m', 'm.user_id', '=', 'u.id')->leftJoin('places as p', 'p.id', '=', 'm.place_id')->leftJoin('organizations as o', 'o.id', '=', 'm.organization_id')->where(function ($q) use ($subject, $supported, $typed) {
+            $q->whereRaw($typed ? 'media_review_scope(u.id,?)' : 'restriction_staff(u.id,?)', [$subject]);
             if (! $supported) {
                 $q->orWhereRaw('restriction_admin(u.id)');
             }
@@ -86,6 +91,10 @@ class Context
 
     public function proposedValue(string $fact): ?string
     {
+        if (in_array($fact, ['association_confirm', 'association_end', 'discovery_error', 'discovery_supplement', 'work_configuration', 'work_outcome', 'return_report', 'impact_continuity'], true) || str_starts_with($fact, 'test_')) {
+            return DB::selectOne('SELECT media_review_value(?) AS value', [$fact])->value;
+        }
+
         return DB::selectOne('SELECT restriction_known_value(?) AS value', [$fact])->value;
     }
 }

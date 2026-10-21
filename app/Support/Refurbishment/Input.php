@@ -13,7 +13,9 @@ class Input
     public static function validate(#[\SensitiveParameter] array $fields, string $kind, object $item, ?UploadedFile $file): array
     {
         $rules = ['idempotency_key' => ['required', 'uuid'], 'expected_version' => ['required', 'integer', 'min:0'], 'expected_context' => ['required', 'string', 'regex:/\A[a-f0-9]{64}\z/'], 'observed_at' => ['required', 'date_format:Y-m-d\TH:i'], 'reason' => ['required', 'string', 'max:2000'], 'evidence_kind' => ['required', Rule::in(['attachment', 'operator_reference'])], 'reference_issuer' => ['required_if:evidence_kind,operator_reference', 'prohibited_unless:evidence_kind,operator_reference', 'nullable', 'string', 'max:120'], 'reference_code' => ['required_if:evidence_kind,operator_reference', 'prohibited_unless:evidence_kind,operator_reference', 'nullable', 'string', 'max:120'], 'reference_attested' => ['required_if:evidence_kind,operator_reference', 'prohibited_unless:evidence_kind,operator_reference', 'exclude_unless:evidence_kind,operator_reference', 'accepted']];
-        if ($kind === 'work') {
+        if ($kind === 'work_applicability') {
+            $rules += ['work_id' => ['required', 'uuid'], 'correction_review_id' => ['required', 'uuid']];
+        } elseif ($kind === 'work') {
             $rules += ['outcome' => ['required', Rule::in(['completed', 'failed', 'incomplete'])], 'configuration' => ['required', Rule::in(['UNCHANGED', 'CHANGED', 'UNKNOWN'])]];
         } elseif ($kind === 'test') {
             $qs = Profiles::questions($item);

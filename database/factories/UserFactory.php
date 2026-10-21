@@ -25,11 +25,16 @@ class UserFactory extends Factory
      */
     public function definition(): array
     {
+        // Focused suites can change Argon test cost; do not reuse an incompatible cached hash.
+        if (! isset(static::$password) || Hash::needsRehash(static::$password)) {
+            static::$password = Hash::make('test-password-only');
+        }
+
         return [
             'display_name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
-            'password_hash' => static::$password ??= Hash::make('test-password-only'),
+            'password_hash' => static::$password,
             'status' => 'active',
             'version' => 1,
             'session_version' => 1,

@@ -48,7 +48,8 @@ Route::middleware(['auth', 'account.current'])->group(function (): void {
     Route::get('/restriction-review/sources/{kind}/{source}/{fact}', [RestrictionController::class, 'source'])->whereUuid('source')->where('fact', '[a-z_]+')->middleware('role:administrator')->name('restrictions.source');
     Route::post('/restriction-review/sources/{kind}/{source}/{fact}', [RestrictionController::class, 'open'])->whereUuid('source')->where('fact', '[a-z_]+')->middleware(['role:administrator', 'throttle:20,1'])->name('restrictions.open');
     Route::get('/restriction-review/cases/{case}', [RestrictionController::class, 'show'])->whereUuid('case')->name('restrictions.show');
-    Route::post('/restriction-review/cases/{case}/{kind}', [RestrictionController::class, 'store'])->whereUuid('case')->where('kind', 'assign|revoke|clarify|note|proposal|continue|close|approve')->middleware(['role:administrator,processor,collector', 'throttle:20,1'])->name('restrictions.store');
+    Route::post('/restriction-review/cases/{case}/{kind}', [RestrictionController::class, 'store'])->whereUuid('case')->where('kind', 'assign|revoke|clarify|note|proposal|continue|close|approve|fulfill')->middleware(['role:administrator,processor,collector', 'throttle:20,1'])->name('restrictions.store');
+    Route::post('/restriction-review/cases/{case}/owner-clarification', [RestrictionController::class, 'ownerClarification'])->whereUuid('case')->middleware(['role:consumer', 'throttle:20,1'])->name('restrictions.owner-clarification');
     Route::get('/restriction-review/cases/{case}/evidence/{attachment}', [RestrictionController::class, 'evidence'])->whereUuid(['case', 'attachment'])->name('restrictions.evidence');
     Route::middleware('role:processor')->group(function (): void {
         Route::get('/facility/downstream', [DownstreamController::class, 'index'])->name('downstream.index');
@@ -73,7 +74,7 @@ Route::middleware(['auth', 'account.current'])->group(function (): void {
     Route::post('/batches/{batch}/media/{medium}/authorize', [BatchController::class, 'authorize'])->whereUuid('batch')->whereUuid('medium')->middleware(['role:processor', 'throttle:20,1'])->name('batches.authorize');
     Route::get('/facility/refurbishment', [RefurbishmentController::class, 'index'])->middleware('role:processor')->name('refurbishment.index');
     Route::get('/items/{subject}/refurbishment', [RefurbishmentController::class, 'show'])->whereUuid('subject')->middleware('role:consumer,processor')->name('refurbishment.show');
-    Route::post('/items/{subject}/refurbishment/{kind}', [RefurbishmentController::class, 'store'])->whereUuid('subject')->where('kind', 'work|test|fan_na|authorize|withdraw|exception|acknowledge')->middleware(['role:consumer,processor', 'throttle:20,1'])->name('refurbishment.store');
+    Route::post('/items/{subject}/refurbishment/{kind}', [RefurbishmentController::class, 'store'])->whereUuid('subject')->where('kind', 'work|work_applicability|test|fan_na|authorize|withdraw|exception|acknowledge')->middleware(['role:consumer,processor', 'throttle:20,1'])->name('refurbishment.store');
     Route::get('/work-evidence/{record}', [RefurbishmentController::class, 'evidence'])->whereUuid('record')->middleware('role:processor')->name('refurbishment.evidence');
     Route::get('/media/{subject}/sanitization', [SanitizationController::class, 'show'])->whereUuid('subject')->middleware('role:consumer,processor')->name('sanitization.show');
     Route::middleware('role:processor')->group(function (): void {

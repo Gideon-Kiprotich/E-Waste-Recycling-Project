@@ -28,8 +28,17 @@ class Effective
             : DB::table('assessments')->where('subject_id', $subject)->where('hard_hold', true)->exists();
     }
 
-    public static function freshInspection(string $subject): bool
+    public static function bindings(): string
     {
+        return DB::getSchemaBuilder()->hasTable('media_review_effects') ? 'media_current_bindings' : 'media_inventory_entries';
+    }
+
+    public static function freshInspection(string $subject, string $operation = 'progress'): bool
+    {
+        if (DB::getSchemaBuilder()->hasTable('media_review_effects')) {
+            return (bool) DB::selectOne('SELECT media_fresh_for(?,?) AS fresh', [$subject, $operation])->fresh;
+        }
+
         return ! self::available() || (bool) DB::selectOne('SELECT restriction_fresh_inspection(?) AS fresh', [$subject])->fresh;
     }
 }

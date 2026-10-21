@@ -1,6 +1,7 @@
 @props(['name', 'label', 'options', 'value' => '', 'hint' => null, 'required' => true, 'id' => null])
 @php($fieldId = $id ?? str_replace('.', '_', $name))
-@php($fieldName = str_contains($name, '.') ? explode('.', $name)[0].'['.explode('.', $name)[1].']' : $name)
+@php($segments = explode('.', $name))
+@php($fieldName = array_shift($segments).implode('', array_map(fn ($segment) => '['.$segment.']', $segments)))
 @php($selected = old($name, $value))
 <div class="field">
     <label for="{{ $fieldId }}">{{ $label }}</label>

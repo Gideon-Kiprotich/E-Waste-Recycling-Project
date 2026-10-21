@@ -98,6 +98,9 @@ class InventoryMedia
         if (! empty($fields['entry_id'])) {
             $entry = DB::table('media_inventory_entries')->where('parent_id', $row->subject_id)->where('id', $fields['entry_id'])->lockForUpdate()->first();
             abort_unless($entry, 404);
+            if ($entry->state === 'association_superseded') {
+                throw ValidationException::withMessages(['entry_id' => 'This erroneous association ended through independent review and remains history. Record the actual inventory as a new evidenced observation; do not restore the old claim.']);
+            }
             if ($kind !== 'correct' && $entry->state !== 'unresolved') {
                 throw ValidationException::withMessages(['entry_id' => 'This entry already has a retained identity. Use Correct inventory entry to record a dispute.']);
             }

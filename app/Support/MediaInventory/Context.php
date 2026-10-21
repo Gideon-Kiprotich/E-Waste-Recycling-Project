@@ -4,6 +4,7 @@ namespace App\Support\MediaInventory;
 
 use App\Models\User;
 use App\Support\Collection\AdminMutation;
+use App\Support\Restrictions\Effective;
 use Illuminate\Support\Facades\DB;
 
 class Context
@@ -58,6 +59,6 @@ class Context
 
     public function candidates(User $actor, object $parent)
     {
-        return app(\App\Support\Assessments\Context::class)->rows($actor)->where('i.owner_user_id', $parent->owner_user_id)->where('i.intake_class', 'standalone_part')->whereIn('i.subtype', ['hdd', 'ssd'])->whereNotExists(fn ($q) => $q->selectRaw('1')->from('media_inventory_entries as e')->whereColumn('e.medium_id', 'i.subject_id'))->get();
+        return app(\App\Support\Assessments\Context::class)->rows($actor)->where('i.owner_user_id', $parent->owner_user_id)->where('i.intake_class', 'standalone_part')->whereIn('i.subtype', ['hdd', 'ssd'])->whereNotExists(fn ($q) => $q->selectRaw('1')->from(Effective::bindings().' as e')->whereColumn('e.medium_id', 'i.subject_id'))->when(DB::getSchemaBuilder()->hasTable('batch_media_discoveries'), fn ($q) => $q->whereNotExists(fn ($stock) => $stock->selectRaw('1')->from('batch_media_discoveries as discovery')->whereColumn('discovery.medium_id', 'i.subject_id')))->get();
     }
 }

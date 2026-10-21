@@ -1,7 +1,8 @@
 @props(['name', 'label', 'type' => 'text', 'value' => '', 'autocomplete' => null, 'required' => true, 'hint' => null, 'maxlength' => null])
 @php($inputValue = old($name, $value))
 @php($fieldId = str_replace('.', '_', $name))
-@php($fieldName = str_contains($name, '.') ? explode('.', $name)[0].'['.explode('.', $name)[1].']' : $name)
+@php($segments = explode('.', $name))
+@php($fieldName = array_shift($segments).implode('', array_map(fn ($segment) => '['.$segment.']', $segments)))
 <div class="field">
     <label for="{{ $fieldId }}">{{ $label }} @if(!$required)<span class="optional">(optional)</span>@endif</label>
     <input id="{{ $fieldId }}" name="{{ $fieldName }}" type="{{ $type }}" value="{{ $type === 'password' || !is_string($inputValue) ? '' : $inputValue }}"

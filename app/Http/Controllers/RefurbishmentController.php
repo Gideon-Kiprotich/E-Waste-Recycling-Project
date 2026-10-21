@@ -8,6 +8,7 @@ use App\Support\Refurbishment\Context;
 use App\Support\Refurbishment\Profiles;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 
 class RefurbishmentController extends Controller
@@ -32,7 +33,7 @@ class RefurbishmentController extends Controller
             $a = DB::table('refurbishment_records')->where('id', $pending->id)->firstOrFail();
             $stale = json_decode($a->context, true) !== $ctx->snapshot($subject, $a->actor_id);
         }
-        $actions = $private ? array_intersect_key(Context::LABELS, array_flip(['work', 'test', 'fan_na', 'authorize', 'withdraw'])) : array_intersect_key(Context::LABELS, array_flip(['acknowledge', 'exception']));
+        $actions = $private ? array_intersect_key(Context::LABELS, array_flip(['work', 'work_applicability', 'test', 'fan_na', 'authorize', 'withdraw'])) : array_intersect_key(Context::LABELS, array_flip(['acknowledge', 'exception']));
         if (! $pending) {
             unset($actions['withdraw'], $actions['acknowledge'], $actions['exception']);
         }
@@ -47,10 +48,19 @@ class RefurbishmentController extends Controller
             $fieldIds['answers.'.$code] = 'answers_'.$code;
             $fieldIds['na_reasons.'.$code] = 'na_reasons_'.$code;
         }
+        $workOptions = $reviewOptions = [];
+        if ($private && $mode === 'work_applicability' && Schema::hasTable('media_review_effects')) {
+            $workOptions = DB::table('refurbishment_records')->where('subject_id', $subject)->where('kind', 'work')->orderByDesc('version')->limit(1)->get()
+                ->mapWithKeys(fn ($r) => [$r->id => 'Actual work v'.$r->version.' · '.ucfirst($r->result).' · '.$r->configuration])->all();
+            $reviewOptions = DB::table('restriction_records as r')->join('restriction_cases as c', 'c.id', '=', 'r.case_id')->join('media_review_commits as committed', 'committed.record_id', '=', 'r.id')
+                ->where('c.subject_id', $subject)->where('c.contract', 'P15')->where('r.kind', 'approve')->orderByDesc('r.recorded_at')->get(['r.id', 'r.version', 'c.fact_key'])
+                ->mapWithKeys(fn ($r) => [$r->id => ucfirst(str_replace('_', ' ', $r->fact_key)).' · approved review v'.$r->version])->all();
+        }
+        $fieldIds += ['work_id' => 'work_id', 'correction_review_id' => 'correction_review_id'];
         $version = $ctx->version($subject);
         $token = $ctx->token($request->user(), $subject);
 
-        return response()->view('refurbishment.show', compact('row', 'private', 'history', 'pending', 'manifest', 'blockers', 'stale', 'actions', 'mode', 'questions', 'fieldIds', 'version', 'token'))->header('Cache-Control', 'private, no-store')->header('Referrer-Policy', 'no-referrer');
+        return response()->view('refurbishment.show', compact('row', 'private', 'history', 'pending', 'manifest', 'blockers', 'stale', 'actions', 'mode', 'questions', 'fieldIds', 'version', 'token', 'workOptions', 'reviewOptions'))->header('Cache-Control', 'private, no-store')->header('Referrer-Policy', 'no-referrer');
     }
 
     public function store(Request $request, RefurbishItems $action, string $subject, string $kind)

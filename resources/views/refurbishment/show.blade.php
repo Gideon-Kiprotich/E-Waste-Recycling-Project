@@ -12,14 +12,19 @@
 @if($pending)
 <section class="card notice-content"><h2>Pending owner acknowledgment — exact return manifest</h2><p>Authorization leaves custody at the facility. Every item below must actually be received together. No partial acknowledgment or automatic expiry applies.</p><ul>@foreach($manifest as $m)<li>{{ $m->public_code }} · {{ $m->model ?? 'Model unknown' }} {{ $m->subtype }}</li>@endforeach</ul></section>
 @endif
-@if(!$private)<p>You can acknowledge only your complete actual receipt. If anything is absent, different or unsafe, use <strong>Report incomplete or mismatched return</strong>. That records an exception without moving custody; reviewed correction remains unavailable. Historical data-treatment evidence does not guarantee subsequent owner use.</p>@endif
+@if(!$private)<p>You can acknowledge only your complete actual receipt. If anything is absent, different or unsafe, use <strong>Report incomplete or mismatched return</strong>. That records an exception without moving custody; supported correction requires your separate original-owner clarification through Operational restriction review. Historical data-treatment evidence does not guarantee subsequent owner use.</p>@endif
 <div class="actions">@foreach($actions as $action=>$label)<a class="secondary button-link" href="{{ route('refurbishment.show',['subject'=>$row->subject_id,'action'=>$action]) }}">{{ $label }}</a>@endforeach</div>
 @if($mode)
 <section class="card" id="submission" tabindex="-1"><div class="card-heading"><h2>{{ $actions[$mode] }}</h2><p>Private fields and receipt selections must be re-entered after errors. Do not include user files, passwords or private hardware identifiers. Replacement and media swaps are unsupported; notes cannot approve a changed configuration. Permitted RECYCLE batch detachment has separate Dismantling / Batches controls and is unavailable in this refurbishment form.</p></div>
 <form class="account-form" method="POST" enctype="multipart/form-data" action="{{ route('refurbishment.store',['subject'=>$row->subject_id,'kind'=>$mode]) }}">@csrf
 <input type="hidden" name="idempotency_key" value="{{ old('idempotency_key',\Illuminate\Support\Str::uuid()) }}"><input type="hidden" name="expected_version" value="{{ $version }}"><input type="hidden" name="expected_context" value="{{ $token }}">
 @if(in_array($mode,['withdraw','exception','acknowledge'],true))<input type="hidden" name="authorization_id" value="{{ $pending->id }}">@endif
-@if($mode === 'work')
+@if($mode === 'work_applicability')
+<p>This retains evidenced actual work without recording another repair. Requires fresh inspection/decision and live data/inventory gates. A new complete functional/safety test and fresh release authorization remain required.</p>
+@if(!$workOptions || !$reviewOptions)<p class="field-error">No current retained work or approved same-subject correction is available. Complete the supported investigation in <a href="{{ route('restrictions.index') }}">Operational restriction review</a>; do not invent another repair or copy a reference from another item.</p>@endif
+<x-select-field name="work_id" label="Latest retained actual work" :options="$workOptions" hint="Only the latest actual work can be reviewed. Its original outcome remains in history." />
+<x-select-field name="correction_review_id" label="Approved correction for this item" :options="$reviewOptions" hint="The server rechecks the exact approved review, current prerequisites and unchanged configuration." />
+@elseif($mode === 'work')
 <x-select-field name="outcome" label="Actual external work outcome" :options="['completed'=>'Completed','failed'=>'Failed — fresh assessment required','incomplete'=>'Incomplete — fresh assessment required']" />
 <x-select-field name="configuration" label="Resulting physical configuration" :options="['UNCHANGED'=>'Unchanged and understood','CHANGED'=>'Changed — unsupported, release blocked','UNKNOWN'=>'Unknown — release blocked']" />
 @elseif($mode === 'test')

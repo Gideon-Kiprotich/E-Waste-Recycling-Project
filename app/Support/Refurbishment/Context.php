@@ -5,11 +5,12 @@ namespace App\Support\Refurbishment;
 use App\Enums\Role;
 use App\Models\User;
 use App\Support\Collection\AdminMutation;
+use App\Support\Restrictions\Effective;
 use Illuminate\Support\Facades\DB;
 
 class Context
 {
-    public const LABELS = ['work' => 'Record work', 'test' => 'Record functional test', 'fan_na' => 'Record fan N/A', 'authorize' => 'Authorize owner return', 'withdraw' => 'Withdraw authorization', 'exception' => 'Report incomplete or mismatched return', 'acknowledge' => 'Acknowledge complete receipt'];
+    public const LABELS = ['work_applicability' => 'Review retained work applicability', 'work' => 'Record work', 'test' => 'Record functional test', 'fan_na' => 'Record fan N/A', 'authorize' => 'Authorize owner return', 'withdraw' => 'Withdraw authorization', 'exception' => 'Report incomplete or mismatched return', 'acknowledge' => 'Acknowledge complete receipt'];
 
     public function item(User $actor, string $subject): object
     {
@@ -52,10 +53,14 @@ class Context
         return AdminMutation::hash($this->snapshot($subject, $actor->id));
     }
 
-    public function blockers(string $subject, string $staff, bool $release = false): array
+    public function blockers(string $subject, string $staff, bool $release = false, string $operation = 'progress'): array
     {
+        if (DB::getSchemaBuilder()->hasTable('batch_media_discoveries') && DB::table('batch_media_discoveries')->where('medium_id', $subject)->exists()) {
+            return ['This drive is permanent on-site discovery output. Work, independent owner return and physical movement require a separately authorized contract. Use Dismantling / Batches for supported treatment applicability; assurance does not authorize movement.'];
+        }
         $messages = [];
-        $ready = DB::selectOne('SELECT refurbishment_ready(?,?) AS ready', [$subject, $staff])->ready;
+        $typed = DB::getSchemaBuilder()->hasTable('media_review_effects');
+        $ready = $typed ? DB::selectOne('SELECT media_refurbishment_ready(?,?,?) AS ready', [$subject, $staff, $operation])->ready : DB::selectOne('SELECT refurbishment_ready(?,?) AS ready', [$subject, $staff])->ready;
         if (! $ready) {
             $row = app(\App\Support\Assessments\Context::class)->rows(User::findOrFail($staff))->where('i.subject_id', $subject)->first();
             if ($row) {
@@ -69,16 +74,16 @@ class Context
             if ($decision !== 'refurbish') {
                 $messages[] = 'Open Assessments / Inspection and record a current human REFURBISH decision; a recommendation or RECYCLE/HOLD decision is insufficient.';
             }
-            if (DB::table('media_inventory_entries')->where('medium_id', $subject)->exists()) {
+            if (DB::table(Effective::bindings())->where('medium_id', $subject)->exists()) {
                 $messages[] = 'This medium has a retained parent association and cannot return independently. Use the intact parent owner-return manifest, or Dismantling / Batches for permitted canonical detachment; that does not authorize an independent return.';
             }
-            if (DB::table('media_inventory_entries')->where('parent_id', $subject)->whereIn('state', ['unresolved', 'disputed'])->exists()) {
-                $messages[] = 'Open Media inventory to resolve unbound uncertainty. A disputed canonical association requires unavailable reviewed correction; it cannot be omitted from a return.';
+            if (DB::table(Effective::bindings())->where('parent_id', $subject)->whereIn('state', ['unresolved', 'disputed'])->exists()) {
+                $messages[] = 'Open Media inventory to resolve unbound uncertainty. A disputed canonical association requires Operational restriction review; it cannot be omitted from a return.';
             }
-            if (DB::table('refurbishment_records')->where('subject_id', $subject)->where('kind', 'exception')->exists()) {
-                $messages[] = 'An incomplete/mismatched return exception retains facility custody and blocks another routine release. Reviewed correction is unavailable.';
+            if ($typed ? DB::selectOne('SELECT media_work_blocked(?) AS blocked', [$subject])->blocked : DB::table('refurbishment_records')->where('subject_id', $subject)->where('kind', 'exception')->exists()) {
+                $messages[] = 'An incomplete/mismatched return exception retains facility custody and blocks another routine release. Open Operational restriction review for supported recording errors; actual movement remains unsupported.';
             }
-            if (DB::table('refurbishment_records')->where('subject_id', $subject)->where(fn ($q) => $q->whereIn('configuration', ['CHANGED', 'UNKNOWN'])->orWhereRaw("answers->>'safety' IN ('FAIL','UNKNOWN') OR answers->>'configuration' IN ('FAIL','UNKNOWN')"))->exists()) {
+            if (! $typed && DB::table('refurbishment_records')->where('subject_id', $subject)->where(fn ($q) => $q->whereIn('configuration', ['CHANGED', 'UNKNOWN'])->orWhereRaw("answers->>'safety' IN ('FAIL','UNKNOWN') OR answers->>'configuration' IN ('FAIL','UNKNOWN')"))->exists()) {
                 $messages[] = 'Recorded safety/configuration uncertainty remains restricted. Replacement and the reviewed correction workflow are unavailable; new notes or routine reassessment cannot clear it.';
             }
             if (! $messages) {

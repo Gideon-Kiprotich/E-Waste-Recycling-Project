@@ -60,7 +60,7 @@ class RefurbishItems
                         throw ValidationException::withMessages(['received' => 'Acknowledge every displayed item only after actual complete receipt. Otherwise use Report incomplete or mismatched return; no partial custody transfer is supported.']);
                     }
                 } elseif (! in_array($kind, ['withdraw', 'exception'], true)) {
-                    $this->eligible($ctx, $subject, $actor->id, $kind === 'authorize');
+                    $this->eligible($ctx, $subject, $actor->id, $kind === 'authorize', in_array($kind, ['test', 'work_applicability', 'fan_na'], true) ? $kind : 'progress');
                 }
                 $this->validateStep($subject, $kind, $fields, $snapshot);
                 $observed = CarbonImmutable::createFromFormat('Y-m-d\TH:i', $fields['observed_at'], 'UTC')->startOfMinute();
@@ -72,9 +72,12 @@ class RefurbishItems
                 $command = AdminMutation::command($actor, $action, $fields['idempotency_key'], $hash, $id);
                 $event = Str::uuid()->toString();
                 $result = match ($kind) {
-                    'work' => $fields['outcome'], 'test' => Profiles::result($fields['answers']), 'fan_na' => 'not_applicable', 'authorize' => 'pending', 'withdraw' => 'withdrawn', 'exception' => 'exception', 'acknowledge' => 'acknowledged',
+                    'work_applicability' => 'applicable', 'work' => $fields['outcome'], 'test' => Profiles::result($fields['answers']), 'fan_na' => 'not_applicable', 'authorize' => 'pending', 'withdraw' => 'withdrawn', 'exception' => 'exception', 'acknowledge' => 'acknowledged',
                 };
-                $record = ['id' => $id, 'subject_id' => $subject, 'version' => ($cur?->version ?? 0) + 1, 'predecessor_id' => $cur?->record_id, 'kind' => $kind, 'result' => $result, 'configuration' => $fields['configuration'] ?? null, 'profile_version' => $kind === 'test' ? Profiles::VERSION : null, 'answers' => json_encode($kind === 'acknowledge' ? array_fill_keys($fields['received'], 'RECEIVED') : (object) $fields['answers'], JSON_THROW_ON_ERROR), 'na_reasons_ciphertext' => empty(array_filter($fields['na_reasons'] ?? [])) ? null : Crypt::encryptString(json_encode($fields['na_reasons'], JSON_THROW_ON_ERROR)), 'work_id' => $kind === 'test' ? $snapshot['work_id'] : null, 'authorization_id' => $fields['authorization_id'] ?? null, 'context' => json_encode($snapshot, JSON_THROW_ON_ERROR), 'actor_id' => $actor->id, 'command_id' => $command, 'event_id' => $event, 'observed_at' => $observed, 'recorded_at' => now(), 'reason_ciphertext' => Crypt::encryptString($fields['reason'])] + $this->evidence($actor, $fields, $file, $stored);
+                $record = ['id' => $id, 'subject_id' => $subject, 'version' => ($cur?->version ?? 0) + 1, 'predecessor_id' => $cur?->record_id, 'kind' => $kind, 'result' => $result, 'configuration' => $kind === 'work_applicability' ? 'UNCHANGED' : ($fields['configuration'] ?? null), 'profile_version' => $kind === 'test' ? Profiles::VERSION : null, 'answers' => json_encode($kind === 'acknowledge' ? array_fill_keys($fields['received'], 'RECEIVED') : (object) $fields['answers'], JSON_THROW_ON_ERROR), 'na_reasons_ciphertext' => empty(array_filter($fields['na_reasons'] ?? [])) ? null : Crypt::encryptString(json_encode($fields['na_reasons'], JSON_THROW_ON_ERROR)), 'work_id' => $kind === 'work_applicability' ? $fields['work_id'] : ($kind === 'test' ? $snapshot['work_id'] : null), 'authorization_id' => $fields['authorization_id'] ?? null, 'context' => json_encode($snapshot, JSON_THROW_ON_ERROR), 'actor_id' => $actor->id, 'command_id' => $command, 'event_id' => $event, 'observed_at' => $observed, 'recorded_at' => now(), 'reason_ciphertext' => Crypt::encryptString($fields['reason'])] + $this->evidence($actor, $fields, $file, $stored);
+                if ($kind === 'work_applicability') {
+                    $record['correction_review_id'] = $fields['correction_review_id'];
+                }
                 DB::table('domain_events')->insert($this->event($record, $subject, 'refurbishment', $record['version'], 'refurbishment_'.$kind, $event, $kind === 'acknowledge' ? 'Owner acknowledged complete reuse return.' : Context::LABELS[$kind].' recorded; no custody transfer.'));
                 DB::table('refurbishment_records')->insert($record);
                 if ($kind === 'authorize') {
@@ -115,9 +118,9 @@ class RefurbishItems
         return $locked;
     }
 
-    private function eligible(Context $ctx, string $subject, string $staff, bool $release): void
+    private function eligible(Context $ctx, string $subject, string $staff, bool $release, string $operation = 'progress'): void
     {
-        if ($messages = $ctx->blockers($subject, $staff, $release)) {
+        if ($messages = $ctx->blockers($subject, $staff, $release, $operation)) {
             throw ValidationException::withMessages(['submission' => implode(' ', $messages)]);
         }
     }
@@ -130,7 +133,7 @@ class RefurbishItems
                 throw new \RuntimeException('Frozen functional profile differs from application; no test recorded.');
             }
             $work = DB::table('refurbishment_records')->where('id', $snapshot['work_id'])->first();
-            if (! $work || $work->result !== 'completed' || $work->configuration !== 'UNCHANGED' || ! DB::selectOne('SELECT refurbishment_work_ready(?) AS ready', [$subject])->ready) {
+            if (! $work || ! in_array($work->kind, ['work', 'work_applicability'], true) || ! DB::selectOne('SELECT refurbishment_work_ready(?) AS ready', [$subject])->ready) {
                 throw ValidationException::withMessages(['submission' => 'Record applicable completed work with unchanged configuration before testing. A failed/incomplete result first needs fresh inspection and decision.']);
             }
         } elseif ($kind === 'authorize' && DB::table('reuse_authorizations')->where('subject_id', $subject)->where('state', 'pending')->exists()) {

@@ -6,6 +6,7 @@ use App\Actions\AuthorizeBatchMedia;
 use App\Actions\DismantleBatches;
 use App\Enums\Role;
 use App\Support\Batches\Context;
+use App\Support\Restrictions\Effective;
 use Endroid\QrCode\QrCode;
 use Endroid\QrCode\Writer\PngWriter;
 use Illuminate\Http\Request;
@@ -49,7 +50,7 @@ class BatchController extends Controller
         $members = $members->get(['m.subject_id', 's.public_code']);
         $inputs = $private ? $ctx->inputs($b) : [];
         $selected = $private ? DB::table('subjects')->whereIn('id', $inputs)->orderBy('id')->get() : collect();
-        $media = $private ? DB::table('media_inventory_entries as e')->join('subjects as s', 's.id', '=', 'e.medium_id')->whereIn('e.parent_id', $inputs)->orderBy('e.medium_id')->get(['e.*', 's.public_code']) : collect();
+        $media = $private ? DB::table(Effective::bindings().' as e')->join('subjects as s', 's.id', '=', 'e.medium_id')->whereIn('e.parent_id', $inputs)->orderBy('e.medium_id')->get(['e.*', 's.public_code']) : collect();
         $outputs = $private ? DB::table('batch_outputs as o')->join('subjects as s', 's.id', '=', 'o.subject_id')->leftJoin('batch_records as r', 'r.id', '=', 'o.measurement_record_id')->where('o.batch_id', $batch)->orderBy('s.public_code')->get(['o.*', 's.public_code', 'r.net_kg', 'r.gross_kg', 'r.tare_kg']) : collect();
         $history = $private ? DB::table('batch_records')->where('batch_id', $batch)->orderByDesc('version')->get() : collect();
         $actions = $private ? ($b->state === 'draft' ? ['draft' => Context::LABELS['draft'], 'commit' => Context::LABELS['commit']] : array_diff_key(Context::LABELS, array_flip(['draft', 'commit']))) : [];

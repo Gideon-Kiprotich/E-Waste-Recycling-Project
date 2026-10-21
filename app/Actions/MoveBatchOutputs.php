@@ -13,6 +13,7 @@ use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 class MoveBatchOutputs
@@ -43,6 +44,9 @@ class MoveBatchOutputs
                 $id = Str::uuid()->toString();
                 $output = $kind === 'measurement_dispute' ? null : ($h?->output_id ?? ($fields['output_id'] ?? null));
                 $o = $output ? DB::table('batch_outputs')->where('batch_id', $batch)->where('subject_id', $output)->lockForUpdate()->firstOrFail() : null;
+                if ($output && in_array($kind, ['draft', 'reserve', 'dispatch'], true) && DB::getSchemaBuilder()->hasTable('batch_media_discoveries') && DB::table('batch_media_discoveries')->where('medium_id', $output)->exists()) {
+                    throw ValidationException::withMessages(['submission' => 'Discovery output remains on site. Downstream movement needs the separately authorized origin/recipient contract; treatment is not dispatch approval.']);
+                }
                 $canonical = $o?->type === 'storage';
                 if ($output) {
                     foreach (['subjects' => 'id', 'custody_current' => 'subject_id', 'sanitization_current' => 'subject_id'] as $table => $key) {

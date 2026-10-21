@@ -33,14 +33,14 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withExceptions(function (Exceptions $exceptions): void {
         $exceptions->dontFlash(['token', 'password', 'password_confirmation', 'current_password', 'identifier', 'photo', 'address', 'contact', 'latitude', 'longitude', 'reason']);
         $exceptions->render(function (ValidationException $exception, Request $request) {
-            if ($request->routeIs('restrictions.open', 'restrictions.store') && ! $request->expectsJson()) {
+            if ($request->routeIs('restrictions.open', 'restrictions.store', 'restrictions.owner-clarification') && ! $request->expectsJson()) {
                 $key = $request->input('idempotency_key');
                 $safe = is_string($key) && Str::isUuid($key) ? ['idempotency_key' => $key] : [];
                 if ($request->routeIs('restrictions.open')) {
                     return redirect()->route('restrictions.source', [$request->route('kind'), $request->route('source'), $request->route('fact')])->withErrors($exception->errors())->withInput($safe);
                 }
 
-                return redirect()->route('restrictions.show', ['case' => $request->route('case'), 'action' => $request->route('kind')])->withErrors($exception->errors())->withInput($safe);
+                return redirect()->route('restrictions.show', ['case' => $request->route('case'), 'action' => $request->routeIs('restrictions.owner-clarification') ? 'owner_clarify' : $request->route('kind')])->withErrors($exception->errors())->withInput($safe);
             }
             if ($request->routeIs('downstream.*', 'admin.output-profiles.*') && ! $request->expectsJson()) {
                 $key = $request->input('idempotency_key');

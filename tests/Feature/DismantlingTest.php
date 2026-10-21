@@ -299,7 +299,7 @@ class DismantlingTest extends TestCase
         $this->batchRecord($w, 'output');
         $this->receiptSignIn($w['receiver'])->get(route('batches.index'))->assertOk()->assertSee('Prepare batch draft');
         $this->get(route('batches.show', ['batch' => $w['batch'], 'action' => 'measurement']))->assertOk()->assertSee('Original current net kg')->assertSee('Record measurement correction');
-        $this->get(route('batches.show', ['batch' => $w['batch'], 'action' => 'authorize', 'medium' => $w['media'][0]]))->assertOk()->assertSee('Authorize detached-drive treatment');
+        $this->get(route('batches.show', ['batch' => $w['batch'], 'action' => 'authorize', 'medium' => $w['media'][0]]))->assertOk()->assertSee('Review batch-drive treatment applicability');
         $this->get(route('batches.label', $w['batch']))->assertOk()->assertSee('Print label');
         $this->get(route('batches.label', ['subject' => $w['batch'], 'qr' => 1]))->assertOk()->assertHeader('Content-Type', 'image/png');
         $code = DB::table('subjects')->where('id', $w['batch'])->value('public_code');

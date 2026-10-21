@@ -6,6 +6,7 @@ use App\Actions\ReviewRestrictions;
 use App\Enums\Role;
 use App\Support\Collection\Review;
 use App\Support\Restrictions\Context;
+use App\Support\Restrictions\MediaReview;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -29,14 +30,24 @@ class RestrictionController extends Controller
     public function source(Request $request, Context $ctx, string $kind, string $source, string $fact)
     {
         $source = $ctx->source($kind, $source, $fact);
+        $typedBlockers = MediaReview::blockers($source);
         $case = null;
         $token = $ctx->token($request->user(), $source);
         $epoch = $ctx->epoch($source->subject_id);
         $impact = $ctx->impact($source->subject_id);
-        $existing = DB::table('restriction_cases')->where('source_kind', $kind)->where('source_id', $source->source_id)->where('fact_key', $fact)->where('active', true)->value('id');
+        $existingQuery = DB::table('restriction_cases')->where('active', true);
+        if (DB::getSchemaBuilder()->hasTable('media_review_effects') && in_array($kind, ['media_correction', 'inventory', 'work', 'batch', 'dependent'], true)) {
+            $existingQuery->whereRaw('media_source_scope(source_kind,source_id)=media_source_scope(?,?)', [$kind, $source->source_id]);
+        } else {
+            $existingQuery->where('source_kind', $kind)->where('source_id', $source->source_id)->where('fact_key', $fact);
+        }
+        $existing = $existingQuery->value('id');
         $sourceAvailable = $source->currently_blocking && ! DB::table('restriction_supersessions')->where('source_kind', $kind)->where('source_id', $source->source_id)->where('fact_key', $fact)->exists();
+        if ($kind === 'media_correction' && $fact === 'impact_continuity' && DB::selectOne('SELECT media_impact_fulfilled(?) AS current', [$source->source_id])->current) {
+            $sourceAvailable = false;
+        }
 
-        return $this->view('restrictions.source', compact('source', 'case', 'token', 'epoch', 'impact', 'existing', 'sourceAvailable') + ['fieldIds' => $this->fields()]);
+        return $this->view('restrictions.source', compact('source', 'case', 'token', 'epoch', 'impact', 'existing', 'sourceAvailable', 'typedBlockers') + ['fieldIds' => $this->fields()]);
     }
 
     public function show(Request $request, Context $ctx, string $case)
@@ -44,9 +55,16 @@ class RestrictionController extends Controller
         $c = $ctx->case($request->user(), $case);
         $consumer = $request->user()->role() === Role::Consumer;
         if ($consumer) {
-            return $this->view('restrictions.owned', compact('c'));
+            $ownerForm = $c->active && ($c->contract ?? 'C14') === 'P15' && $c->fact_key === 'return_report';
+            $source = $ownerForm ? $ctx->source($c->source_kind, $c->source_id, $c->fact_key) : null;
+            $token = $ownerForm ? $ctx->token($request->user(), $source, $c) : null;
+            $epoch = $ctx->epoch($c->subject_id);
+            $ownerManifest = $ownerForm ? DB::table('reuse_manifest as m')->join('refurbishment_records as r', 'r.authorization_id', '=', 'm.authorization_id')->join('subjects as s', 's.id', '=', 'm.subject_id')->where('r.id', $c->source_id)->orderBy('m.subject_id')->get(['m.subject_id', 's.public_code']) : collect();
+
+            return $this->view('restrictions.owned', compact('c', 'ownerForm', 'source', 'token', 'epoch', 'ownerManifest') + ['fieldIds' => $this->fields()]);
         }
         $source = $ctx->source($c->source_kind, $c->source_id, $c->fact_key);
+        $typedBlockers = MediaReview::blockers($source);
         $admin = $request->user()->role() === Role::Administrator;
         $investigator = $ctx->investigator($request->user(), $case);
         $clarifier = (bool) DB::selectOne('SELECT restriction_clarifier(?,?) AS allowed', [$case, $request->user()->id])->allowed;
@@ -54,15 +72,31 @@ class RestrictionController extends Controller
         $token = $ctx->token($request->user(), $source, $c);
         $epoch = $ctx->epoch($c->subject_id);
         $impact = $ctx->impact($c->subject_id);
-        $candidates = $admin && $c->active ? $ctx->candidates($c->subject_id, $c->supported) : collect();
+        $candidates = $admin && $c->active ? $ctx->candidates($c->subject_id, $c->supported, ($c->contract ?? 'C14') === 'P15') : collect();
         $proposals = $admin && $c->active ? DB::table('restriction_records')->where('case_id', $case)->where('kind', 'proposal')->orderByDesc('version')->get() : collect();
         $knownValue = $ctx->proposedValue($c->fact_key);
         $mode = $request->query('action', 'history');
         $allowed = $admin ? ['assign', 'revoke', 'note', 'continue', 'close', ...($c->supported ? ['approve'] : [])] : [...($investigator ? ['note', ...($c->supported ? ['proposal'] : [])] : []), ...($clarifier ? ['clarify'] : [])];
+        if ($admin && ($c->contract ?? 'C14') === 'P15' && $c->fact_key === 'impact_continuity' && $c->state === 'revalidation_pending') {
+            $allowed[] = 'fulfill';
+        }
         $mode = is_string($mode) && in_array($mode, $allowed, true) && $c->active ? $mode : 'history';
+        $retainedUnits = [];
+        if (($c->contract ?? 'C14') === 'P15' && $c->fact_key === 'discovery_supplement') {
+            $details = DB::table('restriction_records')->where('case_id', $case)->where('kind', 'proposal')->orderByDesc('version')->value('details');
+            foreach (json_decode($details ?? '{}', true)['units'] ?? [] as $unit) {
+                $retainedUnits[] = array_intersect_key($unit, array_flip(['id', 'parent_id', 'media_kind']));
+            }
+        }
+        $unitCount = max(1, min(10, (int) $request->query('units', 1)));
+        if ($retainedUnits) {
+            $unitCount = count($retainedUnits);
+        }
+        $parents = ($c->contract ?? 'C14') === 'P15' && str_starts_with($c->fact_key, 'discovery') ? DB::table('batch_members as m')->join('subjects as s', 's.id', '=', 'm.subject_id')->where('m.batch_id', $c->subject_id)->get(['m.subject_id', 's.public_code']) : collect();
+        $batchOutputs = $parents->isNotEmpty() ? DB::table('batch_outputs as o')->join('subjects as s', 's.id', '=', 'o.subject_id')->where('o.batch_id', $c->subject_id)->get(['o.subject_id', 'o.type', 's.public_code']) : collect();
         $allowedEvidence = json_decode(DB::selectOne('SELECT to_json(allowed_evidence) AS ids FROM restriction_cases WHERE id=?', [$case])->ids, true);
 
-        return $this->view('restrictions.show', compact('c', 'source', 'admin', 'investigator', 'clarifier', 'history', 'token', 'epoch', 'impact', 'candidates', 'proposals', 'knownValue', 'mode', 'allowed', 'allowedEvidence') + ['fieldIds' => $this->fields()]);
+        return $this->view('restrictions.show', compact('c', 'source', 'admin', 'investigator', 'clarifier', 'history', 'token', 'epoch', 'impact', 'candidates', 'proposals', 'knownValue', 'mode', 'allowed', 'allowedEvidence', 'unitCount', 'retainedUnits', 'parents', 'batchOutputs', 'typedBlockers') + ['fieldIds' => $this->fields()]);
     }
 
     public function open(Request $request, ReviewRestrictions $action, string $kind, string $source, string $fact)
@@ -80,8 +114,16 @@ class RestrictionController extends Controller
         $destination = $request->user()->role() === Role::Administrator ? redirect()->route('restrictions.show', $case) : redirect()->route('restrictions.index');
 
         return $destination->with('status', match ($kind) {
-            'approve' => 'The specific recorded fact was superseded. Fresh review and prerequisites are required; no physical outcome was recorded.', 'close' => 'Investigation closed without changing the restriction.', default => 'Investigation updated. The underlying restriction is unchanged.'
+            'fulfill' => 'The exact obligation was verified against current evidence; independent gates remain.', 'approve' => 'The exact review effects were recorded. Accounting, treatment and dependent obligations may still be pending. Fresh review and prerequisites are required; no physical outcome was recorded.', 'close' => 'Investigation closed without changing the restriction.', default => 'Investigation updated. The underlying restriction is unchanged.'
         });
+    }
+
+    public function ownerClarification(Request $request, ReviewRestrictions $action, Context $ctx, string $case)
+    {
+        $c = $ctx->case($request->user(), $case);
+        abort_unless(($c->contract ?? 'C14') === 'P15' && $c->fact_key === 'return_report', 404);
+
+        return $this->store($request, $action, $case, 'owner_clarify');
     }
 
     public function evidence(Request $request, Context $ctx, string $case, string $attachment)
@@ -122,7 +164,24 @@ class RestrictionController extends Controller
     {
         $fields = array_combine($keys = ['submission', 'reason', 'observed_at', 'evidence', 'evidence_kind', 'reference_issuer', 'reference_code', 'reference_attested', 'assigned_to', 'pre_receipt', 'allowed_evidence', 'proposal_id', 'original_value', 'proposed_value', 'identity_code', 'basis'], $keys);
         $fields['allowed_evidence.0'] = 'allowed_evidence';
-        foreach (Context::CHECKS as $key => $label) {
+        foreach (['details', 'details.count', 'details.units', 'details.manifest', 'details.no_handover'] as $name) {
+            $fields[$name] = 'submission';
+        }
+        $fields['details.no_handover'] = 'details_no_handover';
+        $fields['details.manifest'] = 'owner-manifest';
+        for ($index = 0; $index < 10; $index++) {
+            foreach (['id', 'parent_id', 'existing_code', 'media_kind', 'identifier', 'model', 'mode', 'source_output_id'] as $key) {
+                $name = 'details.units.'.$index.'.'.$key;
+                $fields[$name] = str_replace('.', '_', $name);
+            }
+            foreach (['measurement', 'remaining'] as $measurement) {
+                foreach (['mode', 'net', 'gross', 'tare', 'source'] as $key) {
+                    $name = 'details.units.'.$index.'.'.$measurement.'.'.$key;
+                    $fields[$name] = str_replace('.', '_', $name);
+                }
+            }
+        }
+        foreach ((Context::CHECKS + MediaReview::DISCOVERY_CHECKS + MediaReview::IMPACT_CHECKS) as $key => $label) {
             $fields['checks.'.$key] = 'check-'.$key;
         }
 

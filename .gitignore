@@ -86,3 +86,10 @@ Thumbs.db
 !database/sql/restriction_review_guards.sql
 !database/sql/restriction_dependencies.sql
 !database/sql/restriction_review_integrity.sql
+
+!/database/sql/media_corrections.sql
+!/database/sql/media_correction_guards.sql
+!/database/sql/media_correction_domains.sql
+
+!/database/sql/media_recovery_gates.sql
+!/database/sql/media_discovery_assurance.sql

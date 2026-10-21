@@ -21,7 +21,7 @@ class AuthorizeBatchMedia
     public function token(User $actor, string $batch, string $medium): string
     {
         $b = $this->control($actor, $batch, $medium);
-        $d = DB::table('batch_detachments')->where('batch_id', $batch)->where('subject_id', $medium)->firstOrFail();
+        $d = $this->origin($batch, $medium);
         $snapshot = app(\App\Support\Sanitization\Context::class)->snapshot($actor, app(\App\Support\Assessments\Context::class)->authorized($actor, $medium));
 
         return AdminMutation::hash(['batch_id' => $batch, 'medium_id' => $medium, 'detachment' => (array) $d, 'snapshot' => $snapshot, 'access' => json_decode(DB::selectOne('SELECT batch_access(?,?) AS context', [$actor->id, $snapshot['facility_party_id']])->context, true), 'discrepancies' => DB::table('batch_records')->where('batch_id', $batch)->where('kind', 'discrepancy')->count()]);
@@ -36,7 +36,7 @@ class AuthorizeBatchMedia
                 Review::lock();
                 $actor = app(\App\Support\Receipts\Context::class)->actor($actor);
                 $b = $this->control($actor, $batch, $medium);
-                $d = DB::table('batch_detachments')->where('batch_id', $batch)->where('subject_id', $medium)->firstOrFail();
+                $d = $this->origin($batch, $medium);
                 $fields = Input::validate($fields, 'authorize', $file);
                 $action = 'media_authorize:'.$medium;
                 $hash = AdminMutation::hash(['batch_id' => $batch, 'medium_id' => $medium] + $fields);
@@ -52,9 +52,9 @@ class AuthorizeBatchMedia
                 $snap = app(\App\Support\Sanitization\Context::class)->snapshot($actor, $row);
                 $parent = DB::table('subjects')->where('id', $d->parent_id)->firstOrFail();
                 $observed = CarbonImmutable::createFromFormat('Y-m-d\TH:i', $fields['observed_at'], 'UTC')->startOfMinute();
-                $earliest = CarbonImmutable::parse(DB::table('batch_records')->where('id', $d->record_id)->value('observed_at'))->startOfMinute();
+                $earliest = CarbonImmutable::parse($d->observed_at ?? DB::table('batch_records')->where('id', $d->record_id)->value('observed_at'))->startOfMinute();
                 if ($observed->isFuture() || $observed->lt($earliest)) {
-                    throw ValidationException::withMessages(['observed_at' => 'Authorization time must be from actual detachment through now (UTC).']);
+                    throw ValidationException::withMessages(['observed_at' => 'Authorization time must be from the evidenced detachment or discovery through now (UTC).']);
                 }
                 $id = Str::uuid()->toString();
                 $command = AdminMutation::command($actor, $action, $fields['idempotency_key'], $hash, $id);
@@ -64,7 +64,7 @@ class AuthorizeBatchMedia
                 }
                 $candidate = DB::selectOne('SELECT media_authorization_applicable(jsonb_populate_record(NULL::media_authorizations,?::jsonb)) AS eligible', [json_encode($record, JSON_THROW_ON_ERROR)])->eligible;
                 if (! $candidate) {
-                    throw ValidationException::withMessages(['submission' => 'Requires coherent batch/detachment control, retained RECYCLE decision, exact HDD/SSD facility capability and no safety/identity/unexpected-media restriction. Resolve setup through supported controls; no override is available.']);
+                    throw ValidationException::withMessages(['submission' => 'Requires coherent batch detachment or discovery control, retained RECYCLE decision, exact HDD/SSD facility capability and no safety/identity/unexpected-media restriction. Resolve setup through supported controls; no override is available.']);
                 }
                 DB::table('domain_events')->insert(['id' => $record['event_id'], 'subject_id' => $medium, 'aggregate_kind' => 'media_authorization', 'aggregate_id' => $medium, 'aggregate_version' => $record['version'], 'actor_id' => $actor->id, 'command_id' => $command, 'type' => 'media_authorized', 'occurred_at' => $observed, 'recorded_at' => $record['recorded_at'], 'safe_payload' => json_encode(['record_id' => $id, 'milestone' => 'Batch-controlled treatment authorized; applicability review and separate assurance remain required.'])]);
                 DB::table('media_authorizations')->insert($record);
@@ -77,6 +77,17 @@ class AuthorizeBatchMedia
             $files->cleanup($stored);
             throw $e;
         }
+    }
+
+    private function origin(string $batch, string $medium): object
+    {
+        if (Schema::hasTable('batch_media_discoveries') && ($d = DB::table('batch_media_discoveries')->where('batch_id', $batch)->where('medium_id', $medium)->first())) {
+            $d->record_id = $d->production_id;
+
+            return $d;
+        }
+
+        return DB::table('batch_detachments')->where('batch_id', $batch)->where('subject_id', $medium)->firstOrFail();
     }
 
     private function control(User $actor, string $batch, string $medium): object

@@ -98,6 +98,7 @@ class RoutingEvaluationTest extends TestCase
                     $result = json_decode($record->results, true, flags: JSON_THROW_ON_ERROR);
                     $this->assertSame(0, DB::transactionLevel());
                     $this->assertCount($size, PlanRoutes::snapshot($record)['jobs']);
+                    RoutingScenarios::export('benchmark-progress.jsonl', array_merge($rows, [['size' => $size, 'repeat' => $repeat, 'seconds' => $seconds]]));
                     $this->assertLessThanOrEqual(10, $seconds, 'NF04 local planning/validation/persistence budget');
                     $this->assertFalse($result['proposed']['budget_exhausted']);
                     if ($repeat === 1) {

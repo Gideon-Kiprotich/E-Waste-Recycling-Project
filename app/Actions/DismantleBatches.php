@@ -10,6 +10,7 @@ use App\Support\Collection\AdminMutation;
 use App\Support\Collection\PrivateEvidence;
 use App\Support\Collection\Review;
 use App\Support\Downstream\Violation;
+use App\Support\Restrictions\Effective;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Crypt;
@@ -112,7 +113,7 @@ class DismantleBatches
                     throw ValidationException::withMessages(['submission' => implode(' ', $messages)]);
                 }
             }
-            $expected = DB::table('media_inventory_entries')->whereIn('parent_id', $inputs)->whereNotNull('medium_id')->orderBy('medium_id')->pluck('medium_id')->all();
+            $expected = DB::table(Effective::bindings())->whereIn('parent_id', $inputs)->whereNotNull('medium_id')->orderBy('medium_id')->pluck('medium_id')->all();
             if ($expected !== $fields['detached']) {
                 throw ValidationException::withMessages(['detached' => 'Explicitly confirm actual detachment of every displayed canonical medium. Missing or additional media cannot be hidden.']);
             }
@@ -123,8 +124,8 @@ class DismantleBatches
         if ($kind !== 'discrepancy' && ! DB::selectOne('SELECT batch_control_ready(?,?) AS ready', [$b->subject_id, $actor->id])->ready) {
             throw ValidationException::withMessages(['submission' => 'Current exact input and HDD/SSD facility capabilities are required. Ask an Administrator to review Operators and places; restore legitimate eligibility and reload.']);
         }
-        if ($kind !== 'discrepancy' && DB::table('batch_records')->where('batch_id', $b->subject_id)->where('kind', 'discrepancy')->exists()) {
-            throw ValidationException::withMessages(['submission' => 'Unexpected media blocks ordinary accounting and new treatment. Reviewed provenance/identity resolution is unavailable; do not invent an owner or change membership.']);
+        if ($kind !== 'discrepancy' && (DB::getSchemaBuilder()->hasTable('media_review_effects') ? DB::selectOne('SELECT media_batch_unresolved(?) AS blocked', [$b->subject_id])->blocked : DB::table('batch_records')->where('batch_id', $b->subject_id)->where('kind', 'discrepancy')->exists())) {
+            throw ValidationException::withMessages(['submission' => 'Unexpected media blocks ordinary accounting and new treatment. Use Operational restriction review for supported on-site provenance/identity resolution; do not invent an owner or change membership.']);
         }
         if ($kind === 'measurement') {
             $old = $fields['target_id'] === $b->subject_id ? $b->input_measurement_id : DB::table('batch_outputs')->where('batch_id', $b->subject_id)->where('subject_id', $fields['target_id'])->firstOrFail()->measurement_record_id;
