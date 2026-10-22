@@ -93,3 +93,8 @@ Thumbs.db
 
 !/database/sql/media_recovery_gates.sql
 !/database/sql/media_discovery_assurance.sql
+
+!/database/sql/downstream_corrections.sql
+!/database/sql/downstream_review.sql
+!/database/sql/downstream_correction_controls.sql
+!/database/sql/downstream_discovery.sql

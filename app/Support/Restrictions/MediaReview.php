@@ -57,6 +57,10 @@ class MediaReview
 
     public static function label(?string $type, string $kind): string
     {
+        if (DownstreamReview::applies($type)) {
+            return DownstreamReview::label($type, $kind);
+        }
+
         return $kind === 'approve' ? match ($type) {
             'discovery_supplement' => 'Approve evidenced discovery supplement',
             'impact_continuity' => 'Approve obligation continuity',
@@ -66,6 +70,10 @@ class MediaReview
 
     public static function checks(?string $type): array
     {
+        if (DownstreamReview::applies($type)) {
+            return DownstreamReview::CHECKS;
+        }
+
         return match ($type) {
             'discovery_supplement' => self::DISCOVERY_CHECKS,
             'impact_continuity' => self::IMPACT_CHECKS,
@@ -75,6 +83,10 @@ class MediaReview
 
     public static function details(#[\SensitiveParameter] array $fields, string $type, string $kind): array
     {
+        if (DownstreamReview::applies($type)) {
+            return DownstreamReview::details($fields, $type, $kind);
+        }
+
         $rules = [];
         if ($kind === 'owner_clarify') {
             $rules = ['no_handover' => ['required', Rule::in(['YES'])], 'manifest' => ['required', 'array', 'min:1'], 'manifest.*' => ['required', 'uuid', 'distinct']];

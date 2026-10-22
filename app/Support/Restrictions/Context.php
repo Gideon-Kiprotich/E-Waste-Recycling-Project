@@ -95,6 +95,10 @@ class Context
             return DB::selectOne('SELECT media_review_value(?) AS value', [$fact])->value;
         }
 
+        if (DownstreamReview::applies($fact)) {
+            return 'REVIEWED';
+        }
+
         return DB::selectOne('SELECT restriction_known_value(?) AS value', [$fact])->value;
     }
 }

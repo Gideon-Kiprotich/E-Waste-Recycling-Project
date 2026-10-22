@@ -9,6 +9,7 @@ use App\Support\Collection\AdminMutation;
 use App\Support\Collection\Review;
 use App\Support\Devices\Identifiers;
 use App\Support\Restrictions\Context;
+use App\Support\Restrictions\DownstreamEffects;
 use App\Support\Restrictions\Input;
 use App\Support\Restrictions\MediaEffects;
 use Carbon\CarbonImmutable;
@@ -46,7 +47,10 @@ class ReviewRestrictions
                 abort_if($actor->role() === Role::Consumer && ! ($c && ($c->contract ?? 'C14') === 'P15' && $c->fact_key === 'return_report' && $kind === 'owner_clarify'), 403);
                 abort_if(! $c && $actor->role() !== Role::Administrator, 403);
                 $source = $c ? $ctx->source($c->source_kind, $c->source_id, $c->fact_key) : $ctx->source(...$sourceRef);
-                $typed = $source->source_kind === 'media_correction';
+                $downstream = $source->source_kind === 'downstream_correction';
+                abort_if($downstream && ! \App\Support\Downstream\Context::correctionsAvailable(), 503, 'Complete the reviewed database upgrade before downstream correction controls are available.');
+                $typed = $source->source_kind === 'media_correction' || $downstream;
+                $effects = app($downstream ? DownstreamEffects::class : MediaEffects::class);
                 $fields = Input::validate($fields, $kind, $file, $typed ? $source->fact_key : null);
                 $action = 'restriction_'.$kind.':'.($caseId ?? implode(':', $sourceRef));
                 $hash = AdminMutation::hash($fields);
@@ -82,13 +86,23 @@ class ReviewRestrictions
                 $caseId = $c?->id ?? Str::uuid()->toString();
                 $context = $ctx->dependencies($source->subject_id);
                 if (! $c) {
-                    DB::table('restriction_cases')->insert(['id' => $caseId, 'source_kind' => $source->source_kind, 'source_id' => $source->source_id, 'fact_key' => $source->fact_key, 'subject_id' => $source->subject_id, 'source_event_id' => $source->source_event_id, 'source_version' => $source->source_version, 'original_value' => $source->original_value, 'supported' => $source->supported, 'created_by' => $actor->id, 'created_at' => now(), 'state' => 'open', 'active' => true, 'version' => 1, 'record_id' => $id] + ($typed ? ['contract' => 'P15'] : []));
+                    DB::table('restriction_cases')->insert(['id' => $caseId, 'source_kind' => $source->source_kind, 'source_id' => $source->source_id, 'fact_key' => $source->fact_key, 'subject_id' => $source->subject_id, 'source_event_id' => $source->source_event_id, 'source_version' => $source->source_version, 'original_value' => $source->original_value, 'supported' => $source->supported, 'created_by' => $actor->id, 'created_at' => now(), 'state' => 'open', 'active' => true, 'version' => 1, 'record_id' => $id] + ($typed ? ['contract' => $downstream ? 'P16' : 'P15'] : []));
                 }
                 $command = AdminMutation::command($actor, $action, $fields['idempotency_key'], $hash, $caseId);
                 $observed = CarbonImmutable::createFromFormat('Y-m-d\TH:i', $fields['observed_at'], 'UTC')->startOfMinute();
                 $recorded = now();
                 $event = Str::uuid()->toString();
                 $milestone = match (true) {
+                    $downstream && $kind === 'approve' => match ($source->fact_key) {
+                        'downstream_located' => 'Later-located material outcome reviewed; original missing report retained. Actual acknowledgment remains separate.',
+                        'downstream_loss_confirm' => 'Quantified loss accountability reviewed; this is not recovered mass or data clearance.',
+                        'downstream_recipient' => 'Recipient succession proposed; successor responsibility and actual physical acknowledgment remain separate.',
+                        'downstream_discovery_movement' => 'Discovery-origin movement applicability reviewed; normal dispatch, actual receipt and assurance gates remain.',
+                        'downstream_damage_disposition' => 'Supported disposition reviewed; actual work and separate completion evidence remain required.',
+                        'downstream_downstream_continuity', 'downstream_closure_review' => 'Downstream continuity reviewed; preparatory revalidation and independent fulfillment remain required.',
+                        'downstream_completion_error' => 'Erroneous completion claim is ineffective; its accepted quantity awaits actual completion.',
+                        default => 'Downstream facts reviewed; original history remains and no physical outcome was recorded.',
+                    },
                     $kind === 'fulfill' => 'Current obligation fulfillment recorded; independent gates and later changes still apply. No physical outcome recorded.',
                     $kind === 'owner_clarify' => 'Owner report clarification recorded. This is not receipt or transfer.',
                     $typed && $kind === 'approve' && $source->fact_key === 'discovery_supplement' => 'On-site provenance supplement recorded; accounting and data obligations remain separate. No physical transfer recorded.',
@@ -102,18 +116,18 @@ class ReviewRestrictions
                 if ($typed && $source->fact_key === 'return_report' && $kind === 'proposal') {
                     $details['owner_statement_id'] = DB::table('restriction_records')->where('case_id', $caseId)->where('kind', 'owner_clarify')->orderByDesc('version')->value('id');
                 }
-                $typedFields = $typed ? ['details' => json_encode(app(MediaEffects::class)->prepare($details, $actor, $source->subject_id), JSON_THROW_ON_ERROR), 'private_details_ciphertext' => $details ? Crypt::encryptString(json_encode($details, JSON_THROW_ON_ERROR)) : null] : [];
-                DB::table('restriction_records')->insert($typedFields + ['id' => $id, 'case_id' => $caseId, 'version' => ($c?->version ?? 0) + 1, 'predecessor_id' => $c?->record_id, 'kind' => $kind, 'proposal_id' => $fields['proposal_id'] ?? null, 'grant_record_id' => $kind === 'proposal' ? $c->grant_record_id : null, 'assigned_to' => $fields['assigned_to'] ?? null, 'pre_receipt' => (bool) ($fields['pre_receipt'] ?? false), 'allowed_evidence' => '{'.implode(',', $fields['allowed_evidence'] ?? []).'}', 'original_value' => $fields['original_value'] ?? null, 'proposed_value' => $fields['proposed_value'] ?? null, 'identity_code' => $fields['identity_code'] ?? null, 'checks' => json_encode($fields['checks'] ?? new \stdClass), 'basis_ciphertext' => isset($fields['basis']) ? Crypt::encryptString($fields['basis']) : null, 'source_version' => $source->source_version, 'restriction_version' => $ctx->epoch($source->subject_id), 'context' => json_encode($context, JSON_THROW_ON_ERROR), 'actor_context' => json_encode($ctx->actorContext($actor->id), JSON_THROW_ON_ERROR), 'actor_id' => $actor->id, 'command_id' => $command, 'event_id' => $event, 'observed_at' => $observed, 'recorded_at' => $recorded, 'reason_ciphertext' => Crypt::encryptString($fields['reason'])] + $evidence);
+                $typedFields = $typed ? ['details' => json_encode($effects->prepare($details, $actor, $source->subject_id), JSON_THROW_ON_ERROR), 'private_details_ciphertext' => $details ? Crypt::encryptString(json_encode($details, JSON_THROW_ON_ERROR)) : null] : [];
+                DB::table('restriction_records')->insert($typedFields + ['id' => $id, 'case_id' => $caseId, 'version' => ($c?->version ?? 0) + 1, 'predecessor_id' => $c?->record_id, 'kind' => $kind, 'proposal_id' => $fields['proposal_id'] ?? null, 'grant_record_id' => ($kind === 'proposal' || ($downstream && $kind === 'clarify')) ? $c->grant_record_id : null, 'assigned_to' => $fields['assigned_to'] ?? null, 'pre_receipt' => (bool) ($fields['pre_receipt'] ?? false), 'allowed_evidence' => '{'.implode(',', $fields['allowed_evidence'] ?? []).'}', 'original_value' => $fields['original_value'] ?? null, 'proposed_value' => $fields['proposed_value'] ?? null, 'identity_code' => $fields['identity_code'] ?? null, 'checks' => json_encode($fields['checks'] ?? new \stdClass), 'basis_ciphertext' => isset($fields['basis']) ? Crypt::encryptString($fields['basis']) : null, 'source_version' => $source->source_version, 'restriction_version' => $ctx->epoch($source->subject_id), 'context' => json_encode($context, JSON_THROW_ON_ERROR), 'actor_context' => json_encode($ctx->actorContext($actor->id), JSON_THROW_ON_ERROR), 'actor_id' => $actor->id, 'command_id' => $command, 'event_id' => $event, 'observed_at' => $observed, 'recorded_at' => $recorded, 'reason_ciphertext' => Crypt::encryptString($fields['reason'])] + $evidence);
                 if ($typed && in_array($kind, ['approve', 'fulfill'], true)) {
                     $review = DB::table('restriction_records')->where('id', $id)->firstOrFail();
-                    app(MediaEffects::class)->apply($actor, $c, $review);
+                    $effects->apply($actor, $c, $review);
                 }
                 if ($c) {
                     $projection = ['version' => $c->version + 1, 'record_id' => $id, 'state' => match ($kind) {
                         'approve' => 'superseded', 'close' => 'closed_no_change', default => 'under_review'
                     }, 'active' => ! in_array($kind, ['approve', 'close'], true)];
                     if ($typed) {
-                        $state = DB::selectOne('SELECT media_case_state(c,r) AS state FROM restriction_cases c JOIN restriction_records r ON r.id=? WHERE c.id=?', [$id, $caseId])->state;
+                        $state = DB::selectOne('SELECT '.($downstream ? 'downstream_case_state' : 'media_case_state').'(c,r) AS state FROM restriction_cases c JOIN restriction_records r ON r.id=? WHERE c.id=?', [$id, $caseId])->state;
                         $projection['state'] = $state;
                         $projection['active'] = in_array($state, ['open', 'under_review', 'revalidation_pending'], true);
                     }
@@ -124,19 +138,23 @@ class ReviewRestrictions
                     }
                     DB::table('restriction_cases')->where('id', $caseId)->update($projection);
                 }
-                if ($kind === 'approve' && (! $typed || $source->fact_key !== 'impact_continuity')) {
+                if ($kind === 'approve' && (! $typed || ! in_array($source->fact_key, ['impact_continuity', 'downstream_downstream_continuity', 'downstream_closure_review'], true))) {
                     $this->invalidate($actor, $ids, $command, $caseId);
                 }
                 $this->notify($actor, $caseId, $event);
                 if ($typed && in_array($kind, ['approve', 'fulfill'], true)) {
-                    DB::table('media_review_commits')->insert(['record_id' => $id, 'context' => json_encode($ctx->dependencies($source->subject_id), JSON_THROW_ON_ERROR)]);
+                    if ($downstream) {
+                        $effects->finish($c, DB::table('restriction_records')->where('id', $id)->firstOrFail());
+                    } else {
+                        DB::table('media_review_commits')->insert(['record_id' => $id, 'context' => json_encode($ctx->dependencies($source->subject_id), JSON_THROW_ON_ERROR)]);
+                    }
                 }
 
                 return $caseId;
             });
         } catch (Throwable $e) {
             app(DismantleBatches::class)->cleanup($stored);
-            if ($e instanceof \PDOException && in_array($e->errorInfo[0] ?? null, ['P1400', 'P1500'], true) && preg_match('/ERROR:\s*([^\n]+)/', $e->errorInfo[2] ?? '', $match)) {
+            if ($e instanceof \PDOException && in_array($e->errorInfo[0] ?? null, ['P1300', 'P1400', 'P1500', 'P1600'], true) && preg_match('/ERROR:\s*([^\n]+)/', $e->errorInfo[2] ?? '', $match)) {
                 throw ValidationException::withMessages(['submission' => $match[1]]);
             }
             if ($e instanceof QueryException && Identifiers::isDuplicateConflict($e)) {
@@ -163,7 +181,16 @@ class ReviewRestrictions
     {
         $c = DB::table('restriction_cases')->where('id', $case)->firstOrFail();
         $owner = DB::table('items')->where('subject_id', $c->subject_id)->value('owner_user_id');
-        foreach (array_unique(array_filter([$actor->id, $c->created_by, $c->assigned_to, $owner])) as $recipient) {
+        $additional = [];
+        if (($c->contract ?? 'C14') === 'P16') {
+            $grant = DB::table('restriction_records')->where('id', $c->grant_record_id)->value('details');
+            $additional[] = json_decode($grant ?? '{}', true)['party_actor_id'] ?? null;
+            if ($c->fact_key === 'downstream_recipient') {
+                $details = DB::table('restriction_records')->where('case_id', $case)->where('kind', 'proposal')->orderByDesc('version')->value('details');
+                $additional[] = json_decode($details ?? '{}', true)['receiver_actor_id'] ?? null;
+            }
+        }
+        foreach (array_unique(array_filter([$actor->id, $c->created_by, $c->assigned_to, $owner, ...$additional])) as $recipient) {
             DB::table('notification_outbox')->insert(['id' => Str::uuid()->toString(), 'event_id' => $event, 'recipient_id' => $recipient, 'channel' => 'in_app', 'state' => 'pending']);
         }
     }

@@ -51,6 +51,7 @@ Route::middleware(['auth', 'account.current'])->group(function (): void {
     Route::post('/restriction-review/cases/{case}/{kind}', [RestrictionController::class, 'store'])->whereUuid('case')->where('kind', 'assign|revoke|clarify|note|proposal|continue|close|approve|fulfill')->middleware(['role:administrator,processor,collector', 'throttle:20,1'])->name('restrictions.store');
     Route::post('/restriction-review/cases/{case}/owner-clarification', [RestrictionController::class, 'ownerClarification'])->whereUuid('case')->middleware(['role:consumer', 'throttle:20,1'])->name('restrictions.owner-clarification');
     Route::get('/restriction-review/cases/{case}/evidence/{attachment}', [RestrictionController::class, 'evidence'])->whereUuid(['case', 'attachment'])->name('restrictions.evidence');
+    Route::post('/downstream/shipments/{shipment}/responsibility/{kind}', [DownstreamController::class, 'responsibility'])->whereUuid('shipment')->where('kind', 'accepted|cancelled')->middleware(['role:administrator,processor', 'throttle:20,1'])->name('downstream.responsibility');
     Route::middleware('role:processor')->group(function (): void {
         Route::get('/facility/downstream', [DownstreamController::class, 'index'])->name('downstream.index');
         Route::get('/batches/{batch}/downstream', [DownstreamController::class, 'show'])->whereUuid('batch')->name('downstream.show');

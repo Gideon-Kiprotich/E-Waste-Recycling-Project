@@ -38,8 +38,8 @@ class MediaCorrectionTest extends TestCase
         $files = glob(database_path('migrations/*.php'));
         sort($files);
         foreach ($files as $file) {
-            if (basename($file) === '2026_10_21_000002_seal_obligation_signatures.php' && $this->name() === 'test_restored_actor_scope_requires_fresh_obligation_signatures_without_rewriting_history') {
-                continue; // This case upgrades already fulfilled Phase 15 obligations explicitly.
+            if (basename($file) >= '2026_10_21_000002_seal_obligation_signatures.php' && $this->name() === 'test_restored_actor_scope_requires_fresh_obligation_signatures_without_rewriting_history') {
+                continue; // This historical upgrade must seal Phase 15 before loading later wrappers.
             }
             (require $file)->up();
         }
@@ -766,6 +766,11 @@ class MediaCorrectionTest extends TestCase
                 $beforeUpgrade[$table] = DB::table($table)->get()->toJson();
             }
             (require $upgrade)->up();
+            foreach (glob(database_path('migrations/*.php')) as $later) {
+                if (basename($later) > basename($upgrade)) {
+                    (require $later)->up();
+                }
+            }
             $this->handoverBoundary();
             foreach ($beforeUpgrade as $table => $rows) {
                 $this->assertSame($rows, DB::table($table)->get()->toJson(), $table);

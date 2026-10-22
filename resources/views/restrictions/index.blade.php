@@ -6,7 +6,7 @@
 <p><a href="{{ route('restrictions.notices') }}">Restriction review notices</a></p>
 @if($admin)
 <section class="card notice-content"><h2>Source restrictions</h2><p>These are existing observations, not historical investigation cases. Opening this page creates nothing.</p>
-@forelse($sources as $s)<p><a href="{{ route('restrictions.source',[$s->source_kind,$s->source_id,$s->fact_key]) }}">{{ $s->public_code }} · {{ ucfirst($s->source_kind) }} / {{ str_replace('_',' ',$s->fact_key) }}</a> · {{ $s->supported ? 'Recording-error review supported' : 'Investigation only — resolution unavailable' }}</p>@empty<p>No projected restrictions in this queue. Do not create test restrictions in development merely to populate it.</p>@endforelse
+@forelse($sources as $s)<p><a href="{{ route('restrictions.source',[$s->source_kind,$s->source_id,$s->fact_key]) }}">{{ $s->public_code }} · {{ ucfirst($s->source_kind) }} / {{ ($s->source_kind==='downstream_correction' ? \App\Support\Restrictions\DownstreamReview::typeLabel($s->fact_key) : str_replace('_',' ',$s->fact_key)) }}</a> · {{ $s->source_kind==='downstream_correction' ? 'Typed downstream review; original history retained' : ($s->supported ? 'Recording-error review supported' : 'Investigation only — resolution unavailable') }}</p>@empty<p>No projected restrictions in this queue. Do not create test restrictions in development merely to populate it.</p>@endforelse
 {{ $sources->links() }}</section>
 @endif
 <section class="card notice-content"><h2>{{ $admin ? 'Investigation cases' : ($consumer ? 'Your review milestones' : 'Your currently authorized investigations') }}</h2>

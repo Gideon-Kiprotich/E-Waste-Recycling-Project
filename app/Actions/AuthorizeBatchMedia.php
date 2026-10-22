@@ -62,6 +62,9 @@ class AuthorizeBatchMedia
                 if (Schema::hasColumn('media_authorizations', 'downstream_receipt_id')) {
                     $record['downstream_receipt_id'] = $b->downstream_receipt_id ?? null;
                 }
+                if (Schema::hasColumn('media_authorizations', 'discovery_id')) {
+                    $record['discovery_id'] = $snap['authorization_context_version'] === 6 ? ($d->id ?? null) : null;
+                }
                 $candidate = DB::selectOne('SELECT media_authorization_applicable(jsonb_populate_record(NULL::media_authorizations,?::jsonb)) AS eligible', [json_encode($record, JSON_THROW_ON_ERROR)])->eligible;
                 if (! $candidate) {
                     throw ValidationException::withMessages(['submission' => 'Requires coherent batch detachment or discovery control, retained RECYCLE decision, exact HDD/SSD facility capability and no safety/identity/unexpected-media restriction. Resolve setup through supported controls; no override is available.']);
@@ -97,7 +100,7 @@ class AuthorizeBatchMedia
         if ($b->facility_party_id === $party) {
             return app(Context::class)->batch($actor, $batch);
         }
-        $receipt = DB::table('downstream_records as r')->join('downstream_shipments as h', 'h.id', '=', 'r.shipment_id')->join('output_profile_records as p', 'p.id', '=', 'h.profile_record_id')->where('r.batch_id', $batch)->where('r.output_id', $medium)->where('r.kind', 'accept')->where('r.canonical', true)->where('h.receiver_actor_id', $actor->id)->where('p.facility_party_id', $party)->first(['r.id']);
+        $receipt = DB::table('downstream_records as r')->join(\App\Support\Downstream\Context::shipments().' as h', 'h.id', '=', 'r.shipment_id')->join('output_profile_records as p', 'p.id', '=', 'h.profile_record_id')->where('r.batch_id', $batch)->where('r.output_id', $medium)->where('r.kind', 'accept')->where('r.canonical', true)->where('h.receiver_actor_id', $actor->id)->where('p.facility_party_id', $party)->first(['r.id']);
         abort_unless($receipt, 404);
         $b->downstream_receipt_id = $receipt->id;
 

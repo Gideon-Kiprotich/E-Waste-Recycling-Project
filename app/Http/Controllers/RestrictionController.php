@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\AcceptDownstreamResponsibility;
 use App\Actions\ReviewRestrictions;
 use App\Enums\Role;
 use App\Support\Collection\Review;
 use App\Support\Restrictions\Context;
+use App\Support\Restrictions\DownstreamReview;
 use App\Support\Restrictions\MediaReview;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,7 +20,7 @@ class RestrictionController extends Controller
         $actor = $request->user();
         $admin = $actor->role() === Role::Administrator;
         $consumer = $actor->role() === Role::Consumer;
-        $sources = $admin ? DB::table('restriction_sources as r')->join('subjects as s', 's.id', '=', 'r.subject_id')->where('r.currently_blocking', true)->whereNotExists(fn ($q) => $q->selectRaw('1')->from('restriction_supersessions as x')->whereColumn('x.source_kind', 'r.source_kind')->whereColumn('x.source_id', 'r.source_id')->whereColumn('x.fact_key', 'r.fact_key'))->orderBy('r.source_time')->orderBy('r.source_id')->orderBy('r.fact_key')->paginate(12, ['r.source_kind', 'r.source_id', 'r.fact_key', 'r.supported', 's.public_code'], 'sources_page') : null;
+        $sources = $admin ? DB::table('restriction_sources as r')->join('subjects as s', 's.id', '=', 'r.subject_id')->where('r.currently_blocking', true)->when(! \App\Support\Downstream\Context::correctionsAvailable(), fn ($q) => $q->where('r.source_kind', '<>', 'downstream_correction'))->whereNotExists(fn ($q) => $q->selectRaw('1')->from('restriction_supersessions as x')->whereColumn('x.source_kind', 'r.source_kind')->whereColumn('x.source_id', 'r.source_id')->whereColumn('x.fact_key', 'r.fact_key'))->orderBy('r.source_time')->orderBy('r.source_id')->orderBy('r.fact_key')->paginate(12, ['r.source_kind', 'r.source_id', 'r.fact_key', 'r.supported', 's.public_code'], 'sources_page') : null;
         $cases = DB::table('restriction_cases as c')->join('subjects as s', 's.id', '=', 'c.subject_id')
             ->when(! $admin && ! $consumer, fn ($q) => $q->whereRaw('restriction_investigator(c.id,?) OR restriction_clarifier(c.id,?)', [$actor->id, $actor->id]))
             ->when($consumer, fn ($q) => $q->whereExists(fn ($s) => $s->selectRaw('1')->from('items as i')->whereColumn('i.subject_id', 'c.subject_id')->where('i.owner_user_id', $actor->id)))
@@ -72,13 +74,21 @@ class RestrictionController extends Controller
         $token = $ctx->token($request->user(), $source, $c);
         $epoch = $ctx->epoch($c->subject_id);
         $impact = $ctx->impact($c->subject_id);
-        $candidates = $admin && $c->active ? $ctx->candidates($c->subject_id, $c->supported, ($c->contract ?? 'C14') === 'P15') : collect();
+        $candidates = $admin && $c->active ? (($c->contract ?? 'C14') === 'P16' ? DownstreamReview::candidates($c->subject_id) : $ctx->candidates($c->subject_id, $c->supported, ($c->contract ?? 'C14') === 'P15')) : collect();
         $proposals = $admin && $c->active ? DB::table('restriction_records')->where('case_id', $case)->where('kind', 'proposal')->orderByDesc('version')->get() : collect();
         $knownValue = $ctx->proposedValue($c->fact_key);
         $mode = $request->query('action', 'history');
         $allowed = $admin ? ['assign', 'revoke', 'note', 'continue', 'close', ...($c->supported ? ['approve'] : [])] : [...($investigator ? ['note', ...($c->supported ? ['proposal'] : [])] : []), ...($clarifier ? ['clarify'] : [])];
         if ($admin && ($c->contract ?? 'C14') === 'P15' && $c->fact_key === 'impact_continuity' && $c->state === 'revalidation_pending') {
             $allowed[] = 'fulfill';
+        }
+        if (($c->contract ?? 'C14') === 'P16') {
+            if ($investigator) {
+                $allowed[] = 'clarify';
+            }
+            if ($admin && in_array($c->fact_key, ['downstream_downstream_continuity', 'downstream_closure_review'], true) && $c->state === 'revalidation_pending') {
+                $allowed[] = 'fulfill';
+            }
         }
         $mode = is_string($mode) && in_array($mode, $allowed, true) && $c->active ? $mode : 'history';
         $retainedUnits = [];
@@ -96,7 +106,11 @@ class RestrictionController extends Controller
         $batchOutputs = $parents->isNotEmpty() ? DB::table('batch_outputs as o')->join('subjects as s', 's.id', '=', 'o.subject_id')->where('o.batch_id', $c->subject_id)->get(['o.subject_id', 'o.type', 's.public_code']) : collect();
         $allowedEvidence = json_decode(DB::selectOne('SELECT to_json(allowed_evidence) AS ids FROM restriction_cases WHERE id=?', [$case])->ids, true);
 
-        return $this->view('restrictions.show', compact('c', 'source', 'admin', 'investigator', 'clarifier', 'history', 'token', 'epoch', 'impact', 'candidates', 'proposals', 'knownValue', 'mode', 'allowed', 'allowedEvidence', 'unitCount', 'retainedUnits', 'parents', 'batchOutputs', 'typedBlockers') + ['fieldIds' => $this->fields()]);
+        $recipientProposal = $admin && ($c->contract ?? 'C14') === 'P16' && $c->fact_key === 'downstream_recipient' ? DB::table('downstream_recipient_current as generation')->join('downstream_review_effects as proof', 'proof.record_id', '=', 'generation.review_id')->where('proof.case_id', $c->id)->where('generation.kind', 'proposed')->first(['generation.*']) : null;
+        $recipientCancelToken = $recipientProposal ? app(AcceptDownstreamResponsibility::class)->token($request->user(), $recipientProposal->shipment_id) : null;
+        $downstreamForm = ($c->contract ?? 'C14') === 'P16' ? DownstreamReview::formData($c, $request->user(), is_string($request->query('finding')) ? $request->query('finding') : null) : [];
+
+        return $this->view('restrictions.show', compact('c', 'source', 'admin', 'investigator', 'clarifier', 'history', 'token', 'epoch', 'impact', 'candidates', 'proposals', 'knownValue', 'mode', 'allowed', 'allowedEvidence', 'unitCount', 'retainedUnits', 'parents', 'batchOutputs', 'typedBlockers', 'downstreamForm', 'recipientProposal', 'recipientCancelToken') + ['fieldIds' => $this->fields()]);
     }
 
     public function open(Request $request, ReviewRestrictions $action, string $kind, string $source, string $fact)
@@ -145,6 +159,10 @@ class RestrictionController extends Controller
     {
         $rows = DB::table('restriction_notifications')->where('recipient_id', $request->user()->id)->orderByDesc('id')->paginate(12);
 
+        foreach ($rows as $notice) {
+            $notice->shipment_id = DB::getSchemaBuilder()->hasTable('downstream_recipient_records') ? DB::table('downstream_recipient_current as generation')->join('downstream_review_effects as proof', 'proof.record_id', '=', 'generation.review_id')->where('proof.case_id', $notice->case_id)->where('generation.kind', 'proposed')->where('generation.receiver_actor_id', $request->user()->id)->whereRaw('generation.receiver_context=restriction_actor_context(?)', [$request->user()->id])->value('generation.shipment_id') : null;
+        }
+
         return $this->view('restrictions.notices', compact('rows'));
     }
 
@@ -181,7 +199,16 @@ class RestrictionController extends Controller
                 }
             }
         }
-        foreach ((Context::CHECKS + MediaReview::DISCOVERY_CHECKS + MediaReview::IMPACT_CHECKS) as $key => $label) {
+        foreach (['party_actor_id', 'receiver_actor_id', 'profile_record_id', 'party_findings', ...DownstreamReview::FACTS] as $key) {
+            $fields['details.'.$key] = 'details_'.str_replace('.', '_', $key);
+            $fields['details.facts.'.$key] = 'details_facts_'.$key;
+        }
+        for ($index = 0; $index < 50; $index++) {
+            foreach (['anchor_kind', 'anchor_id', 'fact', 'value', 'expected_version', 'predecessor_id'] as $key) {
+                $fields['details.revisions.'.$index.'.'.$key] = 'details_revisions_'.$index.'_'.$key;
+            }
+        }
+        foreach ((Context::CHECKS + DownstreamReview::CHECKS + MediaReview::DISCOVERY_CHECKS + MediaReview::IMPACT_CHECKS) as $key => $label) {
             $fields['checks.'.$key] = 'check-'.$key;
         }
 

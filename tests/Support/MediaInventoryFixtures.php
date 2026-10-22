@@ -70,9 +70,9 @@ trait MediaInventoryFixtures
         return array_replace($w, ['ids' => [$s]]);
     }
 
-    protected function standaloneAtParentFacility(array $w): string
+    protected function standaloneAtParentFacility(array $w, string $kind = 'ssd'): string
     {
-        $drive = $this->device($w['owner'], 'standalone_part', 'ssd')->subject_id;
+        $drive = $this->device($w['owner'], 'standalone_part', $kind)->subject_id;
         $request = $this->readyRequest($w['admin'], $w['owner'], [$drive], 'drop_off');
         app(RecordVisit::class)->record($w['pointActor'], $request, $this->visitFields($request));
         $this->handoverBoundary();
@@ -80,7 +80,7 @@ trait MediaInventoryFixtures
         $id = $this->initiateHandover($transfer);
         app(CustodyHandovers::class)->change($w['receiver'], $id, 'acknowledged', $this->acknowledgeFields($id));
         $this->handoverBoundary();
-        app(InspectItems::class)->inspect($w['receiver'], $drive, $this->inspectionFields($drive));
+        app(InspectItems::class)->inspect($w['receiver'], $drive, $this->inspectionFields($drive, $kind.'-healthy'));
         app(InspectItems::class)->decide($w['receiver'], $drive, $this->decisionFields($drive));
         $this->handoverBoundary();
 

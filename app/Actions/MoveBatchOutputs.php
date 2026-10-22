@@ -44,7 +44,7 @@ class MoveBatchOutputs
                 $id = Str::uuid()->toString();
                 $output = $kind === 'measurement_dispute' ? null : ($h?->output_id ?? ($fields['output_id'] ?? null));
                 $o = $output ? DB::table('batch_outputs')->where('batch_id', $batch)->where('subject_id', $output)->lockForUpdate()->firstOrFail() : null;
-                if ($output && in_array($kind, ['draft', 'reserve', 'dispatch'], true) && DB::getSchemaBuilder()->hasTable('batch_media_discoveries') && DB::table('batch_media_discoveries')->where('medium_id', $output)->exists()) {
+                if ($output && in_array($kind, ['draft', 'reserve', 'dispatch'], true) && DB::getSchemaBuilder()->hasTable('batch_media_discoveries') && DB::table('batch_media_discoveries')->where('medium_id', $output)->exists() && (! DB::getSchemaBuilder()->hasTable('downstream_review_effects') || ! DB::selectOne('SELECT downstream_discovery_movable(?,?) AS allowed', [$output, $actor->id])->allowed)) {
                     throw ValidationException::withMessages(['submission' => 'Discovery output remains on site. Downstream movement needs the separately authorized origin/recipient contract; treatment is not dispatch approval.']);
                 }
                 $canonical = $o?->type === 'storage';
@@ -58,6 +58,11 @@ class MoveBatchOutputs
                     $membership = DB::table('memberships')->where('user_id', $fields['receiver_actor_id'])->firstOrFail();
                     $custody = $canonical ? DB::table('custody_current')->where('subject_id', $output)->firstOrFail() : null;
                     $h = (object) ['id' => Str::uuid()->toString(), 'batch_id' => $batch, 'output_id' => $output, 'profile_record_id' => $pr->id, 'receiver_actor_id' => $fields['receiver_actor_id'], 'receiver_membership_id' => $membership->id, 'receiver_scope_version' => $membership->version, 'sender_actor_id' => $actor->id, 'requested_kg' => $fields['kg'], 'hazards' => $fields['hazards'], 'source_subject_version' => $canonical ? DB::table('subjects')->where('id', $output)->value('version') : null, 'source_custody_version' => $custody?->version, 'source_event_id' => $custody?->last_event_id, 'created_record_id' => $id];
+                    if (DB::getSchemaBuilder()->hasColumn('downstream_shipments', 'discovery_id')) {
+                        $discovery = DB::table('batch_media_discoveries')->where('medium_id', $output)->first();
+                        $h->discovery_id = $discovery?->id;
+                        $h->movement_review_id = $discovery ? DB::table('downstream_fact_revisions')->where('anchor_kind', 'discovery')->where('anchor_id', $output)->where('fact', 'movement')->orderByDesc('version')->value('review_id') : null;
+                    }
                     DB::table('downstream_shipments')->insert((array) $h);
                 }
                 $previous = DB::table('downstream_batches')->where('batch_id', $batch)->first();

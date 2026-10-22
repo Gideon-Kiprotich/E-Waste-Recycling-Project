@@ -121,7 +121,9 @@ class DismantleBatches
             return;
         }
         abort_unless($b->state === 'processing', 409, 'Record actual dismantling before output accounting.');
-        if ($kind !== 'discrepancy' && ! DB::selectOne('SELECT batch_control_ready(?,?) AS ready', [$b->subject_id, $actor->id])->ready) {
+        $accountingRecovery = $kind === 'accounted' && \App\Support\Downstream\Context::correctionsAvailable()
+            && DB::selectOne('SELECT downstream_accounting_allowed(?,?) AS allowed', [$b->subject_id, $actor->id])->allowed;
+        if ($kind !== 'discrepancy' && ! $accountingRecovery && ! DB::selectOne('SELECT batch_control_ready(?,?) AS ready', [$b->subject_id, $actor->id])->ready) {
             throw ValidationException::withMessages(['submission' => 'Current exact input and HDD/SSD facility capabilities are required. Ask an Administrator to review Operators and places; restore legitimate eligibility and reload.']);
         }
         if ($kind !== 'discrepancy' && (DB::getSchemaBuilder()->hasTable('media_review_effects') ? DB::selectOne('SELECT media_batch_unresolved(?) AS blocked', [$b->subject_id])->blocked : DB::table('batch_records')->where('batch_id', $b->subject_id)->where('kind', 'discrepancy')->exists())) {
