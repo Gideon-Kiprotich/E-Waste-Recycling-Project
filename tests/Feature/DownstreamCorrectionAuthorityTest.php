@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Actions\AcceptDownstreamResponsibility;
 use App\Actions\ManagePointStaff;
 use App\Support\Restrictions\Notices;
+use App\Support\Sanitization\Context;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -33,7 +34,7 @@ class DownstreamCorrectionAuthorityTest extends TestCase
         $evidence = DB::table('sanitization_records')->where('subject_id', $medium)->get();
         $loss = $this->downstreamRecord($w, 'source_loss');
         $this->assertTrue(DB::selectOne('SELECT downstream_media_uncontrolled(?) AS blocked', [$medium])->blocked);
-        $this->assertNotSame('satisfied', app(\App\Support\Sanitization\Context::class)->state($medium));
+        $this->assertNotSame('satisfied', app(Context::class)->state($medium));
         $this->correction($w, $loss, 'loss_confirm', [$this->fact('downstream', $loss, 'loss_status', 'confirmed')], false, ['quantified_loss' => 'YES']);
         $this->assertFalse(DB::selectOne('SELECT downstream_closable(?) AS ready', [$w['batch']])->ready);
         $this->assertEquals($custody, DB::table('custody_current')->where('subject_id', $medium)->first());
@@ -119,9 +120,9 @@ class DownstreamCorrectionAuthorityTest extends TestCase
         $id = $action->record($w['admin'], $h, 'cancelled', $fields);
         $this->handoverBoundary();
         $this->assertSame($id, $action->record($w['admin'], $h, 'cancelled', $fields));
-        $this->assertNull(DB::table('downstream_effective_shipments')->where('id',$h)->value('receiver_actor_id'));
-        $this->receiptSignIn($w['recipient'])->get(route('downstream.shipment',$h))->assertNotFound();
-        $this->receiptSignIn($successor)->get(route('downstream.shipment',$h))->assertNotFound();
-        $this->assertSame(0,DB::table('downstream_records')->where('kind','accept')->count());
+        $this->assertNull(DB::table('downstream_effective_shipments')->where('id', $h)->value('receiver_actor_id'));
+        $this->receiptSignIn($w['recipient'])->get(route('downstream.shipment', $h))->assertNotFound();
+        $this->receiptSignIn($successor)->get(route('downstream.shipment', $h))->assertNotFound();
+        $this->assertSame(0, DB::table('downstream_records')->where('kind', 'accept')->count());
     }
 }
