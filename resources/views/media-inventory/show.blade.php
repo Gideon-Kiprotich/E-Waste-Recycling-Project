@@ -49,7 +49,7 @@
 @endif
 @if(in_array($mode,['identify','link','unresolved','correct'],true))<x-field name="placement" label="Private distinguishing placement and observation" maxlength="1500" hint="Describe actual position and how this physical unit is distinguished; include access limits. Similar model/photos alone do not prove a match." />@endif
 @foreach(\App\Support\MediaInventory\Context::checks($mode) as $key=>$label)<x-select-field :name="'checks.'.$key" :id="'checks_'.$key" :label="$label" :options="['YES'=>'Yes','NO'=>'No','UNKNOWN'=>'Unknown']" />@endforeach
-<x-field name="observed_at" label="Actual observation time (UTC)" type="datetime-local" :value="now('UTC')->format('Y-m-d\TH:i')" hint="UTC is three hours behind Nairobi. History displays Africa/Nairobi; explain retrospective entry." />
+<x-observation-time />
 <x-select-field name="evidence_kind" label="Private evidence provenance" :options="['operator_reference'=>'Accountable operator reference','attachment'=>'Private JPEG/PNG/PDF attachment']" />
 <x-field name="evidence" type="file" label="Private attachment (attachment option only)" :required="false" hint="One supported file up to 5 MiB; never include user file contents." />
 <x-field name="reference_issuer" label="Record issuer (reference option only)" :required="false" maxlength="120" /><x-field name="reference_code" label="Record number (reference option only)" :required="false" maxlength="120" />
@@ -59,7 +59,7 @@
 </form></section>
 @endif
 <section class="card notice-content"><h2>Retained inventory and authorization history</h2>
-@foreach(['inventory'=>$history,'authorization'=>$authorizations] as $kind=>$records)@foreach($records as $r)<article class="section-title"><h3>{{ $kind }} · version {{ $r->version }}@if($kind==='inventory') · {{ $r->kind }}@endif</h3><p>Observed {{ \Carbon\CarbonImmutable::parse($r->observed_at)->setTimezone('Africa/Nairobi')->format('j M Y H:i') }} Africa/Nairobi · Recorded {{ \Carbon\CarbonImmutable::parse($r->recorded_at)->setTimezone('Africa/Nairobi')->format('j M Y H:i') }} Africa/Nairobi. Actor reference {{ $r->actor_id }}.</p><p>{{ \Illuminate\Support\Facades\Crypt::decryptString($r->reason_ciphertext) }}</p>@if($r->attachment_id)<p><a href="{{ route('media-inventory.evidence',['kind'=>$kind,'record'=>$r->id]) }}">Download private inventory evidence</a></p>@else
+@foreach(['inventory'=>$history,'authorization'=>$authorizations] as $kind=>$records)@foreach($records as $r)<article class="section-title"><h3>{{ $kind }} · version {{ $r->version }}@if($kind==='inventory') · {{ $r->kind }}@endif</h3><p>Observed <x-instant :value="$r->observed_at" /> · Recorded <x-instant :value="$r->recorded_at" />. Actor reference {{ $r->actor_id }}.</p><p>{{ \Illuminate\Support\Facades\Crypt::decryptString($r->reason_ciphertext) }}</p>@if($r->attachment_id)<p><a href="{{ route('media-inventory.evidence',['kind'=>$kind,'record'=>$r->id]) }}">Download private inventory evidence</a></p>@else
 @php($ref=json_decode(\Illuminate\Support\Facades\Crypt::decryptString($r->reference_ciphertext),true,flags:JSON_THROW_ON_ERROR))<p>{{ $ref['issuer'] }} · {{ $ref['code'] }}. {{ $ref['provenance'] }}</p>@endif</article>@endforeach @endforeach
 </section>
 @endif

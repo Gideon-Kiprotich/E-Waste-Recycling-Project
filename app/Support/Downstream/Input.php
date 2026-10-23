@@ -5,6 +5,7 @@ namespace App\Support\Downstream;
 use App\Support\Assignments\Input as StrictInput;
 use App\Support\Batches\Input as BatchInput;
 use App\Support\Batches\Mass;
+use App\Support\NairobiTime;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
@@ -13,6 +14,7 @@ class Input
 {
     public static function validate(#[\SensitiveParameter] array $fields, string $kind, ?UploadedFile $file): array
     {
+        $fields = NairobiTime::normalize($fields);
         $base = array_flip(['idempotency_key', 'expected_version', 'expected_context', 'observed_at', 'reason', 'evidence_kind', 'reference_issuer', 'reference_code', 'reference_attested']);
         $rules = ['attested' => ['required', 'accepted']];
         if ($kind === 'profile') {

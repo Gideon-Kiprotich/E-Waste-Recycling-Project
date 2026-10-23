@@ -53,5 +53,5 @@
     <button class="primary" type="submit">Record assignment action</button>
 </form></section>
 @endif
-<section class="card guidance section-title"><h2>Assignment history</h2><ol class="timeline">@forelse($history as $event)<li><strong>{{ \App\Support\Assignments\History::LABELS[substr($event->type,11)] }}</strong><p>v{{ $event->aggregate_version }} · {{ \Carbon\CarbonImmutable::parse($event->recorded_at)->timezone('Africa/Nairobi')->format('j M Y H:i') }}</p>@if($event->reason_ciphertext)<p>{{ \Illuminate\Support\Facades\Crypt::decryptString($event->reason_ciphertext) }}</p>@endif</li>@empty<li>No assignment history.</li>@endforelse</ol>{{ $history->links('devices.pagination') }}</section>
+<section class="card guidance section-title"><h2>Assignment history</h2><ol class="timeline">@forelse($history as $event)<li><strong>{{ \App\Support\Assignments\History::LABELS[substr($event->type,11)] }}</strong><p>v{{ $event->aggregate_version }} · <x-instant :value="$event->recorded_at" /></p>@if($event->reason_ciphertext)<p>{{ \Illuminate\Support\Facades\Crypt::decryptString($event->reason_ciphertext) }}</p>@endif</li>@empty<li>No assignment history.</li>@endforelse</ol>{{ $history->links('devices.pagination') }}</section>
 @endsection

@@ -1,6 +1,8 @@
 <?php
 
+use App\Support\Notices\Milestones;
 use App\Support\Receipts\Notices;
+use App\Support\Reporting\Exports;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Schedule;
@@ -53,3 +55,25 @@ Artisan::command('app:deliver-assessment-notices {--limit=100}', function (): vo
     }
     $this->info(app(App\Support\Assessments\Notices::class)->deliver($limit).' supported assessment notices delivered.');
 })->purpose('Deliver supported inspection/decision in-app notices only; no email or historical outbox draining');
+
+Schedule::command('app:deliver-milestone-notices')->everyMinute()->withoutOverlapping();
+Artisan::command('app:deliver-milestone-notices {--limit=100}', function (): void {
+    $limit = filter_var($this->option('limit'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 1000]]);
+    if ($limit === false) {
+        $this->error('Use a limit from 1 to 1000.');
+
+        return;
+    }
+    $this->info(app(Milestones::class)->deliver($limit).' versioned in-app notices persisted.');
+})->purpose('Persist only C17 versioned milestone notices; no legacy replay or external delivery');
+
+Schedule::command('app:expire-report-exports')->everyMinute()->withoutOverlapping();
+Artisan::command('app:expire-report-exports {--limit=100}', function (): void {
+    $limit = filter_var($this->option('limit'), FILTER_VALIDATE_INT, ['options' => ['min_range' => 1, 'max_range' => 1000]]);
+    if ($limit === false) {
+        $this->error('Use a limit from 1 to 1000.');
+
+        return;
+    }
+    $this->info(app(Exports::class)->cleanup($limit).' owned expired export artifacts cleaned.');
+})->purpose('Clean only inventoried expired private CSV bytes; retain audit pending Phase 18');

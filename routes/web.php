@@ -15,9 +15,11 @@ use App\Http\Controllers\Collection\RequestController;
 use App\Http\Controllers\Devices\DeviceController;
 use App\Http\Controllers\DownstreamController;
 use App\Http\Controllers\HandoverController;
+use App\Http\Controllers\InboxController;
 use App\Http\Controllers\MediaInventoryController;
 use App\Http\Controllers\ReceiptController;
 use App\Http\Controllers\RefurbishmentController;
+use App\Http\Controllers\ReportingController;
 use App\Http\Controllers\RestrictionController;
 use App\Http\Controllers\RoleHomeController;
 use App\Http\Controllers\RoutingController;
@@ -42,6 +44,14 @@ Route::middleware('guest')->group(function (): void {
 
 Route::post('/logout', [SessionController::class, 'destroy'])->middleware('auth')->name('logout');
 Route::middleware(['auth', 'account.current'])->group(function (): void {
+    Route::get('/reports', [ReportingController::class, 'index'])->name('reports.index');
+    Route::post('/reports/exports', [ReportingController::class, 'export'])->name('reports.export');
+    Route::get('/reports/exports/{export}', [ReportingController::class, 'download'])->whereUuid('export')->name('reports.download');
+    Route::get('/items/{subject}/timeline', [ReportingController::class, 'timeline'])->whereUuid('subject')->name('timeline.show');
+    Route::get('/inbox', [InboxController::class, 'index'])->name('inbox.index');
+    Route::post('/inbox/{family}/{notice}/read', [InboxController::class, 'read'])->whereUuid('notice')->name('inbox.read');
+    Route::post('/inbox/delivery/{outbox}/retry', [InboxController::class, 'retry'])->whereUuid('outbox')->middleware('role:administrator')->name('inbox.retry');
+
     Route::get('/restriction-review', [RestrictionController::class, 'index'])->name('restrictions.index');
     Route::get('/restriction-notices', [RestrictionController::class, 'notices'])->name('restrictions.notices');
     Route::post('/restriction-notices/{notice}/read', [RestrictionController::class, 'read'])->whereUuid('notice')->name('restrictions.notices.read');

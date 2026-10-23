@@ -3,7 +3,7 @@
 @section('intro', 'Your account is signed in with '.$role->label().' access.')
 @section('content')
     <div class="card-heading"><p class="eyebrow">{{ $role->label() }} account</p><h2>Account access is ready</h2></div>
-    <div class="notice-content">
+    <div class="notice-content"><p><a href="{{ route('reports.index') }}">Scoped reporting dashboard</a> · <a href="{{ route('inbox.index') }}">Unified inbox</a></p>
         <p>Welcome{{ auth()->user()->display_name ? ', '.auth()->user()->display_name : '' }}.</p>
         @if($role === \App\Enums\Role::Consumer)
             <p>Register and view your own devices, retained self-report revisions and private identity labels.</p>
@@ -19,6 +19,7 @@
         @if($role !== \App\Enums\Role::Consumer)<p><a href="{{ route('handovers.index') }}">Custody handovers</a> · <a href="{{ route('handovers.notices') }}">Handover notices</a></p>@endif
         <p><a href="{{ route('restrictions.index') }}">Operational restriction review</a> · <a href="{{ route('restrictions.notices') }}">Restriction review notices</a></p>
         <p><a href="{{ route('assignment.notices') }}">Assignment notices</a></p>
+        @if($dashboard)<section class="card section-title"><h2>Scoped dashboard</h2><p>Current effective results, {{ $dashboard['filters']['from'] }} through {{ $dashboard['filters']['to'] }}, inclusive Nairobi calendar dates.</p><dl class="facts">@foreach($dashboard['summary'] as $label=>$value)<dt>{{ $label }}</dt><dd>{{ $value }}</dd>@endforeach</dl><h3>Live work — report dates do not apply</h3><dl class="facts">@foreach($dashboard['live'] as $label=>$value)<dt>{{ $label }}</dt><dd>{{ $value }}</dd>@endforeach</dl></section>@endif
         <form method="POST" action="{{ route('logout') }}">@csrf<button class="primary" type="submit">Sign out</button></form>
     </div>
 @endsection

@@ -1,4 +1,4 @@
-<x-field name="observed_at" type="datetime-local" label="Actual event time (UTC)" :value="now('UTC')->format('Y-m-d\TH:i')" hint="UTC is three hours behind Nairobi. Server recording time is separate; historical timestamps are not reinterpreted." />
+<x-observation-time />
 <x-select-field name="evidence_kind" label="Acknowledgment/review evidence" :options="['attachment'=>'Private JPEG/PNG/PDF attachment','operator_reference'=>'Accountable operator record reference']" hint="Provide one attachment OR a reference. References record staff assertions, not independent verification or signatures." />
 <x-field name="evidence" type="file" label="Private attachment (attachment option only)" :required="false" hint="One JPEG/PNG/PDF, maximum 5 MiB. Images are re-encoded; private evidence is never exposed in owner milestones." />
 <x-field name="reference_issuer" label="Record issuer (reference option only)" :required="false" maxlength="120" />

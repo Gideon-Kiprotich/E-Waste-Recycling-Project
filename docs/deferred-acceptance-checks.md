@@ -210,3 +210,20 @@ On 23 October 2026 the user authorizes provisional fast-forward integration of *
 Known excluded/missing functionality is separate from unperformed checks: general physical returns/redistribution/different destinations, replacement/re-parenting/ownership changes, identity reconstruction, external-only recipients and unsupported hazards/media/treatment remain unavailable. Device re-entry remains an unresolved separate decision, with no approved deferral. C17 reporting/notices, C18 privacy lifecycle and C19 integrated quality remain later work. Keep simulation limits, unverified operational suitability/inbox delivery and routing variability: historical **13.570422625 s** and **15.06 s** failures against the unchanged **ten-second** target are not erased by subsequent passes. Final integrated end-to-end acceptance remains required before deployment/full validation. Phase 16 remains open for acceptance; provisional fast-forward integration is authorized, with no force or push.
 
 The bounded DR01–DR09 automated/native verification and both five-step dedicated migrations are recorded in [the final Phase 16 handoff](phase-16-report.md#final-verification-and-handoff--22-october-2026). Its failed full checkpoint is retained with passing affected coverage for each failure. No manual checkbox above is completed by those tests, preservation comparisons or HTTP/Blade checks; Phase 16 remains open for acceptance.
+
+## Phase 17 — reporting and inbox acceptance (RP12)
+
+Implementation verification is recorded in [the Phase 17 report](phase-17-report.md); Phase 17 remains open for acceptance. Record only browser checks actually performed. Automated fixtures/HTML/CSV checks do not complete the following tasks.
+
+- [ ] Actual multi-role desktop/360px/mobile/touch journeys through dashboard filters, scoped timeline, incoming slices and current Collector manifest.
+- [ ] Actual keyboard/focus/error summaries, screen-reader/contrast and private/unavailable-link behavior.
+- [ ] Nairobi entry with actual users in differing browser timezones, real observed versus recorded instants and preferred dates understood as preferences.
+- [ ] Notice arrival/read/failure/retry wording and configured continuous scheduler delivery; no external inbox delivery claim.
+- [ ] CSV review in intended spreadsheet applications, including formula-like text, Unicode/quotes/newlines, metadata and non-additive rows.
+- [ ] Actual source/destination participation, weighing/provenance, acknowledgment, treatment applicability and operational suitability; genuine history distinguished from current exceptions.
+- [ ] QR/manual/printed labels and camera fallback through the completed integrated flows.
+
+Phase 18 must settle export/temp/metadata/filter/source-manifest/access-audit/retry/context/error/cache/backup privacy and retention decisions before general deletion/redaction implementation. Technical export expiry does not resolve that policy. Device re-entry remains unresolved, without an authorized deferral. Final integrated acceptance, unverified operational/inbox delivery, all physical exclusions and historical **13.570422625 s / 15.06 s** routing failures against unchanged **ten seconds** remain visible.
+
+
+The Phase 17 automated handoff retains a failed full **607 / 11,950 (605 passed, two outdated UTC-label failures)** and passing final affected **59 / 620**, explicit post-migration PostgreSQL/login **5 / 68**, and actual HTTP **57 checks/four roles**. Both dedicated migrations and original 104-table-per-database/37-file preservation passed. The temporary server, isolated fixtures, sessions and CSV bytes were cleaned; no public/development notices were delivered. UI tooling had no enabled browser and `iab` was unavailable, so **none of the RP12 checkboxes is completed** by HTTP/Blade checks. One unchanged Phase 16 test still fails whole-repository Pint; all 80 changed/new PHP files pass. See [the current report](phase-17-report.md) for exact checkpoints and retained failures.

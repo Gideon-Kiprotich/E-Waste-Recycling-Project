@@ -3,6 +3,7 @@
 namespace App\Support\Handovers;
 
 use App\Support\Assignments\Input as FormInput;
+use App\Support\NairobiTime;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -12,6 +13,7 @@ class Input
 {
     public static function validate(#[\SensitiveParameter] array $fields, ?UploadedFile $evidence, string $kind): array
     {
+        $fields = NairobiTime::normalize($fields);
         $rules = [
             'idempotency_key' => ['required', 'uuid'],
             'observed_at' => ['required', 'date_format:Y-m-d\TH:i'],

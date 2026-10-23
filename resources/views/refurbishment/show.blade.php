@@ -42,7 +42,7 @@
 @error('actual_receipt')<p class="field-error" id="actual_receipt-error">{{ $message }}</p>@enderror
 @elseif($mode === 'exception')<p>Record the actual incomplete/mismatched return and private evidence. The pending authorization closes as an exception; no item changes custody and further routine release remains blocked pending reviewed correction.</p>
 @endif
-<x-field name="observed_at" type="datetime-local" label="Actual work/test/receipt observation time (UTC)" :value="now('UTC')->format('Y-m-d\TH:i')" hint="UTC is three hours behind Nairobi. Explain retrospective entry in the private reason. History shows Africa/Nairobi time." />
+<x-observation-time />
 <x-select-field name="evidence_kind" label="Private evidence provenance" :options="['attachment'=>'Private JPEG/PNG/PDF','operator_reference'=>'Accountable record reference']" />
 <x-field name="evidence" type="file" label="Private attachment (attachment option only)" :required="false" hint="JPEG/PNG/PDF up to 5 MiB; no user file contents." />
 <x-field name="reference_issuer" label="Record issuer (reference option only)" :required="false" maxlength="120" />
@@ -54,7 +54,7 @@
 </form></section>
 @endif
 <section class="card notice-content"><h2>{{ $private ? 'Private work and release history' : 'Your safe work and release milestones' }}</h2>
-@forelse($history as $r)<article class="history-entry"><h3>{{ \App\Support\Refurbishment\Context::LABELS[$r->kind] }} · {{ ucfirst(str_replace('_',' ',$r->result)) }}</h3><p>Version {{ $r->version }} · Observed {{ \Carbon\CarbonImmutable::parse($r->observed_at)->setTimezone('Africa/Nairobi')->format('j M Y H:i') }} Africa/Nairobi · Recorded {{ \Carbon\CarbonImmutable::parse($r->recorded_at)->setTimezone('Africa/Nairobi')->format('j M Y H:i') }} Africa/Nairobi.</p>
+@forelse($history as $r)<article class="history-entry"><h3>{{ \App\Support\Refurbishment\Context::LABELS[$r->kind] }} · {{ ucfirst(str_replace('_',' ',$r->result)) }}</h3><p>Version {{ $r->version }} · Observed <x-instant :value="$r->observed_at" /> · Recorded <x-instant :value="$r->recorded_at" />.</p>
 @if($private)<p>{{ \Illuminate\Support\Facades\Crypt::decryptString($r->reason_ciphertext) }}</p>@if($r->configuration)<p>Configuration: {{ $r->configuration }}</p>@endif
 @if($r->kind === 'test')<dl class="facts">@foreach(json_decode($r->answers,true) as $code=>$answer)<dt>{{ $questions[$code]['label'] ?? $code }}</dt><dd>{{ $answer }}</dd>@endforeach</dl>@endif
 <p>Recorded by actor {{ $r->actor_id }}.</p>

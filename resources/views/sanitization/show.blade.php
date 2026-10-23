@@ -39,7 +39,7 @@
 <x-select-field :name="'checks.'.$code" :label="$label" :options="['YES'=>'YES — supported by evidence','NO'=>'NO','UNKNOWN'=>'UNKNOWN']" />
 @endforeach
 @endif
-<x-field name="observed_at" type="datetime-local" label="Actual observation/review time (UTC)" :value="now('UTC')->format('Y-m-d\TH:i')" hint="UTC is three hours behind Nairobi. Observed and recording times are separate. For negative work with unknown execution time, record actual observation of the failure/report and explain the unknown time; never invent it. Explain retrospective entry in the reason." />
+<x-observation-time />
 <x-select-field name="evidence_kind" label="Private evidence provenance" :required="false" :options="['attachment'=>'Private JPEG/PNG/PDF attachment','operator_reference'=>'Accountable operator record reference']" hint="Required for reported success and all reviews. A certificate/reference records a claim, not an independent verification. Unknown evidence is permitted for negative attempts." />
 <x-field name="evidence" type="file" label="Private attachment (attachment option only)" :required="false" hint="One JPEG/PNG/PDF, maximum 5 MiB; never shown in Consumer milestones." />
 <x-field name="reference_issuer" label="Record issuer (reference option only)" :required="false" maxlength="120" />
@@ -54,9 +54,9 @@
 <section class="card notice-content section-title"><h2>Retained treatment and assurance history</h2>
 @forelse($history as $r)
 <article class="section-title"><h3>{{ ucfirst($r->kind) }} · {{ $r->outcome }} · {{ $current?->id === $r->id ? 'Current evidence' : 'Historical evidence' }}</h3>
-<p>Version {{ $r->version }} · Observed {{ \Carbon\CarbonImmutable::parse($r->observed_at)->setTimezone('Africa/Nairobi')->format('j M Y H:i') }} Africa/Nairobi. No release or custody change.</p>
+<p>Version {{ $r->version }} · Observed <x-instant :value="$r->observed_at" />. No release or custody change.</p>
 @if($private)
-<p>Actor {{ $r->display_name }} · Observed {{ \Carbon\CarbonImmutable::parse($r->observed_at)->utc()->format('j M Y H:i') }} UTC · Recorded {{ \Carbon\CarbonImmutable::parse($r->recorded_at)->setTimezone('Africa/Nairobi')->format('j M Y H:i') }} Africa/Nairobi.</p>
+<p>Actor {{ $r->display_name }} · Observed <x-instant :value="$r->observed_at" /> · Recorded <x-instant :value="$r->recorded_at" />.</p>
 <p>{{ $policy['techniques'][$r->technique]['label'] }} · {{ strtoupper($policy['techniques'][$r->technique]['method']) }} · MEDIA-ASSURANCE-1.0.</p>
 @if($policy['techniques'][$r->technique]['method'] === 'destroy')<p>{{ $r->kind === 'attempt' ? 'Destruction reported; execution not yet verified by this record.' : ($r->kind === 'verification' && $r->outcome === 'satisfactory' ? 'Destruction execution verified; adequacy validation is separate.' : (in_array($r->kind,['validation','revalidation'],true) && $r->outcome === 'accepted' ? 'Destruction adequacy accepted (attested); non-reusable, no disposal recorded.' : 'Destruction assurance unresolved or rejected.')) }}</p>@endif
 <p>Record {{ $r->id }} · Attempt {{ $r->attempt_id }}@if($r->previous_attempt_id) · Previous attempt {{ $r->previous_attempt_id }}@endif. Authorization context {{ $r->authorization_context_version }} · {{ $r->authorization_context_version === 2 ? 'Explicit parent authorization' : 'Own inspection/decision' }}. Frozen subject {{ $r->source_subject_version }}, inspection/decision {{ $r->assessment_version }}, custody {{ $r->custody_version }}.</p>

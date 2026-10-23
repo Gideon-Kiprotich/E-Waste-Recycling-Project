@@ -43,7 +43,7 @@ class SanitizationRecordsTest extends TestCase
         $s = $w['ids'][0];
         $before = $this->mediaPreservation();
         $this->receiptSignIn($w['receiver'])->get(route('sanitization.index'))->assertOk()->assertSee('Open media assurance and history');
-        $this->get(route('sanitization.show', ['subject' => $s, 'action' => 'attempt']))->assertOk()->assertSee('Actual observation/review time (UTC)')->assertSee('Accountable staff assertions');
+        $this->get(route('sanitization.show', ['subject' => $s, 'action' => 'attempt']))->assertOk()->assertSee('Actual observation time — Africa/Nairobi (EAT, UTC+03:00)')->assertSee('name="observed_at_local"', false)->assertSee('africa_nairobi_v1')->assertSee('Accountable staff assertions');
         foreach (['attempt' => 'pending_verification', 'verification' => 'pending_validation', 'validation' => 'satisfied'] as $kind => $state) {
             $this->post(route('sanitization.store', ['subject' => $s, 'kind' => $kind]), $this->mediaFields($w, $kind))->assertRedirect(route('sanitization.show', $s))->assertSessionHas('status');
             $this->handoverBoundary();

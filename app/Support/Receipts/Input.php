@@ -3,6 +3,7 @@
 namespace App\Support\Receipts;
 
 use App\Support\Assignments\Input as FormInput;
+use App\Support\NairobiTime;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -12,6 +13,7 @@ class Input
 {
     public static function validate(#[\SensitiveParameter] array $fields, ?UploadedFile $evidence): array
     {
+        $fields = NairobiTime::normalize($fields);
         $fields = FormInput::validate($fields, [
             'expected_version' => ['required', 'integer', 'min:1'], 'assignment_id' => ['nullable', 'uuid'], 'expected_assignment_version' => ['nullable', 'integer', 'min:1'], 'route_id' => ['nullable', 'uuid'],
             'observed_at' => ['required', 'date_format:Y-m-d\TH:i'], 'idempotency_key' => ['required', 'uuid'],

@@ -6,7 +6,7 @@
     @if(isset($r->remaining_kg))
         <p>Unaccounted quantity on this {{ $r->kind }}: {{ $r->remaining_kg }} kg.</p>
     @endif
-    <p>Observed {{ \Carbon\CarbonImmutable::parse($r->observed_at)->setTimezone('Africa/Nairobi')->format('j M Y H:i') }} Africa/Nairobi · Recorded {{ \Carbon\CarbonImmutable::parse($r->recorded_at)->setTimezone('Africa/Nairobi')->format('j M Y H:i') }} Africa/Nairobi.</p>
+    <p>Observed <x-instant :value="$r->observed_at" /> · Recorded <x-instant :value="$r->recorded_at" />.</p>
     <p>{{ \Illuminate\Support\Facades\Crypt::decryptString($r->reason_ciphertext) }}</p>
     @if($r->condition)
         <p>Physically accepted condition: {{ $r->condition }}.</p>

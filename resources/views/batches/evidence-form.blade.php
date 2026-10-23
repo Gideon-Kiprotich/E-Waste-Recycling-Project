@@ -1,4 +1,4 @@
-<x-field name="observed_at" type="datetime-local" label="Actual activity / measurement observation time (UTC)" :value="now('UTC')->format('Y-m-d\TH:i')" hint="UTC is three hours behind Nairobi. Explain retrospective entry privately. History shows Africa/Nairobi time." />
+<x-observation-time />
 <x-select-field name="evidence_kind" label="Private evidence provenance" :options="['attachment'=>'Private JPEG/PNG/PDF','operator_reference'=>'Accountable record reference']" />
 <x-field name="evidence" type="file" label="Private attachment (attachment option only)" :required="false" hint="JPEG/PNG/PDF up to 5 MiB; never upload user file contents." />
 <x-field name="reference_issuer" label="Record issuer (reference option only)" :required="false" maxlength="120" />

@@ -2,6 +2,7 @@
 @section('title', $item->isPart() ? 'Standalone part detail' : 'Device detail')
 @section('intro', 'Your permanent identity and retained consumer self-report.')
 @section('content')
+<p><a href="{{ route('timeline.show',$item->subject_id) }}">Consolidated item timeline</a></p>
 @php($sourceBatch=$item->processing_state === 'dismantled' ? \Illuminate\Support\Facades\DB::table('batch_members')->where('subject_id',$item->subject_id)->value('batch_id') : null)
 @if($sourceBatch)<p><a href="{{ route('batches.show',$sourceBatch) }}">View your batch association</a> · Dismantling does not establish completed recycling.</p>@endif
 
@@ -11,7 +12,7 @@
         <section class="card notice-content">
             <p class="eyebrow">{{ $item->category->label }}{{ $item->subtypeLabel() ? ' · '.$item->subtypeLabel() : '' }}</p><h2>{{ $item->model ?? 'Model unknown' }}</h2>
             <p class="manual-code">{{ $item->subject->public_code }}</p>
-            <dl class="facts"><dt>State</dt><dd>{{ ucfirst($item->processing_state) }}</dd><dt>Initial custody</dt><dd>With you at registration</dd><dt>Registered</dt><dd>{{ $item->subject->created_at->format('j M Y H:i') }} UTC</dd><dt>Serial / IMEI</dt><dd>{{ $item->identifier_ciphertext ? match ($item->identifier_kind) { 'imei' => 'Private IMEI recorded', 'serial' => 'Private serial recorded', default => 'Private identifier recorded · type unspecified' } : 'Unknown / not provided' }}</dd></dl>
+            <dl class="facts"><dt>State</dt><dd>{{ ucfirst($item->processing_state) }}</dd><dt>Initial custody</dt><dd>With you at registration</dd><dt>Registered</dt><dd><x-instant :value="$item->subject->created_at" /></dd><dt>Serial / IMEI</dt><dd>{{ $item->identifier_ciphertext ? match ($item->identifier_kind) { 'imei' => 'Private IMEI recorded', 'serial' => 'Private serial recorded', default => 'Private identifier recorded · type unspecified' } : 'Unknown / not provided' }}</dd></dl>
             @if($item->isPart())<dl class="facts"><dt>Origin</dt><dd>Standalone registration — no parent/removal history recorded</dd>
                 @if($item->storageAsset)<dt>Storage medium</dt><dd>{{ \App\Support\Devices\Questions::PART_SUBTYPES[$item->storageAsset->media_kind] }} · Same physical identity</dd>@endif</dl>
                 @if($item->storageAsset)<p class="form-end">Data-bearing: Yes — storage medium. Sanitization has not been verified by this registration.</p>@endif
@@ -28,7 +29,7 @@
     <section class="card notice-content section-title"><h2>Custody handover milestones</h2>@forelse($handovers as $handover)<p><a href="{{ route('handovers.show',$handover->id) }}">View your handover milestone</a> · {{ ucfirst($handover->state) }}</p>@empty<p>No later handover recorded. Registration and first receipt do not imply facility delivery.</p>@endforelse</section>
     <p><a href="{{ route('assessments.show',$item->subject_id) }}">View your assessment milestones</a> · <a href="{{ route('sanitization.show',$item->subject_id) }}">View your media treatment milestones</a></p>
     <section class="card notice-content section-title"><h2>Registration and observation history</h2><p>Only your registration and self-report revisions are recorded here.</p>
-        <ol class="timeline">@foreach($history as $observation)<li><h3>{{ $observation->revision === 1 ? 'Registered · initial self-report' : 'Self-report revised' }} · revision {{ $observation->revision }}</h3><p class="hint">{{ $observation->observed_at->format('j M Y H:i') }} UTC · Consumer self-report</p>@include('devices.report')</li>@endforeach</ol>
+        <ol class="timeline">@foreach($history as $observation)<li><h3>{{ $observation->revision === 1 ? 'Registered · initial self-report' : 'Self-report revised' }} · revision {{ $observation->revision }}</h3><p class="hint"><x-instant :value="$observation->observed_at" /> · Consumer self-report</p>@include('devices.report')</li>@endforeach</ol>
         {{ $history->links('devices.pagination') }}
     </section>
 @endsection

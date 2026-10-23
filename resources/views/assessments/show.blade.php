@@ -33,7 +33,7 @@
 <input type="hidden" name="assessment_id" value="{{ $current->assessment_id }}">
 <p>This decision references the latest frozen inspection and its evidence. A different pathway requires a reason; safety/custody/data restrictions cannot be overridden.</p>
 <x-select-field name="pathway" label="Human pathway decision" :options="$restricted ? ['hold'=>'HOLD — retain restriction'] : ['refurbish'=>'REFURBISH candidate — no work/release','recycle'=>'RECYCLE candidate — no dismantling','hold'=>'HOLD — manual review']" />
-<x-field name="observed_at" type="datetime-local" label="Actual decision time (UTC)" :value="now('UTC')->format('Y-m-d\TH:i')" hint="UTC is three hours behind Nairobi. Recording time is separate; explain retrospective entry in the reason." />
+<x-observation-time />
 @endif
 <x-field name="reason" label="Private observation/fault or decision reason" maxlength="2000" hint="Required, including every override. Do not include user file contents or private identifiers. Private text and files must be re-entered after errors." />
 <button class="primary">{{ $mode === 'inspect' ? 'Freeze inspection and recommendation' : 'Record human pathway decision' }}</button>
@@ -43,10 +43,10 @@
 <section class="card notice-content section-title"><h2>Retained assessment history</h2>
 @forelse($history as $op)
 <article class="section-title"><h3>{{ $op->event_type === 'inspection_recorded' ? 'Technician inspection recorded' : 'Human pathway decision recorded' }} · {{ $current && ($current->assessment_id === $op->id || $current->decision_id === $op->id) ? 'Current' : 'Historical' }}</h3>
-<p>Version {{ $op->version }} · {{ \Carbon\CarbonImmutable::parse($op->observed_at)->setTimezone('Africa/Nairobi')->format('j M Y H:i') }} Africa/Nairobi. No processing, data clearance or release is established.</p>
+<p>Version {{ $op->version }} · <x-instant :value="$op->observed_at" />. No processing, data clearance or release is established.</p>
 @if(!$private && $op->event_type === 'pathway_decided')<p>Pathway: {{ strtoupper($decisions[$op->id]->pathway) }} — a recorded human decision, not completed work.</p>@endif
 @if($private)
-<p>Actor: {{ $op->display_name }} · Observed {{ \Carbon\CarbonImmutable::parse($op->observed_at)->utc()->format('j M Y H:i') }} UTC.</p>
+<p>Actor: {{ $op->display_name }} · Observed <x-instant :value="$op->observed_at" />.</p>
 @if($op->event_type === 'inspection_recorded')
 @php($a=$assessments[$op->id])
 @php($result=json_decode($a->result,true,flags:JSON_THROW_ON_ERROR))
@@ -54,7 +54,7 @@
 <p>Decisive answers: @foreach($result['decisive_answers'] as $code=>$value)<strong>{{ $schema['questions'][$code]['label'] ?? $code }}: {{ $value }}</strong>{{ $loop->last ? '.' : '; ' }} @endforeach</p>
 <p>Priority: {{ implode(' → ',$result['priority']) }}. Missing/unknown: {{ implode(', ',$result['missing']) ?: 'none' }}. Conflicts: {{ implode(', ',$result['conflicts']) ?: 'none' }}.</p>
 <p>Schema {{ $a->schema_version }} · immutable rule checksum {{ $a->rule_checksum }}. Data-bearing {{ $a->data_status }} · {{ $result['data_gate'] }}</p>
-<p>Recorded {{ \Carbon\CarbonImmutable::parse($a->recorded_at)->setTimezone('Africa/Nairobi')->format('j M Y H:i') }} Africa/Nairobi.</p>
+<p>Recorded <x-instant :value="$a->recorded_at" />.</p>
 <p>Private observation: {{ \Illuminate\Support\Facades\Crypt::decryptString($a->reason_ciphertext) }}</p>
 <dl class="facts">@foreach($answers->get($a->id,collect()) as $answer)<dt>{{ $schema['questions'][$answer->question_code]['label'] ?? $answer->question_code }}</dt><dd>{{ $answer->value }}@if($answer->na_reason_ciphertext) · {{ \Illuminate\Support\Facades\Crypt::decryptString($answer->na_reason_ciphertext) }}@endif</dd>@endforeach</dl>
 @if($a->attachment_id)<p><a href="{{ route('assessments.evidence',$a->id) }}">View private inspection evidence</a></p>@else
@@ -62,7 +62,7 @@
 <p>Private operator reference: {{ $reference['issuer'] }} · {{ $reference['code'] }}. {{ $reference['provenance'] }}</p>@endif
 @else
 @php($d=$decisions[$op->id])
-<p>Recorded {{ \Carbon\CarbonImmutable::parse($d->recorded_at)->setTimezone('Africa/Nairobi')->format('j M Y H:i') }} Africa/Nairobi.</p>
+<p>Recorded <x-instant :value="$d->recorded_at" />.</p>
 <p>Pathway: {{ strtoupper($d->pathway) }} · {{ $d->override ? 'Reasoned override; original recommendation retained' : 'Matches frozen recommendation' }}. {{ \Illuminate\Support\Facades\Crypt::decryptString($d->reason_ciphertext) }}</p>
 @endif
 @endif

@@ -3,6 +3,7 @@
 namespace App\Support\Assessments;
 
 use App\Support\Assignments\Input as FormInput;
+use App\Support\NairobiTime;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -12,6 +13,7 @@ class Input
 {
     public static function validate(#[\SensitiveParameter] array $fields, array $schema, #[\SensitiveParameter] ?UploadedFile $file, bool $decision): array
     {
+        $fields = NairobiTime::normalize($fields);
         $rules = ['idempotency_key' => ['required', 'uuid'], 'expected_version' => ['required', 'integer', 'min:0'], 'expected_subject_version' => ['required', 'integer', 'min:1'], 'observed_at' => ['required', 'date_format:Y-m-d\TH:i'], 'reason' => ['required', 'string', 'max:2000']];
         if ($decision) {
             $rules += ['assessment_id' => ['required', 'uuid'], 'pathway' => ['required', Rule::in(['refurbish', 'recycle', 'hold'])]];

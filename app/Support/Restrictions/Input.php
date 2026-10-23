@@ -3,6 +3,7 @@
 namespace App\Support\Restrictions;
 
 use App\Support\Assignments\Input as StrictInput;
+use App\Support\NairobiTime;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -12,6 +13,7 @@ class Input
 {
     public static function validate(#[\SensitiveParameter] array $fields, string $kind, ?UploadedFile $file, ?string $type = null): array
     {
+        $fields = NairobiTime::normalize($fields);
         $rules = ['idempotency_key' => ['required', 'uuid'], 'expected_version' => ['required', 'integer', 'min:0'], 'expected_source_version' => ['required', 'integer', 'min:1'], 'expected_restriction_version' => ['required', 'integer', 'min:0'], 'expected_context' => ['required', 'string', 'regex:/\A[a-f0-9]{64}\z/'], 'observed_at' => ['required', 'date_format:Y-m-d\TH:i'], 'reason' => ['required', 'string', 'max:2000'], 'evidence_kind' => ['required', Rule::in(['none', 'attachment', 'operator_reference'])], 'reference_issuer' => ['required_if:evidence_kind,operator_reference', 'prohibited_unless:evidence_kind,operator_reference', 'nullable', 'string', 'max:120'], 'reference_code' => ['required_if:evidence_kind,operator_reference', 'prohibited_unless:evidence_kind,operator_reference', 'nullable', 'string', 'max:120'], 'reference_attested' => ['required_if:evidence_kind,operator_reference', 'prohibited_unless:evidence_kind,operator_reference', 'exclude_unless:evidence_kind,operator_reference', 'accepted']];
         if ($kind === 'assign') {
             $rules += ['assigned_to' => ['required', 'uuid'], 'pre_receipt' => ['required', 'boolean'], 'allowed_evidence' => ['sometimes', 'array', 'max:1'], 'allowed_evidence.*' => ['required', 'uuid', 'distinct']];

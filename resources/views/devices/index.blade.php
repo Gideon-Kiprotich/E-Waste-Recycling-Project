@@ -14,7 +14,7 @@
         @forelse($items as $item)
             <article class="card notice-content"><p class="eyebrow">{{ $item->category->label }}{{ $item->subtypeLabel() ? ' · '.$item->subtypeLabel() : '' }}</p>
                 <h2><a href="{{ route('items.show', $item->subject_id) }}">{{ $item->model ?? 'Model unknown' }}</a></h2>
-                <p class="manual-code">{{ $item->subject->public_code }}</p><p>State: {{ ucfirst($item->processing_state) }}</p><p class="hint">{{ $item->intake_class === 'processor_derived' ? 'Identified at facility' : 'Registered' }} {{ $item->subject->created_at->format('j M Y') }} · {{ $item->intake_class === 'processor_derived' ? 'Not a first receipt' : 'Self-report' }}</p>
+                <p class="manual-code">{{ $item->subject->public_code }}</p><p>State: {{ ucfirst($item->processing_state) }}</p><p class="hint">{{ $item->intake_class === 'processor_derived' ? 'Identified at facility' : 'Registered' }} <x-instant :value="$item->subject->created_at" /> · {{ $item->intake_class === 'processor_derived' ? 'Not a first receipt' : 'Self-report' }}</p>
             </article>
         @empty
             <div class="card notice-content"><h2>No devices registered yet</h2><p>Register one supported device or standalone part at a time. Unknown model or serial is welcome.</p><a href="{{ route('items.create') }}">Register your first device or part</a></div>

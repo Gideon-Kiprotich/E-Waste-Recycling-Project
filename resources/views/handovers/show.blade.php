@@ -37,7 +37,7 @@ foreach($editable as $n=>$row){foreach(['outcome','reason','attested'] as $field
 <button class="primary">{{ match($mode){'acknowledged'=>'Record recipient outcomes','withdrawn'=>'Withdraw pending items',default=>'Record discrepancy review'} }}</button></form></section>
 @endif
 @endif
-<section class="card"><h2>Retained handover history</h2><ol class="timeline">@foreach($operations as $op)<li><h3>{{ ucfirst($op->kind) }}@if($private) · v{{ $op->version }}@endif</h3><p>Observed {{ \Carbon\CarbonImmutable::parse($op->observed_at)->timezone('Africa/Nairobi')->format('j M Y H:i') }} Africa/Nairobi · recorded {{ \Carbon\CarbonImmutable::parse($op->recorded_at)->timezone('Africa/Nairobi')->format('j M Y H:i') }} Africa/Nairobi</p>
+<section class="card"><h2>Retained handover history</h2><ol class="timeline">@foreach($operations as $op)<li><h3>{{ ucfirst($op->kind) }}@if($private) · v{{ $op->version }}@endif</h3><p>Observed <x-instant :value="$op->observed_at" /> · recorded <x-instant :value="$op->recorded_at" /></p>
 @foreach($outcomes->where('operation_id',$op->id) as $outcome)<p>{{ $rows->firstWhere('id',$outcome->handover_item_id)->public_code }} · {{ str_replace('_',' ',$outcome->outcome) }}@if($private) · {{ \Illuminate\Support\Facades\Crypt::decryptString($outcome->reason_ciphertext) }}@endif</p>@endforeach
 @if($private && $op->attachment_id)<a href="{{ route('handovers.evidence',$op->id) }}">Download private evidence</a>@elseif($private && $op->reference_ciphertext)@php($ref=json_decode(\Illuminate\Support\Facades\Crypt::decryptString($op->reference_ciphertext),true))<p>Private reference: {{ $ref['issuer'] }} · {{ $ref['code'] }} · {{ $ref['provenance'] }}</p>@endif</li>@endforeach</ol></section>
 @endsection

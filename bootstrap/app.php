@@ -25,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->redirectUsersTo('/dashboard');
+        $middleware->trimStrings(except: ['observed_at_local', 'time_basis']);
         $middleware->alias([
             'account.current' => EnsureCurrentAccount::class,
             'role' => RequireRole::class,

@@ -3,6 +3,7 @@
 namespace App\Support\Sanitization;
 
 use App\Support\Assignments\Input as FormInput;
+use App\Support\NairobiTime;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
@@ -12,6 +13,7 @@ class Input
 {
     public static function validate(#[\SensitiveParameter] array $fields, string $kind, #[\SensitiveParameter] ?UploadedFile $file): array
     {
+        $fields = NairobiTime::normalize($fields);
         $outcomes = match ($kind) {
             'attempt' => ['success', 'failed', 'incomplete', 'unverifiable'],
             'verification' => ['satisfactory', 'unsatisfactory', 'unverifiable'],

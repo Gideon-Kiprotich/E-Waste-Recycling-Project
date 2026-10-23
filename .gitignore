@@ -98,3 +98,7 @@ Thumbs.db
 !/database/sql/downstream_review.sql
 !/database/sql/downstream_correction_controls.sql
 !/database/sql/downstream_discovery.sql
+
+/storage/report-exports/
+
+!/database/sql/reporting.sql
