@@ -1,6 +1,6 @@
 # Phase 17 — Timelines, Notices and Scoped Reporting
 
-Current status: **implemented; whole-repository formatting gate resolved; provisional fast-forward integration authorized; RP12/manual and operational acceptance remain open**.
+Current status: **implemented; whole-repository formatting gate resolved; provisionally integrated into main; RP12/manual and operational acceptance remain open**.
 
 ## Earlier design checkpoint
 
@@ -106,3 +106,5 @@ Formatting commit **3eca4d431bcc3ae5d7bf00ba05a914dc72f3a8b5** (`Fix test format
 The retained failed full **607 / 11,950 (605 passed, two failures/no errors)** was inspected and remains failed. Each HDD/SSD failed dataset has an explicit passing event in final **59 / 620** coverage. Final **5 / 68**, four-role **57 HTTP checks**, strict Composer validity, **20** platform requirements, **22 JavaScript tests**, build **299 ms**, **31** compiled/linted Blade templates, both applied migrations and original **104 tables per database / 37 files** preservation were confirmed from retained evidence. Public tables remain recorded as 109 each/zero pending; public reporting tables contain cutover rows only, with no manufactured notices/exports. No unchanged suite, routing benchmark, database comparison or migration was rerun for this integration; no live database, environment/key, private-upload or backup contents were accessed.
 
 This review permits a normal fast-forward into main, not RP12/manual, physical, technical deployment or operational acceptance. Keep all [deferred checks](deferred-acceptance-checks.md#phase-17--reporting-and-inbox-acceptance-rp12), the known **13.570422625 s / 15.06 s** routing failures against unchanged ten seconds, unavailable workflows, unverified continuous inbox/operator suitability and unresolved device re-entry. A current benchmark pass does not resolve variability. Phase 18 is separately authorized as design only; C18 implementation/privacy execution and C19 final validation are not inferred.
+
+The subsequent Git operation normally fast-forwarded main to **c9741f82846ac1678ca678cbd2c26485e8d21c93**, including implementation, formatting and status commits. No force, merge commit or push occurred. [The Phase 18 design handoff](phase-18-report.md) records that completed integration separately from C18 implementation.
